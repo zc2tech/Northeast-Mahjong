@@ -12,8 +12,8 @@ public class RenderTile : WorldObjectTransformable
 
     public RenderTile()
     {
-        tile_type = new Tile(0, TileType.BLANK, false);
-        _scale = 1;
+        tile_type = new Tile(0, TileType.BLANK);
+        _scale = 1.3f;
 
         selectable = true;
     }
@@ -66,14 +66,6 @@ public class RenderTile : WorldObjectTransformable
         string tex = tile_texture_enum_to_string(texture_type);
         tex = tex[0].toupper().to_string() + tex.substring(1);
         string name = "Tiles/" + tex + "/" + TILE_TYPE_TO_STRING(tile_type.tile_type);
-
-        if (tile_type.dora)
-        {
-            RenderTexture? texture = store.load_texture(name + "-Dora");
-            if (texture != null)
-                return texture;
-        }
-
         return store.load_texture(name);
     }
 

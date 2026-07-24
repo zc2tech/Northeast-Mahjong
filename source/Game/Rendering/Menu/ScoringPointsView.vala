@@ -508,7 +508,7 @@ class ScoringPointsView : View2D
         {
             animate_items_start();
         }
-        // TODO: need to adjust for Northeast Mahjong
+        // TODO: need to adjust for Northeast
         private void set_points_text(float amount)
         {
             string points;

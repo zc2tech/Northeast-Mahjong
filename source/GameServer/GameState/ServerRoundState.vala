@@ -10,7 +10,7 @@ namespace GameServer
         public signal void game_draw_dead_tile(int player_index, Tile tile, bool open);
         public signal void game_discard_tile(Tile tile);
 
-        public signal void game_ron(int[] player_indices, ArrayList<Tile>[] hand, int discard_player_index, Tile discard_tile, int riichi_return_index, Scoring[] scores);
+        public signal void game_ron(int[] player_indices, ArrayList<Tile>[] hand, int discard_player_index, Tile discard_tile, Scoring[] scores);
         public signal void game_tsumo(int player_index, ArrayList<Tile> hand, Scoring score);
         public signal void game_riichi(int player_index, bool open, ArrayList<Tile> hand);
         public signal void game_late_kan(Tile tile);
@@ -432,7 +432,7 @@ namespace GameServer
                     return;
                 }
 
-                game_ron(indices, hands, discarder.index, discard_tile, result.riichi_return_index, validator.get_ron_score());
+                game_ron(indices, hands, discarder.index, discard_tile, validator.get_ron_score());
                 game_over();
                 return;
             }

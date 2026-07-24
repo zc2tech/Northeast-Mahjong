@@ -117,17 +117,6 @@ namespace GameServer
                 pl.server_player.send_message(message);
         }
 
-        private void game_flip_dora(Tile tile)
-        {
-            game_reveal_tile(tile);
-        }
-
-        private void game_flip_ura_dora(ArrayList<Tile> tiles)
-        {
-            foreach (Tile tile in tiles)
-                game_reveal_tile(tile);
-        }
-
         private void game_draw_dead_tile(int player_index, Tile tile, bool open)
         {
             GameRoundServerPlayer player = get_server_player(players, player_index);
@@ -152,7 +141,7 @@ namespace GameServer
             get_server_player(players, player_index).server_player.send_message(message);
         }
 
-        private void game_ron(int[] player_indices, ArrayList<Tile>[] hands, int discard_player_index, Tile discard_tile, int riichi_return_index, Scoring[] scores)
+        private void game_ron(int[] player_indices, ArrayList<Tile>[] hands, int discard_player_index, Tile discard_tile, Scoring[] scores)
         {
             foreach (ArrayList<Tile> hand in hands)
                 foreach (Tile t in hand)
@@ -164,7 +153,7 @@ namespace GameServer
                 pl.server_player.send_message(message);
 
             finished = true;
-            result = new RoundFinishResult.ron(scores, player_indices, discard_player_index, discard_tile.ID, riichi_return_index);
+            result = new RoundFinishResult.ron(scores, player_indices, discard_player_index, discard_tile.ID);
         }
 
         private void game_tsumo(int player_index, ArrayList<Tile> hand, Scoring score)

@@ -33,7 +33,7 @@ public class ScoringDoraView : View3D
         for (int i = 0; i < tile_list.size + front_tiles + back_tiles; i++)
         {
             bool revealed = i >= front_tiles && i < front_tiles + tile_list.size && tile_list[i - front_tiles].tile_type != TileType.BLANK;
-            Tile t = revealed ? tile_list[i - front_tiles] : new Tile(-1, TileType.BLANK, false);
+            Tile t = revealed ? tile_list[i - front_tiles] : new Tile(-1, TileType.BLANK);
             RenderTile tile = new RenderTile()
             {
                 tile_type = t,

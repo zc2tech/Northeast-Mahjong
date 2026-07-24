@@ -8,6 +8,7 @@ private static bool debug =
 #endif
 ;
 
+private static bool run_tests = false;
 private static bool multithread_rendering = false;
 
 private static string? arg_search_dir = null;
@@ -25,6 +26,8 @@ private static void parse_args(string[] args)
             debug = true;
         else if (arg == "-no-debug")
             debug = false;
+        else if (arg == "-test")
+            run_tests = true;
         else if (arg == "-multithread-rendering")
             multithread_rendering = true;
         else if (arg == "-no-multithread-rendering")
@@ -51,6 +54,16 @@ public static int main(string[] args)
     string? built_search_dir = Build.SEARCH_DIR;
 
     parse_args(args);
+
+    if (run_tests)
+    {
+        stdout.printf("Starting hand tests...\n");
+        stdout.flush();
+        test_hands();
+        stdout.printf("Tests completed!\n");
+        stdout.flush();
+        return 0;
+    }
 
     if (!Environment.init(debug))
     {

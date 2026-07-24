@@ -92,11 +92,6 @@ public class GameState : Object
 
         if (ron || (tsumo && sekinin))
         {
-            if (result.riichi_return_index != -1 && ron)
-            {
-                players[result.riichi_return_index].transfer += 1000;
-            }
-
             int loser  = result.loser_index;
 
             for (int i = 0; i < result.winner_indices.length; i++)
@@ -409,14 +404,13 @@ public class RoundFinishResult
         result = RoundResultEnum.NONE;
     }
 
-    public RoundFinishResult.ron(Scoring[] scores, int[] winner_indices, int loser_index, int discard_tile, int riichi_return_index)
+    public RoundFinishResult.ron(Scoring[] scores, int[] winner_indices, int loser_index, int discard_tile)
     {
         result = RoundResultEnum.RON;
         this.scores = scores;
         this.winner_indices = winner_indices;
         this.loser_index = loser_index;
         this.discard_tile = discard_tile;
-        this.riichi_return_index = riichi_return_index;
     }
 
     public RoundFinishResult.tsumo(Scoring score, int winner_index)
@@ -442,7 +436,6 @@ public class RoundFinishResult
     public int discard_tile { get; private set; }
     public int[] tenpai_indices { get; private set; }
     public int[] nagashi_indices { get; private set; }
-    public int riichi_return_index { get; private set; }
 
     public enum RoundResultEnum
     {

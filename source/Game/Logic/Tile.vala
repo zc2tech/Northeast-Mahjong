@@ -3,11 +3,10 @@ using Engine;
 
 public class Tile : Serializable
 {
-    public Tile(int ID, TileType type, bool dora)
+    public Tile(int ID, TileType type)
     {
         this.ID = ID;
         tile_type = type;
-        this.dora = dora;
     }
 
     public bool is_same_sort(Tile other)
@@ -25,6 +24,7 @@ public class Tile : Serializable
         return tile_type == other.tile_type;
     }
 
+    // 万 筒 索 之类， 可以组成顺子的
     public bool is_suit_tile()
     {
         if (tile_type >= TileType.MAN1 && tile_type <= TileType.MAN9)
@@ -165,12 +165,12 @@ public class Tile : Serializable
 
     public new string to_string()
     {
-        return "(" + ID.to_string() + ") " + tile_type.to_string() + (dora ? " dora" : " not dora");
+        return "(" + ID.to_string() + ") " + tile_type.to_string();
     }
 
     public bool equals(Tile tile)
     {
-        return ID == tile.ID && tile_type == tile.tile_type && dora == tile.dora;
+        return ID == tile.ID && tile_type == tile.tile_type;
     }
 
     public static ArrayList<Tile> sort_tiles_ID(ArrayList<Tile> list)
@@ -228,7 +228,6 @@ public class Tile : Serializable
 
     public int ID { get; set; }
     public TileType tile_type { get; set; }
-    public bool dora { get; set; }
 }
 
 public enum Wind

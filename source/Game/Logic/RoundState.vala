@@ -114,7 +114,6 @@ public class RoundState : Object
 
         game_draw_type = GameDrawType.NONE;
         chankan_call = ChankanCall.NONE;
-        riichi_return_index = -1;
     }
 
     public void start()
@@ -148,7 +147,6 @@ public class RoundState : Object
     {
         Tile t = get_tile(tile.ID);
         t.tile_type = tile.tile_type;
-        t.dora = tile.dora;
     }
 
     public void calls_finished()
@@ -206,7 +204,6 @@ public class RoundState : Object
             kan();
 
         turn_counter++;
-        riichi_return_index = -1;
         chankan_call = ChankanCall.NONE;
     }
 
@@ -502,7 +499,6 @@ public class RoundState : Object
         foreach (RoundStatePlayer player in players)
             player.flow_interrupted();
         flow_interrupted = true;
-        riichi_return_index = -1;
     }
 
     private void kan()
@@ -548,7 +544,6 @@ public class RoundState : Object
     public ArrayList<Tile> ura_dora { get { return wall.ura_dora; } }
     public bool tiles_empty { get { return wall.empty; } }
     public ChankanCall chankan_call { get; private set; }
-    public int riichi_return_index { get; private set; }
 }
 
 public class RoundStatePlayer
@@ -982,41 +977,45 @@ class RoundStateWall
 
     public RoundStateWall(int dealer, int wall_index)
     {
-        init(dealer, wall_index, false, null, false, false, null, null, null, null, null, null, null);
+        init(dealer, wall_index, TileType.HATSU, null, false, false, null, null, null, null, null, null, null);
     }
 
     public RoundStateWall.shuffled(int dealer, int wall_index, bool aka_dora, RandomClass rnd)
     {
-        init(dealer, wall_index, aka_dora, rnd, true, false, null, null, null, null, null, null, null);
+        init(dealer, wall_index, TileType.HATSU, rnd, true, false, null, null, null, null, null, null, null);
     }
 
     public RoundStateWall.seeded(int dealer, int wall_index, bool aka_dora, bool shuffle, RandomClass? rnd, TileType[] p1_tiles, TileType[] p2_tiles, TileType[] p3_tiles, TileType[] p4_tiles, TileType[] draw_tiles, TileType[] dead_wall)
     {
-        init(dealer, wall_index, aka_dora, rnd, shuffle, true, null, p1_tiles, p2_tiles, p3_tiles, p4_tiles, draw_tiles, dead_wall);
+        init(dealer, wall_index, TileType.HATSU, rnd, shuffle, true, null, p1_tiles, p2_tiles, p3_tiles, p4_tiles, draw_tiles, dead_wall);
     }
 
     public RoundStateWall.custom(int dealer, int wall_index, Tile[] tiles)
     {
-        init(dealer, wall_index, false, null, false, false, tiles, null, null, null, null, null, null);
+        init(dealer, wall_index, TileType.HATSU, null, false, false, tiles, null, null, null, null, null, null);
     }
 
-    private void init(int dealer, int wall_index, bool aka_dora, RandomClass? rnd, bool shuffled, bool seeded, Tile[]? custom_tiles, TileType[]? p1_tiles, TileType[]? p2_tiles, TileType[]? p3_tiles, TileType[]? p4_tiles, TileType[]? draw_tiles, TileType[]? dead_wall)
+    private void init(int dealer, int wall_index, TileType dragon, RandomClass? rnd, bool shuffled, bool seeded, Tile[]? custom_tiles, TileType[]? p1_tiles, TileType[]? p2_tiles, TileType[]? p3_tiles, TileType[]? p4_tiles, TileType[]? draw_tiles, TileType[]? dead_wall)
     {
+        // 东北麻将张数应该是 9*3（万筒索）* 4 + 4 （中/发/白） = 112
         if (custom_tiles != null)
             tiles = custom_tiles;
         else
-            tiles = new Tile[136];
-
-        dora = new ArrayList<Tile>();
-        ura_dora = new ArrayList<Tile>();
+            tiles = new Tile[112];
 
         if (custom_tiles == null)
         {
-            for (int i = 0; i < tiles.length; i++)
+            int iTile = 0;
+            for (int i = TileType.MAN1; i < TileType.TON; i++)
             {
-                TileType type = (shuffled && !seeded) ? (TileType)((i / 4) + 1) : TileType.BLANK;
-                tiles[i] = new Tile(-1, type, false);
+                TileType type = (shuffled && !seeded) ? (TileType)(i) : TileType.BLANK;
+                tiles[iTile++] = new Tile(-1, type);
+                tiles[iTile++] = new Tile(-1, type);
+                tiles[iTile++] = new Tile(-1, type);
+                tiles[iTile++] = new Tile(-1, type);
             }
+            // 中 发 白 中 选一个
+            tiles[iTile++] = new Tile(-1, dragon);
         }
 
         int start_wall = (4 - dealer) % 4;
@@ -1026,27 +1025,6 @@ class RoundStateWall
             seed(index, rnd, tiles, p1_tiles, p2_tiles, p3_tiles, p4_tiles, draw_tiles, dead_wall);
         else if (shuffled)
             shuffle(tiles, rnd);
-
-        if ((shuffled || seeded) && aka_dora)
-        {
-            ArrayList<Tile> five_man = new ArrayList<Tile>();
-            ArrayList<Tile> five_pin = new ArrayList<Tile>();
-            ArrayList<Tile> five_sou = new ArrayList<Tile>();
-
-            foreach (Tile tile in tiles)
-            {
-                if (tile.tile_type == TileType.MAN5)
-                    five_man.add(tile);
-                else if (tile.tile_type == TileType.PIN5)
-                    five_pin.add(tile);
-                else if (tile.tile_type == TileType.SOU5)
-                    five_sou.add(tile);
-            }
-
-            five_man[rnd.int_range(0, five_man.size - 1)].dora = true;
-            five_pin[rnd.int_range(0, five_pin.size - 1)].dora = true;
-            five_sou[rnd.int_range(0, five_sou.size - 1)].dora = true;
-        }
 
         for (int i = 0; i < tiles.length; i++)
             tiles[i].ID = i;

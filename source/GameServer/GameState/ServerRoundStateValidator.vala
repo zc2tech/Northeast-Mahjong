@@ -306,7 +306,6 @@ namespace GameServer
                     state.discard_tile,
                     null,
                     CallDecisionType.RON,
-                    state.riichi_return_index,
                     ron_players.size >= 3 && settings.triple_ron_draw == OnOffEnum.ON
                 );
             }
@@ -327,7 +326,6 @@ namespace GameServer
                         state.discard_tile,
                         player.call_decision.tiles,
                         player.call_decision.call_type,
-                        state.riichi_return_index,
                         false
                     );
                 }
@@ -410,7 +408,6 @@ namespace GameServer
             Tile discard_tile,
             ArrayList<Tile>? tiles,
             CallDecisionType call_type,
-            int riichi_return_index,
             bool draw
         )
         {
@@ -419,7 +416,6 @@ namespace GameServer
             this.discard_tile = discard_tile;
             this.tiles = tiles;
             this.call_type = call_type;
-            this.riichi_return_index = riichi_return_index;
             this.draw = draw;
         }
 
@@ -428,7 +424,6 @@ namespace GameServer
         public Tile discard_tile { get; private set; }
         public ArrayList<Tile>? tiles { get; private set; }
         public CallDecisionType call_type { get; private set; }
-        public int riichi_return_index { get; private set; }
         public bool draw { get; private set; }
     }
 }

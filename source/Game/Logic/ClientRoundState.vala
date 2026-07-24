@@ -498,7 +498,7 @@ public class ClientRoundState : Object
 
         state.ron(winner_indices);
         Scoring[] scores = state.get_ron_score();
-        result = new RoundFinishResult.ron(scores, winner_indices, discard_index, state.discard_tile.ID, state.riichi_return_index);
+        result = new RoundFinishResult.ron(scores, winner_indices, discard_index, state.discard_tile.ID);
 
         finished = true;
         game_finished(result);

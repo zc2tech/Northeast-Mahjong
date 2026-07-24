@@ -209,6 +209,7 @@ public class TileRules
     {
         ArrayList<ArrayList<Tile>> list = new ArrayList<ArrayList<Tile>>();
 
+        // NOT a suit like man tong suo, that cannot create a sorted meld
         if (!tile.is_suit_tile())
             return list;
 
@@ -216,17 +217,18 @@ public class TileRules
 
         foreach (Tile t in hand)
             if (tile.is_same_sort(t))
+                // 手牌中跟要吃的牌同类型（万，筒，索），放到 tiles
                 tiles.add(t);
 
-        Tile? m2 = null;
-        Tile? m1 = null;
-        Tile? p1 = null;
-        Tile? p2 = null;
+        Tile? m2 = null; // 手牌比对象牌小2
+        Tile? m1 = null; // 手牌比对象牌小1
+        Tile? p1 = null; // 手牌比对象牌大1
+        Tile? p2 = null; // 手牌比对象牌大2
 
-        int type = (int)tile.tile_type;
+        int type = (int)tile.tile_type; // type不但包含花色类型，也包含值 1-9
         foreach (Tile t in tiles)
         {
-            int otype = (int)t.tile_type;
+            int otype = (int)t.tile_type; // 手牌
 
             if (otype - type == -2)
                 m2 = t;
@@ -319,8 +321,14 @@ public class TileRules
         return hand_readings(hand, calls, false, true).size > 0;
     }
 
+    // 手牌如果只剩小于等于两张的话，东北麻将里是不能胡的
     public static ArrayList<HandReading> hand_readings(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls, bool tenpai_only, bool early_return)
     {
+        // 东北麻将的话，已经没机会和了，不能剩 一张或者两张牌的
+        if(hand.size <= 2) {
+           return new ArrayList<HandReading>(); 
+        }
+
         ArrayList<TileMeld> call_melds = new ArrayList<TileMeld>();
 
         if (calls != null)
@@ -340,6 +348,7 @@ public class TileRules
         return hand_reading_recursion(hand, call_melds, tenpai_only, early_return);
     }
 
+    // 第一次进这个函数时 remaining_tiles = hand
     private static ArrayList<HandReading> hand_reading_recursion(ArrayList<Tile> remaining_tiles, ArrayList<TileMeld> melds, bool tenpai_only, bool early_return)
     {
         ArrayList<HandReading> readings = new ArrayList<HandReading>();
@@ -353,7 +362,7 @@ public class TileRules
         else if (hand.size == 1) // If there is a single tile left then we are in a single tile pair wait
         {
             Tile t = hand[0];
-            TilePair pair = new TilePair(t, new Tile(-1, t.tile_type, false));
+            TilePair pair = new TilePair(t, new Tile(-1, t.tile_type));
 
             HandReading reading = new HandReading(melds, pair);
             if (reading.valid_keishiki)
@@ -377,94 +386,11 @@ public class TileRules
 
         if (hand.size == 13 || hand.size == 14)
         {
-            // -------- Kokushi musou --------
-            {
-                int[] kokushi = new int[13];
-
-                foreach (Tile tile in remaining_tiles)
-                {
-                         if (tile.tile_type == TileType.MAN1 ) kokushi[ 0]++;
-                    else if (tile.tile_type == TileType.MAN9 ) kokushi[ 1]++;
-                    else if (tile.tile_type == TileType.PIN1 ) kokushi[ 2]++;
-                    else if (tile.tile_type == TileType.PIN9 ) kokushi[ 3]++;
-                    else if (tile.tile_type == TileType.SOU1 ) kokushi[ 4]++;
-                    else if (tile.tile_type == TileType.SOU9 ) kokushi[ 5]++;
-                    else if (tile.tile_type == TileType.TON  ) kokushi[ 6]++;
-                    else if (tile.tile_type == TileType.NAN  ) kokushi[ 7]++;
-                    else if (tile.tile_type == TileType.SHAA ) kokushi[ 8]++;
-                    else if (tile.tile_type == TileType.PEI  ) kokushi[ 9]++;
-                    else if (tile.tile_type == TileType.HATSU) kokushi[10]++;
-                    else if (tile.tile_type == TileType.HAKU ) kokushi[11]++;
-                    else if (tile.tile_type == TileType.CHUN ) kokushi[12]++;
-                }
-
-                int unique = 0;
-                int total = 0;
-
-                for (int i = 0; i < kokushi.length; i++)
-                {
-                    if (kokushi[i] != 0)
-                        unique++;
-                    total += kokushi[i];
-                }
-
-                if (unique >= hand.size - 1 && total == hand.size)
-                {
-                    append_reading(readings, new HandReading.kokushi(remaining_tiles));
-                    return readings; // Can't be anything else
-                }
-            }
+            // -------- Kokushi musou 国士无双 ---
             // -------- /Kokushi musou --------
 
-            // -------- Chii-toi ---------
-            {
-                bool same = true;
-                bool offset = false;
-                for (int i = 0; i < (tenpai_only ? 12 : 13); i += 2)
-                    if (hand[i].tile_type != hand[i+1].tile_type)
-                    {
-                        if (tenpai_only && !offset)
-                        {
-                            offset = true;
-                            i--;
-                        }
-                        else
-                        {
-                            same = false;
-                            break;
-                        }
-                    }
-                if (same)
-                {
-                    if (tenpai_only)
-                    {
-                        ArrayList<TilePair> p = new ArrayList<TilePair>();
-                        for (int i = 0; i < 13; i += 2)
-                        {
-                            if (i != 12 && hand[i].tile_type == hand[i+1].tile_type)
-                                p.add(new TilePair(hand[i], hand[i+1]));
-                            else
-                            {
-                                p.add(new TilePair(hand[i], new Tile(-1, hand[i].tile_type, false)));
-                                i--;
-                            }
-                        }
-
-                        append_reading(readings, new HandReading.chiitoi(p));
-                    }
-                    else
-                    {
-                        ArrayList<TilePair> p = new ArrayList<TilePair>();
-                        for (int i = 0; i < 13; i += 2)
-                            p.add(new TilePair(hand[i], hand[i+1]));
-                        append_reading(readings, new HandReading.chiitoi(p));
-                    }
-
-                    if (early_return)
-                        return readings;
-                }
-            }
-            // -------- /Chii-toi --------
+            // -------- Chii-toi 七対 ---------
+            // -------- /Chii-toi 七対--------
         }
 
         for (int i = 0; i < hand.size; i++)
@@ -566,7 +492,7 @@ public class TileRules
                         TilePair pair = new TilePair(tile, t);
                         ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
                         new_melds.add_all(melds);
-                        new_melds.add(new TileMeld(n1, n2, new Tile(-1, n1.tile_type, false), true));
+                        new_melds.add(new TileMeld(n1, n2, new Tile(-1, n1.tile_type), true));
 
                         HandReading reading = new HandReading(new_melds, pair);
                         if (reading.valid_keishiki)
@@ -575,7 +501,7 @@ public class TileRules
                         pair = new TilePair(n1, n2);
                         new_melds.clear();
                         new_melds.add_all(melds);
-                        new_melds.add(new TileMeld(tile, t, new Tile(-1, tile.tile_type, false), true));
+                        new_melds.add(new TileMeld(tile, t, new Tile(-1, tile.tile_type), true));
 
                         reading = new HandReading(new_melds, pair);
                         if (reading.valid_keishiki)
@@ -611,7 +537,7 @@ public class TileRules
                         if (tile.is_second_neighbour(t))
                         {
                             int middle = (v1 + v2) / 2; // Need a new tile in the middle
-                            new_melds.add(new TileMeld(t1, new Tile(-1, (TileType)middle, false), t2, true));
+                            new_melds.add(new TileMeld(t1, new Tile(-1, (TileType)middle), t2, true));
 
                             HandReading reading = new HandReading(new_melds, pair);
                             if (reading.valid_keishiki)
@@ -621,7 +547,7 @@ public class TileRules
                         {
                             if (!t1.is_terminal_tile())
                             {
-                                new_melds.add(new TileMeld(new Tile(-1, (TileType)(v1 - 1), false), t1, t2, true));
+                                new_melds.add(new TileMeld(new Tile(-1, (TileType)(v1 - 1)), t1, t2, true));
 
                                 HandReading reading = new HandReading(new_melds, pair);
                                 if (reading.valid_keishiki)
@@ -632,7 +558,7 @@ public class TileRules
                             {
                                 new_melds.clear();
                                 new_melds.add_all(melds);
-                                new_melds.add(new TileMeld(t1, t2, new Tile(-1, (TileType)(v2 + 1), false), true));
+                                new_melds.add(new TileMeld(t1, t2, new Tile(-1, (TileType)(v2 + 1)), true));
 
                                 HandReading reading = new HandReading(new_melds, pair);
                                 if (reading.valid_keishiki)
@@ -1031,6 +957,7 @@ public class HandReading : Object
     public bool valid_keishiki { get; private set; }
 }
 
+// 顺子 刻子 都可以称为 meld， 可以用 is_triplet(刻子) 去看到底是什么
 public class TileMeld : Object
 {
     public TileMeld(Tile tile_1, Tile tile_2, Tile tile_3, bool is_closed)

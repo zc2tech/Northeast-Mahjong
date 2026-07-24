@@ -502,7 +502,7 @@ private class TileMenuView : View3D
 
         tile = new RenderTile()
         {
-            tile_type = new Tile(0, TileType.PIN1, false),
+            tile_type = new Tile(0, TileType.PIN1),
             model_quality = QualityEnum.HIGH
         };
 

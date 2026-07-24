@@ -52,15 +52,15 @@ class JulianBot : Bot
                 return;
             }
         }
-        /*else if (round_state.can_chii(tile, round_state.self, round_state.discard_player))
+        // 不能随随便便就吃啊
+        else if (round_state.can_chii(round_state.self))
         {
-            action_delay();
 
             ArrayList<ArrayList<Tile>> groups = TileRules.get_chii_groups(round_state.self.hand, tile);
             ArrayList<Tile> tiles = groups[0];
 
             call_chii(tiles[0], tiles[1]);
-        }*/
+        }
 
         call_nothing();
     }

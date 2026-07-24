@@ -21,7 +21,7 @@ public void test_hands()
         new ArrayList<Tile>(),// dora
         new ArrayList<Tile>(),// ura_dora,
         true,
-        new Tile(-1, TileType.PEI, false),
+        new Tile(-1, TileType.PEI),
         false,
         false,
         false,
@@ -29,28 +29,35 @@ public void test_hands()
     );
 
     ArrayList<Tile> tiles = new ArrayList<Tile>();
-    tiles.add(new Tile(0, TileType.MAN9, false));
-    tiles.add(new Tile(1, TileType.MAN8, false));
-    tiles.add(new Tile(2, TileType.MAN7, false));
-    tiles.add(new Tile(3, TileType.PIN8, false));
-    tiles.add(new Tile(4, TileType.PIN7, false));
-    tiles.add(new Tile(5, TileType.PIN9, false));
-    tiles.add(new Tile(6, TileType.TON, false));
-    tiles.add(new Tile(7, TileType.TON, false));
-    tiles.add(new Tile(8, TileType.NAN, false));
-    tiles.add(new Tile(9, TileType.NAN, false));
-    tiles.add(new Tile(10, TileType.NAN, false));
+    tiles.add(new Tile(0, TileType.MAN9));
+    tiles.add(new Tile(1, TileType.MAN8));
+    tiles.add(new Tile(2, TileType.MAN7));
+    tiles.add(new Tile(3, TileType.PIN8));
+    tiles.add(new Tile(4, TileType.PIN7));
+    tiles.add(new Tile(5, TileType.PIN9));
+    tiles.add(new Tile(6, TileType.TON));
+    tiles.add(new Tile(7, TileType.TON));
+    tiles.add(new Tile(8, TileType.NAN));
+    tiles.add(new Tile(9, TileType.NAN));
+    tiles.add(new Tile(10, TileType.NAN));
 
     ArrayList<RoundStateCall> calls = new ArrayList<RoundStateCall>();
 
     ArrayList<Tile> chii_tiles = new ArrayList<Tile>();
-    chii_tiles.add(new Tile(11, TileType.SOU9, false));
-    chii_tiles.add(new Tile(12, TileType.SOU7, false));
-    chii_tiles.add(new Tile(13, TileType.SOU8, false));
+    chii_tiles.add(new Tile(11, TileType.SOU9));
+    chii_tiles.add(new Tile(12, TileType.SOU7));
+    chii_tiles.add(new Tile(13, TileType.SOU8));
 
-    calls.add(new RoundStateCall(RoundStateCall.CallType.CHII, chii_tiles, new Tile(13, TileType.SOU9, false), 1));
+    calls.add(new RoundStateCall(RoundStateCall.CallType.CHII, chii_tiles, new Tile(13, TileType.SOU9), 1));
 
+    stdout.printf("Calling TileRules.hand_readings with %d tiles and %d calls\n", tiles.size, calls.size);
+    stdout.flush();
+
+    // Changed from (true, true) to (false, false) to test a complete winning hand
     ArrayList<HandReading> readings = TileRules.hand_readings(tiles, calls, false, false);
+
+    stdout.printf("Got %d readings\n", readings.size);
+    stdout.flush();
 
     foreach (var reading in readings)
     {
@@ -62,4 +69,7 @@ public void test_hands()
             print(yaku.to_string() + "\n");
         }
     }
+
+    stdout.printf("Test completed with %d readings\n", readings.size);
+    stdout.flush();
 }
