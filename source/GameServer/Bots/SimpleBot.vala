@@ -30,12 +30,7 @@ class SimpleBot : Bot
         }
         else
         {
-            Tile tile;
-            if (round_state.self.in_riichi)
-                tile = round_state.self.newest_tile;
-            else
-                tile = get_discard_tile();
-
+            Tile tile = get_discard_tile();
             do_discard(tile);
         }
     }

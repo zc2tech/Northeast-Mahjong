@@ -162,15 +162,11 @@ public class RoundState : Object
                 return;
             }
 
-            bool four_riichi = true;
             bool diff = false;
             int count = 0;
 
             foreach (RoundStatePlayer player in players)
             {
-                if (!player.in_riichi)
-                    four_riichi = false;
-
                 if ((count += player.get_kan_count()) != 4)
                     diff = true;
             }
@@ -179,13 +175,6 @@ public class RoundState : Object
             {
                 game_over = true;
                 game_draw_type = GameDrawType.FOUR_KANS;
-                return;
-            }
-
-            if (four_riichi) // Four riichi game draw
-            {
-                game_over = true;
-                game_draw_type = GameDrawType.FOUR_RIICHI;
                 return;
             }
 
@@ -433,7 +422,6 @@ public class RoundState : Object
         return
             wall.can_call &&
             wall.can_kan &&
-            !player.in_riichi &&
             player != current_player &&
             chankan_call == ChankanCall.NONE &&
             TileRules.can_open_kan(player.hand, discard_tile);
@@ -443,7 +431,6 @@ public class RoundState : Object
     {
         return
             wall.can_call &&
-            !player.in_riichi &&
             player != current_player &&
             chankan_call == ChankanCall.NONE &&
             TileRules.can_pon(player.hand, discard_tile);
@@ -851,7 +838,7 @@ public class RoundStatePlayer
 
     public bool can_late_kan()
     {
-        if (do_chii_discard || do_pon_discard || in_riichi)
+        if (do_chii_discard || do_pon_discard )
             return false;
 
         return TileRules.can_late_kan(hand, calls);
@@ -867,7 +854,7 @@ public class RoundStatePlayer
         if (do_chii_discard || do_pon_discard)
             return false;
 
-        return !revealed || TileRules.can_closed_kan(hand, calls, in_riichi);
+        return !revealed || TileRules.can_closed_kan(hand, calls);
     }
 
     public bool can_closed_kan_with(TileType type)
@@ -877,17 +864,11 @@ public class RoundStatePlayer
 
     public bool can_chii(Tile discard_tile)
     {
-        if (in_riichi)
-            return false;
-
         return get_chii_groups(discard_tile).size > 0;
     }
 
     public bool can_chii_with(Tile tile_1, Tile tile_2, Tile discard_tile)
     {
-        if (in_riichi)
-            return false;
-
         ArrayList<Tile> tiles = new ArrayList<Tile>();
         tiles.add(tile_1);
         tiles.add(tile_2);
@@ -923,7 +904,7 @@ public class RoundStatePlayer
 
     public ArrayList<ArrayList<Tile>> get_closed_kan_groups()
     {
-        return TileRules.get_closed_kan_groups(hand, calls, in_riichi);
+        return TileRules.get_closed_kan_groups(hand, calls);
     }
 
     public int get_kan_count()
@@ -974,8 +955,6 @@ public class RoundStatePlayer
             calls,
             wind,
             dealer,
-            in_riichi,
-            double_riichi,
             open,
             ippatsu,
             tiles_called_on,

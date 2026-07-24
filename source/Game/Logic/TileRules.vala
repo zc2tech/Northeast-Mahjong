@@ -83,9 +83,9 @@ public class TileRules
         return false;
     }
 
-    public static bool can_closed_kan(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls, bool in_riichi)
+    public static bool can_closed_kan(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls)
     {
-        return get_closed_kan_groups(hand, calls, in_riichi).size > 0;
+        return get_closed_kan_groups(hand, calls).size > 0;
     }
 
     public static bool can_open_kan(ArrayList<Tile> hand, Tile tile)
@@ -129,7 +129,7 @@ public class TileRules
         return tiles;
     }
 
-    public static ArrayList<ArrayList<Tile>> get_closed_kan_groups(ArrayList<Tile> hand_in, ArrayList<RoundStateCall>? calls, bool in_riichi)
+    public static ArrayList<ArrayList<Tile>> get_closed_kan_groups(ArrayList<Tile> hand_in, ArrayList<RoundStateCall>? calls)
     {
         ArrayList<ArrayList<Tile>> list = new ArrayList<ArrayList<Tile>>();
 
@@ -151,56 +151,56 @@ public class TileRules
             hand.remove_at(0);
         }
 
-        if (in_riichi && list.size > 0)
-        {
-            for (int i = 0; i < list.size; i++)
-            {
-                hand.clear();
-                hand.add_all(hand_in);
-                hand.remove(list[i][0]);
-                ArrayList<HandReading> readings = hand_readings(hand, calls, true, false);
+        //  if (in_riichi && list.size > 0)
+        //  {
+        //      for (int i = 0; i < list.size; i++)
+        //      {
+        //          hand.clear();
+        //          hand.add_all(hand_in);
+        //          hand.remove(list[i][0]);
+        //          ArrayList<HandReading> readings = hand_readings(hand, calls, true, false);
 
-                if (readings.size == 0)
-                {
-                    list.remove_at(i--);
-                    continue;
-                }
+        //          if (readings.size == 0)
+        //          {
+        //              list.remove_at(i--);
+        //              continue;
+        //          }
 
-                foreach (HandReading reading in readings)
-                {
-                    TileType type = list[i][0].tile_type;
-                    bool found = false;
+        //          foreach (HandReading reading in readings)
+        //          {
+        //              TileType type = list[i][0].tile_type;
+        //              bool found = false;
 
-                    if (!reading.is_kokushi && reading.pairs.size == 1)
-                    {
-                        foreach (TileMeld meld in reading.melds)
-                        {
-                            if (!meld.is_triplet &&
-                            (
-                                meld.tile_1.tile_type == type ||
-                                meld.tile_2.tile_type == type ||
-                                meld.tile_3.tile_type == type)
-                            )
-                            {
-                                found = true;
-                                break;
-                            }
-                        }
+        //              if (!reading.is_kokushi && reading.pairs.size == 1)
+        //              {
+        //                  foreach (TileMeld meld in reading.melds)
+        //                  {
+        //                      if (!meld.is_triplet &&
+        //                      (
+        //                          meld.tile_1.tile_type == type ||
+        //                          meld.tile_2.tile_type == type ||
+        //                          meld.tile_3.tile_type == type)
+        //                      )
+        //                      {
+        //                          found = true;
+        //                          break;
+        //                      }
+        //                  }
 
-                        if (reading.pairs[0].tile_1.tile_type == type)
-                            found = true;
-                    }
-                    else
-                        found = true;
+        //                  if (reading.pairs[0].tile_1.tile_type == type)
+        //                      found = true;
+        //              }
+        //              else
+        //                  found = true;
 
-                    if (found)
-                    {
-                        list.remove_at(i--);
-                        break;
-                    }
-                }
-            }
-        }
+        //              if (found)
+        //              {
+        //                  list.remove_at(i--);
+        //                  break;
+        //              }
+        //          }
+        //      }
+        //  }
 
         return list;
     }
@@ -815,8 +815,6 @@ public class PlayerStateContext : Object
         ArrayList<RoundStateCall> calls,
         Wind wind,
         bool dealer,
-        bool in_riichi,
-        bool double_riichi,
         bool open,
         bool ippatsu,
         bool tiles_called_on,

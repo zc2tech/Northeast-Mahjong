@@ -9,8 +9,6 @@ namespace GameServer
         public signal void game_draw_tile(int player_index, Tile tile, bool open);
         public signal void game_draw_dead_tile(int player_index, Tile tile, bool open);
         public signal void game_discard_tile(Tile tile);
-        public signal void game_flip_dora(Tile tile);
-        public signal void game_flip_ura_dora(ArrayList<Tile> tiles);
 
         public signal void game_ron(int[] player_indices, ArrayList<Tile>[] hand, int discard_player_index, Tile discard_tile, int riichi_return_index, Scoring[] scores);
         public signal void game_tsumo(int player_index, ArrayList<Tile> hand, Scoring score);
@@ -94,7 +92,6 @@ namespace GameServer
             validator.start();
             add_animation_delay(timings.split_wall.total());
             initial_draw();
-            game_flip_dora(validator.newest_dora);
             next_turn();
         }
 
@@ -241,8 +238,7 @@ namespace GameServer
             ServerRoundStatePlayer player = validator.get_player(player_index);
 
             log_action(action);
-            if (player.in_riichi)
-                game_flip_ura_dora(validator.ura_dora);
+         
             game_tsumo(player.index, player.hand, validator.get_tsumo_score());
             game_over();
             return true;
@@ -420,7 +416,6 @@ namespace GameServer
             else if (result.call_type == CallDecisionType.RON)
             {
                 // Game over
-                bool flip_ura_dora = false;
 
                 int[] indices = new int[result.callers.length];
                 ArrayList<Tile>[] hands = new ArrayList<Tile>[result.callers.length];
@@ -429,8 +424,6 @@ namespace GameServer
                     indices[i] = result.callers[i].index;
                     hands[i] = result.callers[i].hand;
 
-                    if (validator.get_player(indices[i]).in_riichi)
-                        flip_ura_dora = true;
                 }
 
                 if (result.draw)
@@ -438,9 +431,6 @@ namespace GameServer
                     triple_ron(indices);
                     return;
                 }
-
-                if (flip_ura_dora)
-                    game_flip_ura_dora(validator.ura_dora);
 
                 game_ron(indices, hands, discarder.index, discard_tile, result.riichi_return_index, validator.get_ron_score());
                 game_over();
@@ -560,7 +550,6 @@ namespace GameServer
         private void kan(int player_index)
         {
             ServerRoundStatePlayer player = validator.get_player(player_index);
-            game_flip_dora(validator.newest_dora);
             game_draw_dead_tile(player.index, player.newest_tile, player.open);
             add_animation_delay(timings.call.total() + timings.tile_draw.total());
         }

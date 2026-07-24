@@ -23,8 +23,6 @@ namespace GameServer
             round.game_initial_draw.connect(game_initial_draw);
             round.game_draw_tile.connect(game_draw_tile);
             round.game_discard_tile.connect(game_discard_tile);
-            round.game_flip_dora.connect(game_flip_dora);
-            round.game_flip_ura_dora.connect(game_flip_ura_dora);
             round.game_draw_dead_tile.connect(game_draw_dead_tile);
             round.game_get_turn_decision.connect(game_get_turn_decision);
             round.game_get_call_decision.connect(game_get_call_decision);

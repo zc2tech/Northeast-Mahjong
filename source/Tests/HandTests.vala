@@ -9,8 +9,6 @@ public void test_hands()
         new ArrayList<RoundStateCall>(), // calls
         Wind.NORTH,
         false,
-        false,
-        false,
         true,
         false,
         false,
