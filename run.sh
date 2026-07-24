@@ -1,6 +1,6 @@
 #!/bin/bash
-# Launch script for OpenRiichi on macOS
+# Launch script for Northeast-Mahjong on macOS
 # This ensures the Data directory is found
 
 cd "$(dirname "$0")"
-./build/OpenRiichi --working-directory "$(pwd)/bin" "$@"
+./build/Northeast-Mahjong --working-directory "$(pwd)/bin" "$@"

@@ -28,9 +28,9 @@ private class AboutMenuView : MenuSubView
         string[] text =
         {
             "",
-            "OpenRiichi " + Environment.version_info.to_string(),
-            "https://github.com/FluffyStuff/OpenRiichi",
-            "OpenRiichi is licensed under GPLv3. Visit the link above for the license.",
+            "Northeast-Mahjong " + Environment.version_info.to_string(),
+            "https://github.com/zc2tech/Northeast-Mahjong",
+            "Northeast-Mahjong is licensed under GPLv3. Visit the link above for the license.",
             ""
         };
         label.text = FileLoader.array_to_string(text);

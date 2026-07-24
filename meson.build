@@ -3,7 +3,7 @@ project('Northeast-Mahjong', 'vala', 'c')
 # We use subdir instead of subproject so we don't have to recompile everything when we change something in libengine
 subdir('Engine')
 
-dataDir = get_option('prefix') / get_option('datadir') / 'OpenRiichi'
+dataDir = get_option('prefix') / get_option('datadir') / 'Northeast-Mahjong'
 add_project_arguments('-DDATA_SEARCH_DIR="' + dataDir +  '"', language: 'c')
 add_project_arguments('-Wno-int-conversion', language : 'c')
 
@@ -100,7 +100,7 @@ sources = files(
 
 includes = [include_directories('include'), engine_includes]
 
-executable('OpenRiichi', sources,
+executable('Northeast-Mahjong', sources,
     dependencies: dependencies,
     include_directories: includes,
     gui_app: true,

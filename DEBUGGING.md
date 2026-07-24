@@ -1,4 +1,4 @@
-# Debugging OpenRiichi in VSCode on macOS
+# Debugging Northeast-Mahjong in VSCode on macOS
 
 ## Prerequisites
 
@@ -12,17 +12,17 @@
 
 Three debug configurations are available in the Debug panel (Run and Debug):
 
-### 1. **Debug OpenRiichi** (Recommended)
+### 1. **Debug Northeast-Mahjong** (Recommended)
 - Automatically rebuilds the project before debugging
 - Runs with `--debug` flag for verbose logging
 - Use this for most debugging sessions
 
-### 2. **Debug OpenRiichi (no rebuild)**
+### 2. **Debug Northeast-Mahjong (no rebuild)**
 - Skips the build step
 - Faster when you haven't changed any code
 - Good for quick repeated debugging sessions
 
-### 3. **Debug OpenRiichi (clean build)**
+### 3. **Debug Northeast-Mahjong (clean build)**
 - Does a full clean rebuild with debug symbols
 - Use this if you're having issues with outdated build artifacts
 - Slower but ensures everything is fresh
@@ -30,9 +30,9 @@ Three debug configurations are available in the Debug panel (Run and Debug):
 ## How to Debug
 
 ### Quick Start:
-1. Open OpenRiichi project in VSCode
+1. Open Northeast-Mahjong project in VSCode
 2. Press `F5` or click "Run" → "Start Debugging"
-3. Select "Debug OpenRiichi" configuration
+3. Select "Debug Northeast-Mahjong" configuration
 4. The debugger will build and launch the game
 
 ### Setting Breakpoints:

@@ -1,4 +1,4 @@
-# Building OpenRiichi on macOS (Updated 2026)
+# Building Northeast-Mahjong on macOS (Updated 2026)
 
 This project has been updated to build and run on modern macOS systems.
 
@@ -19,8 +19,8 @@ brew install vala meson pkg-config libgee gtk+3 sdl2 sdl2_image sdl2_mixer glew 
 
 1. Clone the repository with submodules:
 ```bash
-git clone --recurse-submodules https://github.com/FluffyStuff/OpenRiichi.git
-cd OpenRiichi
+git clone --recurse-submodules https://github.com/zc2tech/Northeast-Mahjong.git
+cd Northeast-Mahjong
 ```
 
 2. Configure the build:
@@ -42,7 +42,7 @@ Use the convenient launch script:
 
 Or run directly:
 ```bash
-./build/OpenRiichi --working-directory bin
+./build/Northeast-Mahjong --working-directory bin
 ```
 
 ## Changes Made for macOS Compatibility
@@ -65,4 +65,4 @@ If you encounter any issues:
 
 - The project builds as a 64-bit ARM binary on Apple Silicon Macs
 - The project builds as a 64-bit x86_64 binary on Intel Macs
-- OpenRiichi requires the `bin/Data` folder to run, which is automatically located when using `run.sh`
+- Northeast-Mahjong requires the `bin/Data` folder to run, which is automatically located when using `run.sh`

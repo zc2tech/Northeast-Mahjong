@@ -280,7 +280,7 @@ public class Environment
 
     public static string get_user_dir()
     {
-        return GLib.Environment.get_user_config_dir() + "/OpenRiichi/";
+        return GLib.Environment.get_user_config_dir() + "/Northeast-Mahjong/";
     }
 
     public static string get_datetime_string()
