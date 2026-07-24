@@ -1,0 +1,11 @@
+.vscode
+*.code-workspace
+*.shader
+.build
+build
+bin/*
+!bin/Data
+bin/Data/Fonts/.uuid
+*.c
+*.o
+*.DS_Store
