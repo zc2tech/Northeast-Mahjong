@@ -14,22 +14,22 @@ public class RoundState : Object
     private int turn_counter = 1;
     private bool rinshan = false;
 
-    public RoundState(ServerSettings settings, int player_index, Wind round_wind, int dealer, int wall_index, bool[] can_riichi)
+    public RoundState(ServerSettings settings, int player_index, Wind round_wind, int dealer, int wall_index)
     {
-        init(false, settings, player_index, round_wind, dealer, wall_index, null, can_riichi, false, null);
+        init(false, settings, player_index, round_wind, dealer, wall_index, null, false, null);
     }
 
-    public RoundState.server(ServerSettings settings, Wind round_wind, int dealer, int wall_index, RandomClass rnd, bool[] can_riichi)
+    public RoundState.server(ServerSettings settings, Wind round_wind, int dealer, int wall_index, RandomClass rnd)
     {
-        init(true, settings, -1, round_wind, dealer, wall_index, rnd, can_riichi, true, null);
+        init(true, settings, -1, round_wind, dealer, wall_index, rnd, true, null);
     }
 
-    public RoundState.custom(ServerSettings settings, Wind round_wind, int dealer, int wall_index, bool[] can_riichi, Tile[] tiles)
+    public RoundState.custom(ServerSettings settings, Wind round_wind, int dealer, int wall_index, Tile[] tiles)
     {
-        init(false, settings, -1, round_wind, dealer, wall_index, null, can_riichi, true, tiles);
+        init(false, settings, -1, round_wind, dealer, wall_index, null,  true, tiles);
     }
 
-    private void init(bool shuffled, ServerSettings settings, int player_index, Wind round_wind, int dealer, int wall_index, RandomClass? rnd, bool[] can_riichi, bool revealed, Tile[]? tiles)
+    private void init(bool shuffled, ServerSettings settings, int player_index, Wind round_wind, int dealer, int wall_index, RandomClass? rnd,bool revealed, Tile[]? tiles)
     {
         this.settings = settings;
         this.player_index = player_index;
@@ -110,7 +110,7 @@ public class RoundState : Object
         discard_tile = null;
 
         for (int i = 0; i < players.length; i++)
-            players[i] = new RoundStatePlayer(i, i == dealer, (Wind)((i - dealer + 4) % 4), can_riichi[i], i == player_index || revealed);
+            players[i] = new RoundStatePlayer(i, i == dealer, (Wind)((i - dealer + 4) % 4), i == player_index || revealed);
 
         game_draw_type = GameDrawType.NONE;
         chankan_call = ChankanCall.NONE;
@@ -283,16 +283,7 @@ public class RoundState : Object
         game_over = true;
     }
 
-    public bool riichi(bool open)
-    {
-        if (!can_riichi())
-            return false;
-
-        riichi_return_index = current_player.index;
-        current_player.do_riichi(open);
-        return true;
-    }
-
+    // 杠牌 吃牌之后又摸了一张
     public ArrayList<Tile>? late_kan(int tile_ID)
     {
         if (!can_late_kan_with(tile_ID))
@@ -416,15 +407,11 @@ public class RoundState : Object
         return true;
     }
 
+    // 自摸
     public bool can_tsumo()
     {
         RoundStatePlayer player = current_player;
         return player.can_tsumo(create_context(false, player.newest_tile));
-    }
-
-    public bool can_riichi()
-    {
-        return wall.can_riichi && current_player.can_riichi();
     }
 
     public bool can_late_kan_with(int tile_ID)
@@ -517,6 +504,7 @@ public class RoundState : Object
         return indices.to_array();
     }
 
+    // 找到听牌的玩家
     public ArrayList<RoundStatePlayer> get_tenpai_players()
     {
         ArrayList<RoundStatePlayer> players = new ArrayList<RoundStatePlayer>();
@@ -600,17 +588,15 @@ public class RoundStatePlayer
     private bool dealer;
     private bool tiles_called_on = false;
     private bool temporary_furiten = false;
-    private bool _can_riichi;
 
     private int sekinin_rinshan_index = -1;
     private int sekinin_index = -1;
 
-    public RoundStatePlayer(int index, bool dealer, Wind wind, bool can_riichi, bool revealed)
+    public RoundStatePlayer(int index, bool dealer, Wind wind,bool revealed)
     {
         this.index = index;
         this.dealer = dealer;
         this.wind = wind;
-        _can_riichi = can_riichi;
         this.revealed = revealed;
 
         hand = new ArrayList<Tile>();
@@ -899,18 +885,6 @@ public class RoundStatePlayer
         return !do_chii_discard && !do_pon_discard && TileRules.can_tsumo(create_context(true), context);
     }
 
-    public bool can_riichi()
-    {
-        if (!_can_riichi || in_riichi)
-            return false;
-
-        foreach (RoundStateCall call in calls)
-            if (call.call_type != RoundStateCall.CallType.CLOSED_KAN)
-                return false;
-
-        return !revealed || TileRules.tenpai_tiles(hand, calls).size > 0;
-    }
-
     public bool can_late_kan()
     {
         if (do_chii_discard || do_pon_discard || in_riichi)
@@ -1016,6 +990,7 @@ public class RoundStatePlayer
         return !tiles_called_on && calls.size == 0 && TileRules.is_nagashi_mangan(pond);
     }
 
+    // 玩家是否听牌
     public bool in_tenpai()
     {
         return TileRules.in_tenpai(hand, calls);

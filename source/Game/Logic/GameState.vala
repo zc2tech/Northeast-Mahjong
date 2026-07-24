@@ -32,9 +32,7 @@ public class GameState : Object
 
         if (game_is_started)
         {
-            if (reset_riichi)
-                riichi_count = 0;
-
+        
             for (int i = 0; i < players.length; i++)
                 players[i].transfer = 0;
 
@@ -84,7 +82,6 @@ public class GameState : Object
 
         round_is_finished = true;
         do_renchan = false;
-        reset_riichi = false;
 
         bool ron = result.result == RoundFinishResult.RoundResultEnum.RON;
         bool tsumo = result.result == RoundFinishResult.RoundResultEnum.TSUMO;
@@ -98,7 +95,6 @@ public class GameState : Object
             if (result.riichi_return_index != -1 && ron)
             {
                 players[result.riichi_return_index].transfer += 1000;
-                riichi_count--;
             }
 
             int loser  = result.loser_index;
@@ -111,10 +107,7 @@ public class GameState : Object
 
                 int transfer = result.scores[i].total_points + renchan * 300;
                 players[winner].transfer += transfer;
-
-                if (winner == result.winner_indices[0])
-                    players[winner].transfer += 1000 * riichi_count;
-
+                // 这个sekinin 包含最后的点炮选手 ？
                 if (sekinin)
                 {
                     if (ron)
@@ -129,7 +122,6 @@ public class GameState : Object
                     do_renchan = true;
             }
 
-            reset_riichi = true;
         }
         else if (result.result == RoundFinishResult.RoundResultEnum.TSUMO)
         {
@@ -140,7 +132,7 @@ public class GameState : Object
             {
                 for (int i = 0; i < players.length; i++)
                     if (i != dealer_index)
-                        players[i].transfer -= score.tsumo_points_higher + renchan * 100;
+                        players[i].transfer -= score.tsumo_points + renchan * 100;
 
                 do_renchan = true;
             }
@@ -151,66 +143,29 @@ public class GameState : Object
                     if (i == winner)
                         continue;
                     else if (i == dealer_index)
-                        players[i].transfer -= score.tsumo_points_higher + renchan * 100;
+                        players[i].transfer -= score.tsumo_points + renchan * 100;
                     else
-                        players[i].transfer -= score.tsumo_points_lower  + renchan * 100;
+                        players[i].transfer -= score.tsumo_points  + renchan * 100;
                 }
             }
 
-            players[winner].transfer += score.total_points + renchan * 300 + 1000 * riichi_count;
-            reset_riichi = true;
+            players[winner].transfer += score.total_points + renchan * 300;
         }
+        // 流局
         else if (result.result == RoundFinishResult.RoundResultEnum.DRAW)
         {
-            if (result.draw_type == GameDrawType.EMPTY_WALL)
-            {
-                for (int i = 0; i < result.nagashi_indices.length; i++)
-                {
-                    int n = result.nagashi_indices[i];
-                    bool dealer = n == dealer_index;
-                    players[n].transfer += dealer ? 12000 : 8000;
-
-                    for (int j = 0; j < (players.length - 1); j++)
-                    {
-                        int a = (n + j + 1) % players.length;
-                        if (dealer || a == dealer_index)
-                            players[a].transfer -= 4000;
-                        else
-                            players[a].transfer -= 2000;
-                    }
-                }
-
-                int tenpai_count = result.tenpai_indices.length;
-
-                bool[] marked = new bool[players.length];
-                for (int i = 0; i < result.tenpai_indices.length; i++)
-                    marked[result.tenpai_indices[i]] = true;
-
-                if (tenpai_count != 0 && tenpai_count != players.length)
-                {
-                    for (int i = 0; i < players.length; i++)
-                    {
-                        if (marked[i])
-                            players[i].transfer += 3000 / tenpai_count;
-                        else
-                            players[i].transfer -= 3000 / (players.length - tenpai_count);
-                    }
-                }
-
-                if (marked[dealer_index])
-                    do_renchan = true;
-            }
-            else
-                do_renchan = true; // Abortive draw is always renchan
+            // 流局应该算连庄吧
+            do_renchan = true; // Abortive draw is always renchan
         }
         else
             return null; // Shouldn't happen
 
+        // 把钱放到玩家口袋
         for (int i = 0; i < players.length; i++)
             players[i].points += players[i].transfer;
 
         if (!do_renchan)
-            hanchan_is_finished = (current_round + 1) >= round_count;
+            hanchan_is_finished = (current_round + 1) >= round_count; // 半庄是什么鬼？
 
         for (int i = 0; i < players.length; i++)
             if (players[i].points < 0)
@@ -230,28 +185,6 @@ public class GameState : Object
         return replace_round_score_state(result);
     }
 
-    public bool[] can_riichi()
-    {
-        bool[] can_riichi = new bool[players.length];
-
-        for (int i = 0; i < players.length; i++)
-            can_riichi[i] = players[i].points >= 1000;
-
-        return can_riichi;
-    }
-
-    public void declare_riichi(int player_index)
-    {
-        if (game_is_finished || round_is_finished)
-            return;
-
-        if (players[player_index].points < 1000)
-            return;
-
-        players[player_index].transfer -= 1000;
-        riichi_count++;
-    }
-
     public GameScorePlayer get_player(int index)
     {
         return players[index];
@@ -264,7 +197,7 @@ public class GameState : Object
         for (int i = 0; i < ordered_players.length; i++)
         {
             int a = (starting_dealer_index + i) % players.length;
-            ordered_players[i] = players[a];
+            ordered_players[i] = players[a]; // 把庄家放到了 ordered_players[0]
         }
 
         for (int i = 1; i < players.length; i++)
@@ -277,13 +210,6 @@ public class GameState : Object
                 ordered_players[j-1] = p;
                 j--;
             }
-        }
-
-        if (!reset_riichi) // Give remaining riichi tenbou to top player (this isn't used for calculation, only for displaying)
-        {
-            ordered_players[0].transfer += 1000 * riichi_count;
-            ordered_players[0].points += 1000 * riichi_count;
-            reset_riichi = true;
         }
 
         int sum = 0;
@@ -321,15 +247,12 @@ public class GameState : Object
             renchan,
             current_hanchan,
             hanchan_count,
-            riichi_count,
             round_is_finished,
             hanchan_is_finished,
             game_is_started,
             game_is_finished,
-            do_renchan,
-            reset_riichi
+            do_renchan
         );
-
         scores.add(score);
         return score;
     }
@@ -349,13 +272,11 @@ public class GameState : Object
             renchan,
             current_hanchan,
             hanchan_count,
-            riichi_count,
             round_is_finished,
             hanchan_is_finished,
             game_is_started,
             game_is_finished,
-            do_renchan,
-            reset_riichi
+            do_renchan
         );
 
         scores.remove_at(scores.size - 1);
@@ -375,14 +296,11 @@ public class GameState : Object
         "renchan: " + renchan.to_string() + "\n" +
         "current_hanchan: " + current_hanchan.to_string() + "\n" +
         "hanchan_count: " + hanchan_count.to_string() + "\n" +
-        "riichi_count: " + riichi_count.to_string() + "\n" +
         "round_is_finished: " + round_is_finished.to_string() + "\n" +
         "hanchan_is_finished: " + hanchan_is_finished.to_string() + "\n" +
         "game_is_started: " + game_is_started.to_string() + "\n" +
         "game_is_finished: " + game_is_finished.to_string() + "\n" +
-        "do_renchan: " + do_renchan.to_string() + "\n" +
-        "reset_riichi: " + reset_riichi.to_string();
-
+        "do_renchan: " + do_renchan.to_string() ;
         return str;
     }
 
@@ -393,16 +311,14 @@ public class GameState : Object
     public int dealer_index { get; private set; }
     public int current_round { get; private set; }
     public int round_count { get; private set; }
-    public int renchan { get; private set; }
+    public int renchan { get; private set; } // 连庄
     public int current_hanchan { get; private set; }
     public int hanchan_count { get; private set; }
-    public int riichi_count { get; private set; }
     public bool round_is_finished { get; private set; }
     public bool hanchan_is_finished { get; private set; }
     public bool game_is_started { get; private set; }
     public bool game_is_finished { get; private set; }
     public bool do_renchan { get; private set; }
-    public bool reset_riichi { get; private set; }
 }
 
 public class RoundScoreState
@@ -418,13 +334,11 @@ public class RoundScoreState
         int renchan,
         int current_hanchan,
         int hanchan_count,
-        int riichi_count,
         bool round_is_finished,
         bool hanchan_is_finished,
         bool game_is_started,
         bool game_is_finished,
-        bool do_renchan,
-        bool reset_riichi
+        bool do_renchan
     )
     {
         this.result = result;

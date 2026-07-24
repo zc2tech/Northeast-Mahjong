@@ -13,8 +13,6 @@ namespace GameServer
         public bool finished { get; private set; }
         public RoundFinishResult result { get; private set; }
 
-        public signal void declare_riichi(int player_index);
-
         protected ServerGameRound(RoundStartInfo info)
         {
             this.info = info;
@@ -32,7 +30,6 @@ namespace GameServer
             round.game_get_call_decision.connect(game_get_call_decision);
             round.game_ron.connect(game_ron);
             round.game_tsumo.connect(game_tsumo);
-            round.game_riichi.connect(game_riichi);
             round.game_late_kan.connect(game_late_kan);
             round.game_closed_kan.connect(game_closed_kan);
             round.game_open_kan.connect(game_open_kan);
@@ -186,20 +183,6 @@ namespace GameServer
             result = new RoundFinishResult.tsumo(score, player_index);
         }
 
-        private void game_riichi(int player_index, bool open, ArrayList<Tile> hand)
-        {
-            if (open)
-                foreach (Tile t in hand)
-                    game_reveal_tile(t);
-
-            ServerMessageRiichi message = new ServerMessageRiichi(open);
-
-            foreach (GameRoundServerPlayer pl in players)
-                pl.server_player.send_message(message);
-
-            declare_riichi(player_index);
-        }
-
         public void game_late_kan(Tile tile)
         {
             game_reveal_tile(tile);
@@ -304,11 +287,11 @@ namespace GameServer
         private ClientMessageParser parser = new ClientMessageParser();
         public signal void log(GameLogLine line);
 
-        public RegularServerGameRound(RoundStartInfo info, ServerSettings settings, ArrayList<ServerPlayer> players, ArrayList<ServerPlayer> spectators, Wind round_wind, int dealer, RandomClass rnd, bool[] can_riichi, AnimationTimings timings)
+        public RegularServerGameRound(RoundStartInfo info, ServerSettings settings, ArrayList<ServerPlayer> players, ArrayList<ServerPlayer> spectators, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings)
         {
             base(info);
 
-            round = new RegularServerRoundState(settings, round_wind, dealer, info.wall_index, rnd, can_riichi, timings);
+            round = new RegularServerRoundState(settings, round_wind, dealer, info.wall_index, rnd, timings);
             tiles = round.get_tiles();
 
             init();
@@ -368,12 +351,12 @@ namespace GameServer
     {
         GameLogRound log_round;
 
-        public LogServerGameRound(ServerSettings settings, ArrayList<ServerPlayer> players, ArrayList<ServerPlayer> spectators, Wind round_wind, int dealer, RandomClass rnd, bool[] can_riichi, AnimationTimings timings, GameLogRound log_round)
+        public LogServerGameRound(ServerSettings settings, ArrayList<ServerPlayer> players, ArrayList<ServerPlayer> spectators, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings, GameLogRound log_round)
         {
             base(log_round.start_info);
             this.log_round = log_round;
 
-            round = new LogServerRoundState(settings, round_wind, dealer, rnd, can_riichi, timings, log_round);
+            round = new LogServerRoundState(settings, round_wind, dealer, rnd, timings, log_round);
 
             for (int i = 0; i < players.size; i++)
             {

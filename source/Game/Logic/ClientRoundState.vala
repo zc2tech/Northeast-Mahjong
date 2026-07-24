@@ -14,8 +14,9 @@ public class ClientRoundState : Object
     public signal void set_chii_state(bool enabled);
     public signal void set_pon_state(bool enabled);
     public signal void set_kan_state(bool enabled);
-    public signal void set_riichi_state(bool enabled);
+    // 自摸
     public signal void set_tsumo_state(bool enabled);
+    // Ron (ロン) means winning by claiming another player's discarded tile
     public signal void set_ron_state(bool enabled);
     public signal void set_timer_state(bool enabled);
     public signal void set_continue_state(bool enabled);
@@ -33,17 +34,15 @@ public class ClientRoundState : Object
     public signal void game_tile_draw(int player_index);
     public signal void game_dead_tile_draw(int player_index);
     public signal void game_tile_discard(int player_index, int tile_ID);
-    public signal void game_flip_dora();
-    public signal void game_riichi(int player_index, bool open);
     public signal void game_late_kan(int player_index, int tile_ID);
     public signal void game_closed_kan(int player_index, TileType type);
     public signal void game_open_kan(int player_index, int discard_player_index, int tile_ID, int tile_1_ID, int tile_2_ID, int tile_3_ID);
     public signal void game_pon(int player_index, int discard_player_index, int tile_ID, int tile_1_ID, int tile_2_ID);
     public signal void game_chii(int player_index, int discard_player_index, int tile_ID, int tile_1_ID, int tile_2_ID);
 
-    public ClientRoundState(RoundStartInfo info, ServerSettings settings, int player_index, Wind round_wind, int dealer_index, bool[] can_riichi)
+    public ClientRoundState(RoundStartInfo info, ServerSettings settings, int player_index, Wind round_wind, int dealer_index)
     {
-        state = new RoundState(settings, player_index, round_wind, dealer_index, info.wall_index, can_riichi);
+        state = new RoundState(settings, player_index, round_wind, dealer_index, info.wall_index);
         state.start();
         action_state = State.DONE;
         self_active = player_index != -1;
@@ -58,7 +57,6 @@ public class ClientRoundState : Object
         parser.connect(server_draw, typeof(ServerMessageDraw));
         parser.connect(server_ron, typeof(ServerMessageRon));
         parser.connect(server_tsumo, typeof(ServerMessageTsumo));
-        parser.connect(server_riichi, typeof(ServerMessageRiichi));
         parser.connect(server_late_kan, typeof(ServerMessageLateKan));
         parser.connect(server_closed_kan, typeof(ServerMessageClosedKan));
         parser.connect(server_open_kan, typeof(ServerMessageOpenKan));
@@ -84,7 +82,6 @@ public class ClientRoundState : Object
         set_chii_state(false);
         set_pon_state(false);
         set_kan_state(false);
-        set_riichi_state(false);
         set_tsumo_state(false);
         set_ron_state(false);
         set_continue_state(false);
@@ -119,14 +116,12 @@ public class ClientRoundState : Object
         action_state = State.TURN;
 
         bool can_kan = state.can_closed_kan() || state.can_late_kan();
-        bool can_riichi = state.can_riichi();
         bool can_tsumo = state.can_tsumo();
         bool can_void_hand = state.can_void_hand();
 
         set_chii_state(false);
         set_pon_state(false);
         set_kan_state(can_kan);
-        set_riichi_state(can_riichi);
         set_tsumo_state(can_tsumo);
         set_ron_state(false);
         set_continue_state(false);
@@ -160,7 +155,6 @@ public class ClientRoundState : Object
         set_chii_state(can_chii);
         set_pon_state(can_pon);
         set_kan_state(can_kan);
-        set_riichi_state(false);
         set_tsumo_state(false);
         set_ron_state(can_ron);
         set_continue_state(true);
@@ -358,7 +352,6 @@ public class ClientRoundState : Object
                     selection_groups.add(new TileSelectionGroup(selection, highlight, TileSelectionGroup.GroupType.CLOSED_KAN));
                 }
 
-                set_riichi_state(false);
                 set_tsumo_state(false);
                 set_void_hand_state(false);
                 set_tile_select_groups(selection_groups);
@@ -527,13 +520,6 @@ public class ClientRoundState : Object
         result = new RoundFinishResult.tsumo(score, state.current_player.index);
         finished = true;
         game_finished(result);
-    }
-
-    private void server_riichi(ServerMessage message)
-    {
-        ServerMessageRiichi riichi = (ServerMessageRiichi)message;
-        state.riichi(riichi.open);
-        game_riichi(state.current_player.index, riichi.open);
     }
 
     private void server_late_kan(ServerMessage message)

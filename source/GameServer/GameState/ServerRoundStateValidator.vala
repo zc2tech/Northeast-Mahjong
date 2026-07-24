@@ -9,14 +9,14 @@ namespace GameServer
         private ActionState action_state = ActionState.STARTING;
         private ServerSettings settings;
 
-        public ServerRoundStateValidator(ServerSettings settings, int dealer, int wall_index, RandomClass rnd, Wind round_wind, bool[] can_riichi, Tile[]? tiles)
+        public ServerRoundStateValidator(ServerSettings settings, int dealer, int wall_index, RandomClass rnd, Wind round_wind,Tile[]? tiles)
         {
             this.settings = settings;
 
             if (tiles == null)
-                state = new RoundState.server(settings, round_wind, dealer, wall_index, rnd, can_riichi);
+                state = new RoundState.server(settings, round_wind, dealer, wall_index, rnd);
             else
-                state = new RoundState.custom(settings, round_wind, dealer, wall_index, can_riichi, tiles);
+                state = new RoundState.custom(settings, round_wind, dealer, wall_index, tiles);
 
             players = new ServerRoundStatePlayer[4];
 
@@ -51,6 +51,7 @@ namespace GameServer
             return state.get_nagashi_indices();
         }
 
+        // 找到听牌的玩家
         public ArrayList<ServerRoundStatePlayer> get_tenpai_players()
         {
             ArrayList<ServerRoundStatePlayer> players = new ArrayList<ServerRoundStatePlayer>();
@@ -157,14 +158,6 @@ namespace GameServer
             ServerRoundStatePlayer player = get_player(player_index);
             player.state = PlayerState.DONE;
             player.call_decision = null;
-        }
-
-        public bool riichi(bool open)
-        {
-            if (open && settings.open_riichi != OnOffEnum.ON)
-                return false;
-
-            return state.riichi(open);
         }
 
         public Scoring[] get_ron_score()

@@ -146,7 +146,6 @@ namespace GameServer
             state.start_round(info);
             round = create_round(info);
 
-            round.declare_riichi.connect(state.declare_riichi);
             round.start(time);
         }
 
@@ -196,7 +195,7 @@ namespace GameServer
 
         protected override ServerGameRound create_round(RoundStartInfo info)
         {
-            RegularServerGameRound round = new RegularServerGameRound(info, settings, players, spectators, state.round_wind, state.dealer_index, rnd, state.can_riichi(), start_info.timings);
+            RegularServerGameRound round = new RegularServerGameRound(info, settings, players, spectators, state.round_wind, state.dealer_index, rnd, start_info.timings);
             log_round(info, round.tiles);
             round.log.connect(log);
 
@@ -237,7 +236,7 @@ namespace GameServer
 
         protected override ServerGameRound create_round(RoundStartInfo info)
         {
-            return new LogServerGameRound(settings, players, spectators, state.round_wind, state.dealer_index, rnd, state.can_riichi(), start_info.timings, round);
+            return new LogServerGameRound(settings, players, spectators, state.round_wind, state.dealer_index, rnd,start_info.timings, round);
         }
 
         public class ServerLogPlayer : ServerPlayer

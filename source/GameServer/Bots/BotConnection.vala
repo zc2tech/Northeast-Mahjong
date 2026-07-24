@@ -16,7 +16,6 @@ class BotConnection : Object
         parser.connect(tile_discard, typeof(ServerMessageTileDiscard));
         parser.connect(ron, typeof(ServerMessageRon));
         parser.connect(tsumo, typeof(ServerMessageTsumo));
-        parser.connect(riichi, typeof(ServerMessageRiichi));
         parser.connect(turn_decision, typeof(ServerMessageTurnDecision));
         parser.connect(call_decision, typeof(ServerMessageCallDecision));
         parser.connect(late_kan, typeof(ServerMessageLateKan));
@@ -114,12 +113,6 @@ class BotConnection : Object
     private void tsumo(ServerMessage message)
     {
         bot.tsumo();
-    }
-
-    private void riichi(ServerMessage message)
-    {
-        ServerMessageRiichi r = (ServerMessageRiichi)message;
-        bot.riichi(r.open);
     }
 
     private void turn_decision(ServerMessage message)

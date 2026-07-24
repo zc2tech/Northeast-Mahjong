@@ -45,9 +45,9 @@ namespace GameServer
 
         protected abstract void next_player_action(float time);
 
-        protected ServerRoundState(ServerSettings settings, Wind round_wind, int dealer, int wall_index, RandomClass rnd, bool[] can_riichi, AnimationTimings timings, Tile[]? tiles)
+        protected ServerRoundState(ServerSettings settings, Wind round_wind, int dealer, int wall_index, RandomClass rnd,  AnimationTimings timings, Tile[]? tiles)
         {
-            validator = new ServerRoundStateValidator(settings, dealer, wall_index, rnd, round_wind, can_riichi, tiles);
+            validator = new ServerRoundStateValidator(settings, dealer, wall_index, rnd, round_wind,tiles);
             this.dealer = dealer;
             this.wall_index = wall_index;
             this.timings = timings;
@@ -117,8 +117,6 @@ namespace GameServer
                 client_ron(action);
             else if (a is TsumoClientAction)
                 client_tsumo(action);
-            else if (a is RiichiClientAction)
-                client_riichi(action);
             else if (a is LateKanClientAction)
                 client_late_kan(action);
             else if (a is ClosedKanClientAction)
@@ -250,31 +248,7 @@ namespace GameServer
             return true;
         }
 
-        private bool client_riichi(ClientServerAction action)
-        {
-            int player_index = action.client;
-
-            var a = action.action as RiichiClientAction;
-            bool open = a.open;
-
-            if (!validator.is_players_turn(player_index))
-            {
-                debug_log("client_riichi(" + player_index.to_string() + "): Not players turn");
-                return false;
-            }
-
-            if (!validator.riichi(open))
-            {
-                debug_log("client_riichi(" + player_index.to_string() + "): Player can't declare riichi");
-                return false;
-            }
-
-            log_action(action);
-            ServerRoundStatePlayer player = validator.get_player(player_index);
-            game_riichi(player_index, player.open, player.hand);
-            return true;
-        }
-
+        // 玩家要求用摸到的牌去杠牌(late kan)
         private bool client_late_kan(ClientServerAction action)
         {
             int player_index = action.client;
@@ -556,6 +530,7 @@ namespace GameServer
 
         private void draw_situation()
         {
+            // 找到听牌的玩家
             ArrayList<ServerRoundStatePlayer> tenpai_players = validator.get_tenpai_players();
             ArrayList<Tile> tiles = new ArrayList<Tile>();
 
@@ -615,9 +590,9 @@ namespace GameServer
         private ArrayList<ClientServerAction> actions = new ArrayList<ClientServerAction>();
         private DelayTimer move_timer = new DelayTimer();
 
-        public RegularServerRoundState(ServerSettings settings, Wind round_wind, int dealer, int wall_index, RandomClass rnd, bool[] can_riichi, AnimationTimings timings)
+        public RegularServerRoundState(ServerSettings settings, Wind round_wind, int dealer, int wall_index, RandomClass rnd, AnimationTimings timings)
         {
-            base(settings, round_wind, dealer, wall_index, rnd, can_riichi, timings, null);
+            base(settings, round_wind, dealer, wall_index, rnd, timings, null);
         }
 
         public override void buffer_action(ClientServerAction action)
@@ -651,9 +626,9 @@ namespace GameServer
     {
         private ArrayList<GameLogLine> lines;
 
-        public LogServerRoundState(ServerSettings settings, Wind round_wind, int dealer, RandomClass rnd, bool[] can_riichi, AnimationTimings timings, GameLogRound round)
+        public LogServerRoundState(ServerSettings settings, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings, GameLogRound round)
         {
-            base(settings, round_wind, dealer, round.start_info.wall_index, rnd, can_riichi, timings, round.tiles.to_array());
+            base(settings, round_wind, dealer, round.start_info.wall_index, rnd,timings, round.tiles.to_array());
             lines = new ArrayList<GameLogLine>.wrap(round.lines.to_array());
         }
 

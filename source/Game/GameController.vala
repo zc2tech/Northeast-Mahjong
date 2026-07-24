@@ -93,12 +93,11 @@ class GameController : Object
 
     private void create_round_state(RoundStartInfo round_start)
     {
-        round = new ClientRoundState(round_start, settings, player_index, game.round_wind, game.dealer_index, game.can_riichi());
+        round = new ClientRoundState(round_start, settings, player_index, game.round_wind, game.dealer_index);
         round.do_action.connect(do_action);
         round.set_chii_state.connect(menu.set_chii);
         round.set_pon_state.connect(menu.set_pon);
         round.set_kan_state.connect(menu.set_kan);
-        round.set_riichi_state.connect(menu.set_riichi);
         round.set_tsumo_state.connect(menu.set_tsumo);
         round.set_ron_state.connect(menu.set_ron);
         round.set_timer_state.connect(menu.set_move_timer);
@@ -107,15 +106,12 @@ class GameController : Object
         round.set_furiten_state.connect(menu.set_furiten);
         round.set_tile_select_state.connect(renderer.set_active);
         round.set_tile_select_groups.connect(renderer.set_tile_select_groups);
-        round.game_riichi.connect(declared_riichi);
 
         round.game_finished.connect(renderer.game_finished);
         round.game_tile_assignment.connect(renderer.tile_assignment);
         round.game_tile_draw.connect(renderer.tile_draw);
         round.game_dead_tile_draw.connect(renderer.dead_tile_draw);
         round.game_tile_discard.connect(renderer.tile_discard);
-        round.game_flip_dora.connect(renderer.flip_dora);
-        round.game_riichi.connect(renderer.riichi);
         round.game_late_kan.connect(renderer.late_kan);
         round.game_closed_kan.connect(renderer.closed_kan);
         round.game_open_kan.connect(renderer.open_kan);
@@ -171,11 +167,6 @@ class GameController : Object
     private void on_game_loaded()
     {
         game_loaded();
-    }
-
-    private void declared_riichi(int player_index, bool open)
-    {
-        game.declare_riichi(player_index);
     }
 
     private void menu_score_finished()

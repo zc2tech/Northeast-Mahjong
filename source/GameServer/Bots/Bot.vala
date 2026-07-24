@@ -26,7 +26,7 @@ public abstract class Bot : Object
             mutex.lock();
 
         game_state.start_round(info);
-        round_state = new RoundState(settings, player_index, game_state.round_wind, game_state.dealer_index, info.wall_index, game_state.can_riichi());
+        round_state = new RoundState(settings, player_index, game_state.round_wind, game_state.dealer_index, info.wall_index);
         round_state.start();
 
         if (use_lock)
@@ -109,12 +109,6 @@ public abstract class Bot : Object
         Scoring score = round_state.get_tsumo_score();
         RoundFinishResult result = new RoundFinishResult.tsumo(score, round_state.current_player.index);
         game_state.round_finished(result);
-    }
-
-    public void riichi(bool open)
-    {
-        game_state.declare_riichi(round_state.current_player.index);
-        round_state.riichi(open);
     }
 
     public void turn_decision()

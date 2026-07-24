@@ -1207,117 +1207,31 @@ public class Scoring : Object
         ron = round.ron;
         dealer = player.dealer;
         calculate_fu();
-        tsumo_points_lower = 0;
-        tsumo_points_higher = 0;
+        tsumo_points = 0;
         ron_points = 0;
-        this.dora = true;
         score_type = ScoreType.NORMAL;
 
-        bool riichi = false;
-
-        foreach (Yaku y in yaku)
-        {
-            yakuman += y.yakuman;
-            han += y.han;
-
-            if (y.yaku_type == YakuType.RIICHI || y.yaku_type == YakuType.OPEN_RIICHI)
-                riichi = true;
-        }
-
-        this.ura_dora = riichi;
-
-        int dora = 0;
-        int ura_dora = 0;
-        int aka_dora = 0;
-
-        foreach (Tile tile in hand.tiles)
-            if (tile.dora)
-                aka_dora++;
-
-        foreach (Tile tile in hand.tiles)
-        {
-            foreach (Tile d in round.dora)
-                if (tile.tile_type == d.dora_indicator())
-                    dora++;
-            if (riichi)
-            {
-                foreach (Tile d in round.ura_dora)
-                    if (tile.tile_type == d.dora_indicator())
-                        ura_dora++;
-            }
-        }
-
-        han += dora + ura_dora + aka_dora;
-        if (dora > 0)
-            yaku.add(new Yaku(YakuType.DORA, dora, 0));
-        if (ura_dora > 0)
-            yaku.add(new Yaku(YakuType.URA_DORA, ura_dora, 0));
-        if (aka_dora > 0)
-            yaku.add(new Yaku(YakuType.AKA_DORA, aka_dora, 0));
-
-        int basic_points;
-        if (yakuman > 0)
-        {
-            basic_points = 8000 * yakuman;
-            han = 0;
-            score_type = ScoreType.YAKUMAN;
-        }
-        else
-        {
-            basic_points = fu * (4 << han);
-            basic_points = int.min(basic_points, 2000);
-
-            if (han >= 13)
-            {
-                basic_points = 8000;
-                score_type = ScoreType.KAZOE_YAKUMAN;
-            }
-            else if (han >= 11)
-            {
-                basic_points = 6000;
-                score_type = ScoreType.SANBAIMAN;
-            }
-            else if (han >= 8)
-            {
-                basic_points = 4000;
-                score_type = ScoreType.BAIMAN;
-            }
-            else if (han >= 6)
-            {
-                basic_points = 3000;
-                score_type = ScoreType.HANEMAN;
-            }
-            else if (han >= 5)
-            {
-                basic_points = 2000;
-                score_type = ScoreType.MANGAN;
-            }
-        }
+        int basic_points = 5;
+       
 
         if (dealer)
         {
             if (ron)
-                ron_points = basic_points * 6;
+                ron_points = basic_points * 2;
             else
-                tsumo_points_lower = tsumo_points_higher = basic_points * 2;
+                tsumo_points = basic_points * 4;
         }
         else
         {
             if (ron)
-                ron_points = basic_points * 4;
+                ron_points = basic_points * 1;
             else
             {
-                tsumo_points_lower  = basic_points * 1;
-                tsumo_points_higher = basic_points * 2;
+                tsumo_points  = basic_points * 2;
             }
         }
-
-        // Round up to next 100
-        tsumo_points_lower  = (tsumo_points_lower  + 99) / 100 * 100;
-        tsumo_points_higher = (tsumo_points_higher + 99) / 100 * 100;
-        ron_points = (ron_points + 99) / 100 * 100;
-
-        total_points = tsumo_points_lower * 2 + tsumo_points_higher + ron_points;
+        // either tsumo or ron will be 0
+        total_points = tsumo_points + ron_points;
     }
 
     public Scoring.invalid()
@@ -1329,15 +1243,12 @@ public class Scoring : Object
         yaku = null;
         ron = false;
         dealer = false;
-        tsumo_points_lower = 0;
-        tsumo_points_higher = 0;
+        tsumo_points = 0;
         ron_points = 0;
         total_points = 0;
         han = 0;
         fu = 0;
         yakuman = 0;
-        dora = false;
-        ura_dora = false;
         score_type = ScoreType.NONE;
     }
 
@@ -1352,19 +1263,16 @@ public class Scoring : Object
         fu = 0;
         yakuman = 0;
         ron_points = 0;
-        dora = false;
-        ura_dora = false;
         score_type = ScoreType.NAGASHI_MANGAN;
 
         if (dealer)
-            tsumo_points_lower = tsumo_points_higher = 4000;
+            tsumo_points = 20;
         else
         {
-            tsumo_points_lower  = 2000;
-            tsumo_points_higher = 4000;
+            tsumo_points  = 10;
         }
 
-        total_points = 2 * tsumo_points_lower + tsumo_points_higher;
+        total_points = tsumo_points;
     }
 
     public bool has_valid_yaku()
@@ -1483,15 +1391,12 @@ public class Scoring : Object
     public ArrayList<Yaku> yaku { get; private set; }
     public bool ron { get; private set; }
     public bool dealer { get; private set; }
-    public int tsumo_points_lower { get; private set; }
-    public int tsumo_points_higher { get; private set; }
+    public int tsumo_points { get; private set; }
     public int ron_points { get; private set; }
     public int total_points { get; private set; }
     public int han { get; private set; }
     public int fu { get; private set; }
     public int yakuman { get; private set; }
-    public bool dora { get; private set; }
-    public bool ura_dora { get; private set; }
     public ScoreType score_type { get; private set; }
 
     public string to_string()
@@ -1509,18 +1414,22 @@ public class Scoring : Object
         str +=
         "ron: " + ron.to_string() + "\n" +
         "dealer: " + dealer.to_string() + "\n" +
-        "tsumo_points_lower: " + tsumo_points_lower.to_string() + "\n" +
-        "tsumo_points_higher: " + tsumo_points_higher.to_string() + "\n" +
+        "tsumo_points: " + tsumo_points.to_string() + "\n" +
         "ron_points: " + ron_points.to_string() + "\n" +
         "total_points: " + total_points.to_string() + "\n" +
-        "han: " + han.to_string() + "\n" +
-        "fu: " + fu.to_string() + "\n" +
-        "yakuman: " + yakuman.to_string() + "\n" +
         "score_type: " + score_type.to_string();
 
         return str;
     }
 
+
+//  MANGAN           满贯
+//  HANEMAN          跳满
+//  BAIMAN           倍满
+//  SANBAIMAN        三倍满
+//  KAZOE_YAKUMAN    累计役满（或：数え役满）
+//  YAKUMAN          役满
+//  NAGASHI_MANGAN   流局满贯
     public enum ScoreType
     {
         NONE,

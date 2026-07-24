@@ -130,29 +130,6 @@ class ScoringPointsView : View2D
         }
 
         var s = score.result.scores[0];
-        var d = s.round.dora;
-        var u = s.round.ura_dora;
-        
-        dora = new ScoringDoraView(d, 2 - d.size / 2, 4 - d.size / 2);
-        ura = new ScoringDoraView(u, 2 - (u.size - 1) / 2, 4 - (u.size - 1) / 2);
-        add_child(dora);
-        add_child(ura);
-
-        dora.visible = s.dora;
-        ura.visible = s.dora; // Optional s.ura_dora?
-        dora.inner_anchor = Vec2(ura.visible ? 0 : 0.5f, 0);
-        dora.outer_anchor = Vec2(ura.visible ? 0 : 0.5f, 0);
-        ura.inner_anchor = Vec2(1, 0);
-        ura.outer_anchor = Vec2(1, 0);
-
-        dora.size = Size2(1, 60);
-        ura.size = dora.size;
-
-        dora.alpha = animate ? 0 : 1;
-        ura.alpha = animate ? 0 : 1;
-
-        score_label.inner_anchor = Vec2(0.5f, 1);
-        score_label.outer_anchor = Vec2(0.5f, 1);
 
         show_score_control();
 
@@ -531,7 +508,7 @@ class ScoringPointsView : View2D
         {
             animate_items_start();
         }
-
+        // TODO: need to adjust for Northeast Mahjong
         private void set_points_text(float amount)
         {
             string points;
@@ -548,9 +525,9 @@ class ScoringPointsView : View2D
                 if (sekinin)
                     points = ((int)(scoring.total_points * amount)).to_string();
                 else if (scoring.dealer)
-                    points = "3 * " + ((int)(scoring.tsumo_points_higher * amount)).to_string();
+                    points = "3 * " + ((int)(scoring.tsumo_points * amount)).to_string();
                 else
-                    points = ((int)(scoring.tsumo_points_lower * amount)).to_string() + "/" + ((int)(scoring.tsumo_points_higher * amount)).to_string();
+                    points = ((int)(scoring.tsumo_points * amount)).to_string() + "/" + ((int)(scoring.tsumo_points * amount)).to_string();
             }
 
             string name = "";

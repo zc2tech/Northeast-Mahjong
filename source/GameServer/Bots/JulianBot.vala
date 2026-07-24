@@ -1,9 +1,10 @@
 using Gee;
 
-class SimpleBot : Bot
+class JulianBot : Bot
 {
     private Engine.RandomClass rnd = new Engine.RandomClass();
 
+    // 摸到牌之后，做个处理决定
     protected override void do_turn_decision()
     {
         if (round_state.can_tsumo())
@@ -40,6 +41,7 @@ class SimpleBot : Bot
         }
     }
 
+    // 别人打牌之后，做个处理决定
     protected override void do_call_decision(RoundStatePlayer discarding_player, Tile tile)
     {
         if (round_state.can_ron(round_state.self))
@@ -68,6 +70,7 @@ class SimpleBot : Bot
         call_nothing();
     }
 
+    // 找出需要舍弃的牌
     private Tile get_discard_tile()
     {
         ArrayList<Tile> tiles = round_state.self.get_discard_tiles();
@@ -230,5 +233,5 @@ class SimpleBot : Bot
         return false;
     }
 
-    public override string name { get { return "SimpleBot"; } }
+    public override string name { get { return "JulianBot"; } }
 }
