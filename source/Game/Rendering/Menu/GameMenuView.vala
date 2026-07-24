@@ -14,16 +14,13 @@ class GameMenuView : View2D
     private Sound hint_sound;
     private float start_time;
     private LabelControl timer;
-    private LabelControl furiten;
 
     private MenuTextButton chii;
     private MenuTextButton pon;
     private MenuTextButton kan;
-    private MenuTextButton riichi;
-    private MenuTextButton open_riichi;
     private MenuTextButton tsumo;
     private MenuTextButton ron;
-    private MenuTextButton conti;
+    private MenuTextButton conti; // "conti" is usually shorthand for continuance or dealer continuation
     private MenuTextButton void_hand;
 
     private MenuTextButton next;
@@ -32,7 +29,6 @@ class GameMenuView : View2D
     public signal void chii_pressed();
     public signal void pon_pressed();
     public signal void kan_pressed();
-    public signal void riichi_pressed(bool open);
     public signal void tsumo_pressed();
     public signal void ron_pressed();
     public signal void continue_pressed();
@@ -46,20 +42,7 @@ class GameMenuView : View2D
     private void press_chii() { chii_pressed(); }
     private void press_pon() { pon_pressed(); }
     private void press_kan() { kan_pressed(); }
-    private void press_riichi()
-    {
-        bool state = open_riichi.enabled;
-        riichi_pressed(false);
-        if (state)
-            open_riichi.enabled = false;
-    }
-    private void press_open_riichi()
-    {
-        bool state = riichi.enabled;
-        riichi_pressed(true);
-        if (state)
-            riichi.enabled = false;
-    }
+   
     private void press_tsumo() { tsumo_pressed(); }
     private void press_ron() { ron_pressed(); }
     private void press_continue() { continue_pressed(); }
@@ -92,21 +75,9 @@ class GameMenuView : View2D
         timer.font_size = 60;
         timer.visible = false;
 
-        furiten = new LabelControl();
-        add_child(furiten);
-        furiten.inner_anchor = Vec2(0, 0);
-        furiten.outer_anchor = Vec2(0, 0);
-        furiten.position = Vec2(padding, padding / 2);
-        furiten.font_size = 30;
-        furiten.visible = false;
-        furiten.text = "Furiten";
-        furiten.color = Color.red();
-
         chii = new MenuTextButton("MenuButtonSmall", "Chii");
         pon = new MenuTextButton("MenuButtonSmall", "Pon");
         kan = new MenuTextButton("MenuButtonSmall", "Kan");
-        riichi = new MenuTextButton("MenuButtonSmall", "Riichi");
-        open_riichi = new MenuTextButton("MenuButtonSmall", "Open Riichi");
         tsumo = new MenuTextButton("MenuButtonSmall", "Tsumo");
         ron = new MenuTextButton("MenuButtonSmall", "Ron");
         conti = new MenuTextButton("MenuButtonSmall", "Continue");
@@ -118,8 +89,6 @@ class GameMenuView : View2D
         chii.clicked.connect(press_chii);
         pon.clicked.connect(press_pon);
         kan.clicked.connect(press_kan);
-        riichi.clicked.connect(press_riichi);
-        open_riichi.clicked.connect(press_open_riichi);
         tsumo.clicked.connect(press_tsumo);
         ron.clicked.connect(press_ron);
         conti.clicked.connect(press_continue);
@@ -131,11 +100,9 @@ class GameMenuView : View2D
         buttons.add(chii);
         buttons.add(pon);
         buttons.add(kan);
-        buttons.add(riichi);
-        buttons.add(open_riichi);
         buttons.add(tsumo);
         buttons.add(ron);
-        buttons.add(conti);
+        buttons.add(conti); // "conti" is usually shorthand for continuance or dealer continuation
         buttons.add(void_hand);
 
         observer_buttons.add(prev);
@@ -161,7 +128,6 @@ class GameMenuView : View2D
         }
 
         void_hand.visible = false;
-        open_riichi.visible = open_riichi.visible && settings.open_riichi == OnOffEnum.ON;
         position_buttons(buttons);
         position_buttons(observer_buttons);
 
@@ -220,12 +186,6 @@ class GameMenuView : View2D
         kan.enabled = enabled;
     }
 
-    public void set_riichi(bool enabled)
-    {
-        riichi.enabled = enabled;
-        open_riichi.enabled = enabled;
-    }
-
     public void set_tsumo(bool enabled)
     {
         tsumo.enabled = enabled;
@@ -248,11 +208,6 @@ class GameMenuView : View2D
         void_hand.visible = enabled;
         void_hand.enabled = enabled;
         position_buttons(buttons);
-    }
-
-    public void set_furiten(bool enabled)
-    {
-        furiten.visible = enabled;
     }
 
     public void set_move_timer(bool enabled)

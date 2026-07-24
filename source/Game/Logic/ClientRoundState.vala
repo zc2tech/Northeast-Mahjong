@@ -21,7 +21,6 @@ public class ClientRoundState : Object
     public signal void set_timer_state(bool enabled);
     public signal void set_continue_state(bool enabled);
     public signal void set_void_hand_state(bool enabled);
-    public signal void set_furiten_state(bool enabled);
 
     public signal void set_tile_select_state(bool enabled);
     public signal void set_tile_select_groups(ArrayList<TileSelectionGroup>? selection_groups);
@@ -231,14 +230,6 @@ public class ClientRoundState : Object
     {
         decision_finished();
         do_discard_tile(tile);
-    }
-
-    private void check_furiten()
-    {
-        if (!self_active)
-            return;
-
-        set_furiten_state(state.self.in_furiten());
     }
 
     /////////////////////////
@@ -547,7 +538,6 @@ public class ClientRoundState : Object
 
         game_open_kan(state.current_player.index, discard_index, state.discard_tile.ID, kan.tile_1_ID, kan.tile_2_ID, kan.tile_3_ID);
 
-        check_furiten();
     }
 
     private void server_pon(ServerMessage message)
@@ -560,7 +550,6 @@ public class ClientRoundState : Object
 
         game_pon(state.current_player.index, discard_index, state.discard_tile.ID, pon.tile_1_ID, pon.tile_2_ID);
 
-        check_furiten();
     }
 
     private void server_chii(ServerMessage message)
@@ -573,7 +562,6 @@ public class ClientRoundState : Object
 
         game_chii(state.current_player.index, discard_index, state.discard_tile.ID, chii.tile_1_ID, chii.tile_2_ID);
 
-        check_furiten();
     }
 
     public void server_calls_finished(ServerMessage message)
@@ -586,7 +574,6 @@ public class ClientRoundState : Object
         if (kan)
             game_dead_tile_draw(state.current_player.index);
 
-        check_furiten();
     }
 
     public void server_turn_decision(ServerMessage message)

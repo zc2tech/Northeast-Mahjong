@@ -216,8 +216,6 @@ public class RoundState : Object
         else
             kan();
 
-        check_temporary_furiten();
-
         turn_counter++;
         riichi_return_index = -1;
         chankan_call = ChankanCall.NONE;
@@ -329,7 +327,6 @@ public class RoundState : Object
         current_index = player_index;
         kan();
 
-        check_temporary_furiten();
     }
 
     public void pon(int player_index, int tile_1_ID, int tile_2_ID)
@@ -347,7 +344,6 @@ public class RoundState : Object
         interrupt_flow();
         current_index = player_index;
 
-        check_temporary_furiten();
     }
 
     public void chii(int player_index, int tile_1_ID, int tile_2_ID)
@@ -364,8 +360,6 @@ public class RoundState : Object
 
         interrupt_flow();
         current_index = player_index;
-
-        check_temporary_furiten();
     }
 
     public Scoring[]? get_ron_score()
@@ -516,13 +510,6 @@ public class RoundState : Object
         return players;
     }
 
-    private void check_temporary_furiten()
-    {
-        if (discard_tile != null)
-            foreach (var player in players)
-                player.check_temporary_furiten(discard_tile, chankan_call == ChankanCall.CLOSED);
-    }
-
     private void interrupt_flow()
     {
         foreach (RoundStatePlayer player in players)
@@ -587,7 +574,6 @@ public class RoundStatePlayer
     private bool ippatsu = false;
     private bool dealer;
     private bool tiles_called_on = false;
-    private bool temporary_furiten = false;
 
     private int sekinin_rinshan_index = -1;
     private int sekinin_index = -1;
@@ -602,7 +588,6 @@ public class RoundStatePlayer
         hand = new ArrayList<Tile>();
         pond = new ArrayList<Tile>();
         calls = new ArrayList<RoundStateCall>();
-        in_riichi = false;
         first_turn = true;
     }
 
@@ -622,9 +607,6 @@ public class RoundStatePlayer
     public void draw(Tile tile)
     {
         hand.add(tile);
-
-        if (!in_riichi)
-            temporary_furiten = false;
     }
 
     public bool discard(Tile tile)
@@ -654,19 +636,6 @@ public class RoundStatePlayer
         tiles_called_on = true;
     }
 
-    public void check_temporary_furiten(Tile tile, bool closed_chankan)
-    {
-        ArrayList<Tile> hand = new ArrayList<Tile>();
-        hand.add_all(this.hand);
-        hand.add(tile);
-
-        if (TileRules.winning_hand(hand, calls))
-        {
-            if (!closed_chankan || can_closed_chankan(tile))
-                temporary_furiten = true;
-        }
-    }
-
     public void flow_interrupted()
     {
         ippatsu = false;
@@ -675,7 +644,6 @@ public class RoundStatePlayer
 
     public void do_riichi(bool open)
     {
-        in_riichi = true;
         this.open = open;
         ippatsu = true;
         do_riichi_discard = true;
@@ -785,12 +753,7 @@ public class RoundStatePlayer
     public ArrayList<Tile> get_discard_tiles()
     {
         ArrayList<Tile> tiles = new ArrayList<Tile>();
-        if (in_riichi)
-        {
-            tiles.add(newest_tile);
-            return tiles;
-        }
-
+       
         foreach (Tile tile in hand)
             if (can_discard(tile))
                 tiles.add(tile);
@@ -843,10 +806,11 @@ public class RoundStatePlayer
 
     public bool can_discard(Tile tile)
     {
-        if (!has_tile(tile) ||
-            (in_riichi && !do_riichi_discard && tile.ID != newest_tile.ID))
-            return false;
+        // Julian: don't understand this logic, original logic also contains riichi info
+        //  if (!has_tile(tile))
+        //      return false;
 
+        // Kuikae (喰い替え) is a Riichi Mahjong rule that prevents a player from calling a tile (Chi/Pon) and then immediately discarding a tile that makes the call effectively pointless or abusive.
         // Kuikae check
         if (do_chii_discard)
         {
@@ -868,7 +832,7 @@ public class RoundStatePlayer
 
     public bool can_ron(RoundStateContext context)
     {
-        return !in_furiten() && TileRules.can_ron(create_context(false), context);
+        return TileRules.can_ron(create_context(false), context);
     }
 
     public bool can_closed_chankan(Tile tile)
@@ -941,11 +905,6 @@ public class RoundStatePlayer
         }
 
         return false;
-    }
-
-    public bool in_furiten()
-    {
-        return temporary_furiten || TileRules.in_furiten(hand, calls, pond);
     }
 
     public ArrayList<ArrayList<Tile>> get_chii_groups(Tile discard_tile)
@@ -1030,7 +989,6 @@ public class RoundStatePlayer
     public ArrayList<Tile> hand { get; private set; }
     public ArrayList<Tile> pond { get; private set; }
     public ArrayList<RoundStateCall> calls { get; private set; }
-    public bool in_riichi { get; private set; }
     public bool open { get; private set; } // Open riichi
     public bool first_turn { get; private set; }
     public Tile newest_tile { owned get { return hand[hand.size - 1]; } }

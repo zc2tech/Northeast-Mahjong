@@ -265,30 +265,6 @@ public class TileRules
         return list;
     }
 
-    public static bool in_furiten(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls, ArrayList<Tile> pond_in)
-    {
-        ArrayList<Tile> pond = Tile.sort_tiles_type(pond_in);
-        ArrayList<Tile> tiles = new ArrayList<Tile>();
-        tiles.add_all(hand);
-
-        for (int i = 0; i < pond.size; i++)
-        {
-            Tile tile = pond[i];
-
-            if (i != 0 && tile.tile_type == pond[i-1].tile_type) // Already checked this tile type
-                continue;
-
-            tiles.add(tile);
-
-            if (winning_hand(tiles, calls))
-                return true;
-
-            tiles.remove(tile);
-        }
-
-        return false;
-    }
-
     public static bool can_void_hand(ArrayList<Tile> hand_in)
     {
         ArrayList<Tile> hand = Tile.sort_tiles_type(hand_in);
