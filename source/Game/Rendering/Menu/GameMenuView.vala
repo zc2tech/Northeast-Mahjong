@@ -4,7 +4,7 @@ using Gee;
 class GameMenuView : View2D
 {
     private ScoringView? score_view = null;
-    private ArrayList<Control> buttons = new ArrayList<Control>();
+    private ArrayList<MenuButton> action_buttons = new ArrayList<MenuButton>();
     private ArrayList<MenuTextButton> observer_buttons = new ArrayList<MenuTextButton>();
 
     private GameRenderContext context;
@@ -97,18 +97,18 @@ class GameMenuView : View2D
         next.clicked.connect(press_next);
         prev.clicked.connect(press_prev);
 
-        buttons.add(chii);
-        buttons.add(pon);
-        buttons.add(kan);
-        buttons.add(tsumo);
-        buttons.add(ron);
-        buttons.add(conti); // "conti" is usually shorthand for continuance or dealer continuation
-        buttons.add(void_hand);
+        action_buttons.add(chii);
+        action_buttons.add(pon);
+        action_buttons.add(kan);
+        action_buttons.add(tsumo);
+        action_buttons.add(ron);
+        action_buttons.add(conti); // "conti" is usually shorthand for continuance or dealer continuation
+        action_buttons.add(void_hand);
 
         observer_buttons.add(prev);
         observer_buttons.add(next);
 
-        foreach (var button in buttons)
+        foreach (var button in action_buttons)
         {
             add_child(button);
             button.enabled = false;
@@ -127,24 +127,47 @@ class GameMenuView : View2D
         }
 
         void_hand.visible = false;
-        position_buttons(buttons);
-        position_buttons(observer_buttons);
+        position_action_buttons();
+        position_observer_buttons();
 
         add_child(score_view);
     }
 
-    private void position_buttons(ArrayList<Control> buttons)
+    private void position_action_buttons()
     {
         float p = 0;
         float width = 0;
 
-        foreach (var button in buttons)
-            if (button.visible)
-                width += button.size.width / 2;
-
-        foreach (var button in buttons)
+        foreach (var button in action_buttons)
         {
-            if (!button.visible)
+            if (button.visible && button.size.width > 0)
+                width += button.size.width / 2;
+        }
+
+        foreach (var button in action_buttons)
+        {
+            if (!button.visible || button.size.width == 0)
+                continue;
+
+            button.position = Vec2(button.size.width / 2 - width + p, 120);
+            p += button.size.width;
+        }
+    }
+
+    private void position_observer_buttons()
+    {
+        float p = 0;
+        float width = 0;
+
+        foreach (var button in observer_buttons)
+        {
+            if (button.visible && button.size.width > 0)
+                width += button.size.width / 2;
+        }
+
+        foreach (var button in observer_buttons)
+        {
+            if (!button.visible || button.size.width == 0)
                 continue;
 
             button.position = Vec2(button.size.width / 2 - width + p, 120);
@@ -206,7 +229,7 @@ class GameMenuView : View2D
     {
         void_hand.visible = enabled;
         void_hand.enabled = enabled;
-        position_buttons(buttons);
+        position_action_buttons();
     }
 
     public void set_move_timer(bool enabled)

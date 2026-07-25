@@ -57,10 +57,10 @@ public static int main(string[] args)
 
     if (run_tests)
     {
-        stdout.printf("Starting hand tests...\n");
+        stdout.printf("------------Starting hand tests --------\n");
         stdout.flush();
         test_hands();
-        stdout.printf("Tests completed!\n");
+        stdout.printf("------------Tests completed!-------------\n");
         stdout.flush();
         return 0;
     }

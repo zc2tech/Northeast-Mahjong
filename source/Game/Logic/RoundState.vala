@@ -382,8 +382,9 @@ public class RoundState : Object
         if (!player.can_ron(create_context(true, discard_tile)))
             return false;
 
-        if (chankan_call == ChankanCall.CLOSED)
-            return player.can_closed_chankan(discard_tile);
+        // 抢杠应该在东北麻将里不允许吧？
+        //  if (chankan_call == ChankanCall.CLOSED)
+        //      return player.can_closed_chankan(discard_tile);
 
         return true;
     }
@@ -990,7 +991,7 @@ class RoundStateWall
             tiles = new Tile[112];
 
 
-        stdout.printf("shuffled : %d  seeded: %d \n", (int)shuffled, (int)seeded);
+        //  stdout.printf("shuffled : %d  seeded: %d \n", (int)shuffled, (int)seeded);
         if (custom_tiles == null)
         {
             int iTile = 0;

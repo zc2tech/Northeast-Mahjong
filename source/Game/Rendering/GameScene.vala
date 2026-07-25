@@ -123,10 +123,6 @@ class GameScene : WorldObject
             action_ron(action as RenderActionRon);
         else if (action is RenderActionTsumo)
             action_tsumo(action as RenderActionTsumo);
-        else if (action is RenderActionRiichi)
-            action_riichi(action as RenderActionRiichi);
-        else if (action is RenderActionReturnRiichi)
-            action_return_riichi(action as RenderActionReturnRiichi);
         else if (action is RenderActionLateKan)
             action_late_kan(action as RenderActionLateKan);
         else if (action is RenderActionClosedKan)
@@ -233,12 +229,6 @@ class GameScene : WorldObject
 
         // Northeast Mahjong doesn't have riichi
         // action.player.riichi(action.open);
-    }
-
-    // Non-blocking
-    private void action_return_riichi(RenderActionReturnRiichi action)
-    {
-        action.player.return_riichi(context.server_times.riichi);
     }
 
     private void action_late_kan(RenderActionLateKan action)

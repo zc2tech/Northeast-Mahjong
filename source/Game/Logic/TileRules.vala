@@ -11,16 +11,30 @@ public class TileRules
 
     public static bool can_ron(PlayerStateContext player, RoundStateContext round)
     {
-        Scoring score = calculate_yaku(player, round, true);
-        return score.valid && score.has_valid_yaku();
+        //  Scoring score = calculate_yaku(player, round, true);
+        //  return score.valid && score.has_valid_yaku();
+        ArrayList<Tile> hand = new ArrayList<Tile>();
+        hand.add_all(player.hand);
+        hand.add(round.win_tile);
+
+        ArrayList<HandReading> readings = hand_readings(hand, player.calls, false, false);
+        return readings.size > 0;
+
     }
 
     public static bool can_tsumo(PlayerStateContext player, RoundStateContext round)
     {
-        Scoring score = calculate_yaku(player, round, true);
-        return score.valid && score.has_valid_yaku();
+        //  Scoring score = calculate_yaku(player, round, true);
+        //  return score.valid && score.has_valid_yaku();
+        ArrayList<Tile> hand = new ArrayList<Tile>();
+        hand.add_all(player.hand);
+        hand.add(round.win_tile);
+        ArrayList<HandReading> readings = hand_readings(hand, player.calls, false, false);
+        // 杠上开花是不行的，东北麻将不算胡
+        return !round.rinshan && readings.size > 0;
     }
 
+    // 应该在东北麻将不会用到。暂时不删除
     private static Scoring calculate_yaku(PlayerStateContext player, RoundStateContext round, bool early_return)
     {
         ArrayList<Tile> hand = new ArrayList<Tile>();
@@ -322,6 +336,7 @@ public class TileRules
     }
 
     // 手牌如果只剩小于等于两张的话，东北麻将里是不能胡的
+    // 杠上开花 判断不了， 所以有Readings还是会返回的
     public static ArrayList<HandReading> hand_readings(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls, bool tenpai_only, bool early_return)
     {
         // 东北麻将的话，已经没机会和了，不能剩 一张或者两张牌的
@@ -368,7 +383,7 @@ public class TileRules
                     if(firstSuitTile == null) {
                         firstSuitTile = t;
                     } else {
-                        if(t.tile_type != firstSuitTile.tile_type) {
+                        if(!t.is_same_sort(firstSuitTile)) {
                            isHonitsu_Chnitsu = false; 
                         }
                     }
@@ -779,7 +794,7 @@ public class RoundStateContext : Object
         string str =
         "round_wind: " + round_wind.to_string() + "\n" +
         "ron: " + ron.to_string() + "\n" +
-        "win_wile: " + win_tile.tile_type.to_string() + "\n" +
+        "win_tile: " + win_tile.tile_type.to_string() + "\n" +
         "last_tile: " + last_tile.to_string() + "\n" +
         "rinshan: " + rinshan.to_string() + "\n" +
         "chankan: " + chankan.to_string() + "\n" +
@@ -964,13 +979,13 @@ public class HandReading : Object
     {
         string str =
 
-        "tiles:\n";
+        "--tiles:\n";
         foreach (Tile tile in tiles)
             str += "\t" + tile.to_string() + "\n";
-        str += "melds:";
+        str += "--melds:\n";
         foreach (TileMeld meld in melds)
             str += meld.to_string() + "\n";
-        str += "pairs:";
+        str += "--pairs:\n";
         foreach (TilePair pair in pairs)
             str += pair.to_string() + "\n";
 
