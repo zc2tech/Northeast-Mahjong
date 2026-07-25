@@ -3,6 +3,8 @@
 This mahjong follows rules of Northeast China.
 Currently, it only works under Mac
 
+Use 112 tiles, every wall has 28 tiles. For Dragons, we only choose ONE into walls
+
 ## Acknowledgments
 
 This project is based on [OpenRiichi](https://github.com/FluffyStuff/OpenRiichi), an open source [Japanese Mahjong](https://en.wikipedia.org/wiki/Japanese_Mahjong)

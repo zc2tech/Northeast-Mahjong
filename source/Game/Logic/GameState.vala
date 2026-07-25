@@ -351,7 +351,6 @@ public class RoundScoreState
         this.game_is_started = game_is_started;
         this.game_is_finished = game_is_finished;
         this.do_renchan = do_renchan;
-        this.reset_riichi = reset_riichi;
 
         this.players = new GameScorePlayer[players.length];
         for (int i = 0; i < players.length; i++)
@@ -374,7 +373,6 @@ public class RoundScoreState
     public bool game_is_started { get; private set; }
     public bool game_is_finished { get; private set; }
     public bool do_renchan { get; private set; }
-    public bool reset_riichi { get; private set; }
 }
 
 public class GameScorePlayer

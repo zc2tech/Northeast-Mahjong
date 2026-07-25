@@ -17,7 +17,7 @@ public class RenderTable : WorldObject
 
     protected override void added()
     {
-        float hand_offset = 8;
+        float hand_offset = 10;
 
         RenderTableCenterPiece center = new RenderTableCenterPiece(context.tile_size, field_rotation, score);
         add_object(center);
@@ -46,6 +46,8 @@ public class RenderTable : WorldObject
         }
 
         table.load(quality, table_texture_path);
+        // Hide the wooden table frame
+        table.visible = false;
     }
 
     public void split_dead_wall(AnimationTime time)

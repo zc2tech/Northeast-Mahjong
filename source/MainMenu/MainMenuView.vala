@@ -44,27 +44,45 @@ class MainMenuView : MenuSubView
         return menu_game_start(info, settings, connection, player_index);
     }
 
+    protected override void key_press(KeyArgs key)
+    {
+        // Check if no modifier keys are pressed
+        if (key.down && key.modifiers == Modifier.NONE)
+        {
+            if (key.scancode == ScanCode.S)
+                singleplayer();
+            else if (key.scancode == ScanCode.M)
+                multiplayer();
+            else if (key.scancode == ScanCode.O)
+                options();
+            else if (key.scancode == ScanCode.A)
+                about();
+            else if (key.scancode == ScanCode.E)
+                do_finish();
+        }
+    }
+
     protected override ArrayList<MenuTextButton>? get_main_buttons()
     {
         ArrayList<MenuTextButton> buttons = new ArrayList<MenuTextButton>();
 
-        MenuTextButton singleplayer_button = new MenuTextButton("MenuButtonBig", "Singleplayer");
+        MenuTextButton singleplayer_button = new MenuTextButton("MenuButtonBig", "Singleplayer (S)");
         singleplayer_button.clicked.connect(singleplayer);
         buttons.add(singleplayer_button);
 
-        MenuTextButton multiplayer_button = new MenuTextButton("MenuButtonBig", "Multiplayer");
+        MenuTextButton multiplayer_button = new MenuTextButton("MenuButtonBig", "Multiplayer (M)");
         multiplayer_button.clicked.connect(multiplayer);
         buttons.add(multiplayer_button);
 
-        MenuTextButton options_button = new MenuTextButton("MenuButtonBig", "Options");
+        MenuTextButton options_button = new MenuTextButton("MenuButtonBig", "Options (O)");
         options_button.clicked.connect(options);
         buttons.add(options_button);
 
-        MenuTextButton about_button = new MenuTextButton("MenuButtonBig", "About");
+        MenuTextButton about_button = new MenuTextButton("MenuButtonBig", "About (A)");
         about_button.clicked.connect(about);
         buttons.add(about_button);
 
-        MenuTextButton exit_button = new MenuTextButton("MenuButtonBig", "Exit");
+        MenuTextButton exit_button = new MenuTextButton("MenuButtonBig", "Exit (E)");
         exit_button.clicked.connect(do_finish);
         buttons.add(exit_button);
 

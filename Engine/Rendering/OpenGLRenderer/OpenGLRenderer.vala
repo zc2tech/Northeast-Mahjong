@@ -256,7 +256,13 @@ namespace Engine
 
         private void render_image_2D(RenderImage2D obj, OpenGLShaderProgram2D program, float aspect)
         {
-            OpenGLTextureResourceHandle texture_handle = obj.texture.handle as OpenGLTextureResourceHandle;
+            if (obj == null || obj.texture == null)
+                return;
+
+            OpenGLTextureResourceHandle? texture_handle = obj.texture.handle as OpenGLTextureResourceHandle;
+            if (texture_handle == null)
+                return;
+
             glBindTexture(GL_TEXTURE_2D, (GLuint)texture_handle.handle);
 
             Mat3 model_transform = Calculations.get_model_matrix_3(obj.position, obj.rotation, obj.scale, aspect);

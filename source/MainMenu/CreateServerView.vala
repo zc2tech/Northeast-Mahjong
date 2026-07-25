@@ -9,6 +9,7 @@ class CreateServerView : MenuSubView
     protected override void load()
     {
         name_text = new TextInputControl("Player name", Environment.MAX_NAME_LENGTH);
+        name_text.text = "dummy name";
         name_text.text_changed.connect(name_changed);
         add_child(name_text);
     }

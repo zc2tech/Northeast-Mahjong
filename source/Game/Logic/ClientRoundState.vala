@@ -89,12 +89,6 @@ public class ClientRoundState : Object
         set_tile_select_state(false);
     }
 
-    private void do_riichi(Tile tile, bool open)
-    {
-        do_action(new RiichiClientAction(open));
-        do_discard_tile(tile);
-    }
-
     private void do_late_kan(Tile tile)
     {
         do_action(new LateKanClientAction(tile.ID));
@@ -201,25 +195,6 @@ public class ClientRoundState : Object
                     else if (group.group_type == TileSelectionGroup.GroupType.CLOSED_KAN)
                         do_closed_kan(tile.tile_type);
 
-                    return;
-                }
-            }
-        }
-    }
-
-    private void do_select_riichi(Tile tile, bool open)
-    {
-        foreach (TileSelectionGroup group in selection_groups)
-        {
-            if (group.group_type != TileSelectionGroup.GroupType.RIICHI)
-                continue;
-
-            foreach (Tile t in group.selection_tiles)
-            {
-                if (t.ID == tile.ID)
-                {
-                    decision_finished();
-                    do_riichi(tile, open);
                     return;
                 }
             }
@@ -354,44 +329,6 @@ public class ClientRoundState : Object
         }
     }
 
-    public void client_riichi(bool open)
-    {
-        if (action_state == State.TURN)
-        {
-            ArrayList<Tile> tiles = state.get_tenpai_tiles(state.self);
-            if (tiles.size == 1)
-            {
-                decision_finished();
-                do_riichi(tiles[0], open);
-            }
-            else if (tiles.size > 1)
-            {
-                if (open)
-                    action_state = State.SELECT_OPEN_RIICHI;
-                else
-                    action_state = State.SELECT_RIICHI;
-
-                selection_groups.clear();
-
-                foreach (Tile tile in tiles)
-                {
-                    ArrayList<Tile> list = new ArrayList<Tile>();
-                    list.add(tile);
-                    selection_groups.add(new TileSelectionGroup(list, list, TileSelectionGroup.GroupType.RIICHI));
-                }
-
-                set_kan_state(false);
-                set_tsumo_state(false);
-                set_void_hand_state(false);
-                set_tile_select_groups(selection_groups);
-            }
-        }
-        else if (action_state == State.SELECT_RIICHI || action_state == State.SELECT_OPEN_RIICHI)
-        {
-            do_turn_decision();
-        }
-    }
-
     public void client_tsumo()
     {
         if (action_state != State.TURN)
@@ -436,10 +373,6 @@ public class ClientRoundState : Object
             do_select_chii(tile);
         else if (action_state == State.SELECT_KAN)
             do_select_kan(tile);
-        else if (action_state == State.SELECT_RIICHI)
-            do_select_riichi(tile, false);
-        else if (action_state == State.SELECT_OPEN_RIICHI)
-            do_select_riichi(tile, true);
     }
 
     ////////////////////////
@@ -595,8 +528,6 @@ public class ClientRoundState : Object
     {
         SELECT_CHII,
         SELECT_KAN,
-        SELECT_RIICHI,
-        SELECT_OPEN_RIICHI,
         CALL,
         TURN,
         DONE

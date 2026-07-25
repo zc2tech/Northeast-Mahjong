@@ -156,31 +156,21 @@ namespace GameServer
             if (player != host)
                 return;
 
+            var msg = (ClientMessageMenuAddBot)message;
+
+            Bot? bot = null;
+            if (msg.name == "JulianBot")
+                bot = new JulianBot();
+            else if (msg.name == "SimpleBot")
+                bot = new SimpleBot();
+
+            if (bot == null)
+                return;
+
             mutex.lock();
 
-            var msg = (ClientMessageMenuAddBot)message;
-            string name = typeof(Bot).name();
-            name = name.substring(0, name.length - 3) + msg.name;
-            Type? type = Type.from_name(name);
-
-            if (type == null || !type.is_a(typeof(Bot)))
-            {
-                mutex.lock();
-                return;
-            }
-
-            Object? obj = Object.new_with_properties(type, new string[0], new Value[0]);
-            if (obj == null)
-            {
-                mutex.lock();
-                return;
-            }
-
-            Bot bot = (Bot)obj;
             int slot = msg.slot;
-
             ServerPlayer bot_player = new ServerComputerPlayer(bot);
-
             players.add(bot_player);
 
             mutex.unlock();

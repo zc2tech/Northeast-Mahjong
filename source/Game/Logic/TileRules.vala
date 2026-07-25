@@ -345,10 +345,53 @@ public class TileRules
             }
         }
 
-        return hand_reading_recursion(hand, call_melds, tenpai_only, early_return);
+
+        ArrayList<HandReading> normalReadings = hand_reading_recursion(hand, call_melds, tenpai_only, early_return);
+        ArrayList<HandReading> northeastReadings = new ArrayList<HandReading>();
+        foreach(HandReading r in normalReadings) {
+            bool hasTerminalHonor = false;
+            bool hasTriplet = false;
+            bool isHonitsu_Chnitsu = true;
+          
+            foreach ( TileMeld tm in r.melds) {
+                if(tm.is_triplet) {
+                   hasTriplet = true;
+                }
+            }
+
+            Tile firstSuitTile = null;
+            foreach ( Tile t in r.tiles) {
+                if(t.is_honor_tile() || t.is_terminal_tile()) {
+                    hasTerminalHonor = true;
+                }
+                if(t.is_suit_tile()) {
+                    if(firstSuitTile == null) {
+                        firstSuitTile = t;
+                    } else {
+                        if(t.tile_type != firstSuitTile.tile_type) {
+                           isHonitsu_Chnitsu = false; 
+                        }
+                    }
+                }
+                if(hasTerminalHonor && !isHonitsu_Chnitsu) {
+                    // we got all the info we need, so we can quit
+                    break;
+                }
+
+            }
+
+            // Northeast Mahjong rule: must have at least one triplet and one terminal/honor
+            // Cannot be Chinitsu or Honitsu
+            if(hasTriplet && hasTerminalHonor && !isHonitsu_Chnitsu) {
+                northeastReadings.add(r);
+            }
+        }
+
+        return northeastReadings;
     }
 
     // 第一次进这个函数时 remaining_tiles = hand
+    // tenpai_only: 只看听牌，不看和牌
     private static ArrayList<HandReading> hand_reading_recursion(ArrayList<Tile> remaining_tiles, ArrayList<TileMeld> melds, bool tenpai_only, bool early_return)
     {
         ArrayList<HandReading> readings = new ArrayList<HandReading>();
@@ -383,6 +426,24 @@ public class TileRules
 
             return readings;
         }
+        // 仅从这一轮看有没有，我们看不到子递归里有没有这些东西
+        bool hasTriplet = false;
+        bool hasTerminalHonor = false;
+        foreach (TileMeld tm in melds) {
+            if(tm.is_triplet) {
+                hasTriplet = true;
+            }
+            if(
+                tm.hasTerminalHonor()
+             )
+             {
+               hasTerminalHonor = true; 
+             }
+             if(hasTriplet && hasTerminalHonor) {
+                // no need to continue check
+                break;
+             }
+        }
 
         if (hand.size == 13 || hand.size == 14)
         {
@@ -406,15 +467,22 @@ public class TileRules
 
             foreach (Tile t in hand)
             {
+                // 算上外围的 hand[i]自己，数量不到3时 都往 meld里加
                 if (meld.size < 3 && tile.tile_type == t.tile_type)
                     meld.add(t);
                 else
                     copy.add(t);
             }
 
+            // 凑够了刻子
             if (meld.size == 3)
             {
                 TileMeld m = new TileMeld(meld[0], meld[1], meld[2], true);
+                hasTriplet = true;
+                // since they are same type, we check only one
+                if(meld[0].is_honor_tile() || meld[0].is_terminal_tile()) {
+                    hasTerminalHonor = true;
+                }
 
                 ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
                 new_melds.add_all(melds);
@@ -422,10 +490,11 @@ public class TileRules
 
                 append_readings(readings, hand_reading_recursion(copy, new_melds, tenpai_only, early_return));
 
-                if (early_return && readings.size > 0)
+                if (early_return && readings.size > 0 && hasTriplet && hasTerminalHonor)
                     return readings;
             }
 
+            // 顺子
             if (tile.is_suit_tile() && tile.get_number_index() <= 6)
             {
                 // See if we can make a row with our tile being the lowest number (only lowest, in order to skip redundant row permutations)
@@ -438,24 +507,29 @@ public class TileRules
                     if (t == tile)
                         continue;
                     if (t.tile_type - tile.tile_type == 1 && one_more == null)
-                        one_more = t;
+                        one_more = t; // 手牌里找到一个临近的，大一
                     else if (t.tile_type - tile.tile_type == 2 && two_more == null)
-                        two_more = t;
+                        two_more = t; // 手牌里找到一个隔一个位置的，大二
                     else
-                        copy.add(t);
+                        copy.add(t); // 用不上的，只能下一递归轮用了（也有可能one_more two_more 已经有了，只能看下一回了）
                 }
 
                 if (one_more != null && two_more != null)
                 {
                     TileMeld m = new TileMeld(tile, one_more, two_more, true);
-
+                    if(
+                       m.hasTerminalHonor()
+                    )
+                    {
+                        hasTerminalHonor = true; 
+                    }
                     ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
                     new_melds.add_all(melds);
                     new_melds.add(m);
 
                     append_readings(readings, hand_reading_recursion(copy, new_melds, tenpai_only, early_return));
 
-                    if (early_return && readings.size > 0)
+                    if (early_return && readings.size > 0 && hasTriplet && hasTerminalHonor)
                         return readings;
                 }
             }
@@ -466,6 +540,8 @@ public class TileRules
                 int s = hand.size;
                 Tile? t = null;
                 Tile? n1 = null, n2 = null;
+                // remember max i in loop will be 3
+                // and we have ruled out 'i != 0 && hand[i].tile_type == hand[i-1].tile_type'
                 if (hand[(i+1)%s].tile_type == hand[(i+2)%s].tile_type)
                 {
                     n1 = hand[(i+1)%s];
@@ -509,7 +585,7 @@ public class TileRules
 
                         return readings;
                     }
-                    else if (tile.is_neighbour(t) || tile.is_second_neighbour(t)) // We have a pair and are waiting on the final triplet
+                    else if (tile.is_neighbour(t) || tile.is_second_neighbour(t)) // We have a pair and are waiting on the final sequence
                     {
                         TilePair pair = new TilePair(n1, n2);
 
@@ -567,10 +643,10 @@ public class TileRules
                         }
 
                         return readings;
-                    }
-                }
+                    } // end if neighbouring
+                } // end if t!= null
             }
-        }
+        } // end for loop 'hand'
 
         return readings;
     }
@@ -754,8 +830,6 @@ public class PlayerStateContext : Object
         this.calls = calls;
         this.wind = wind;
         this.dealer = dealer;
-        this.in_riichi = in_riichi;
-        this.double_riichi = double_riichi;
         this.open = open;
         this.ippatsu = ippatsu;
         this.tiles_called_on = tiles_called_on;
@@ -769,8 +843,6 @@ public class PlayerStateContext : Object
         "index: " + index.to_string() + "\n" +
         "wind: " + wind.to_string() + "\n" +
         "dealer: " + dealer.to_string() + "\n" +
-        "in_riichi: " + in_riichi.to_string() + "\n" +
-        "double_riichi: " + double_riichi.to_string() + "\n" +
         "open: " + open.to_string() + "\n" +
         "ippatsu: " + ippatsu.to_string() + "\n" +
         "tiles_called_on: " + tiles_called_on.to_string() + "\n" +
@@ -794,8 +866,6 @@ public class PlayerStateContext : Object
     public ArrayList<RoundStateCall> calls { get; private set; }
     public Wind wind { get; private set; }
     public bool dealer { get; private set; }
-    public bool in_riichi { get; private set; }
-    public bool double_riichi { get; private set; }
     public bool open { get; private set; }
     public bool ippatsu { get; private set; }
     public bool tiles_called_on { get; private set; }
@@ -978,6 +1048,19 @@ public class TileMeld : Object
         is_triplet = tile_1.tile_type == tile_2.tile_type && tile_2.tile_type == tile_3.tile_type;
     }
 
+    public bool hasTerminalHonor()
+    {
+        if(
+            this.tile_1.is_honor_tile()  || this.tile_1.is_terminal_tile() ||
+            this.tile_2.is_honor_tile()  || this.tile_2.is_terminal_tile() ||
+            this.tile_3.is_honor_tile()  || this.tile_3.is_terminal_tile()
+        ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public TileMeld.kan(Tile tile_1, Tile tile_2, Tile tile_3, Tile tile_4, bool is_closed)
     {
         this.tile_1 = tile_1;
@@ -1063,6 +1146,18 @@ public class TilePair : Object
     {
         this.tile_1 = tile_1;
         this.tile_2 = tile_2;
+    }
+
+    public bool hasTerminalHonor()
+    {
+        if(
+            this.tile_1.is_honor_tile()  || this.tile_1.is_terminal_tile() ||
+            this.tile_2.is_honor_tile()  || this.tile_2.is_terminal_tile() 
+        ) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public string to_string()
@@ -1399,7 +1494,7 @@ public class Yaku : Object
                 yaku.add(new Yaku(YakuType.RENHOU, 0, 1));
         }
 
-        // Kokushi musou
+        // Kokushi musou 国士无双
         if (hand.is_kokushi)
         {
             bool pair_wait = false;
@@ -1427,21 +1522,7 @@ public class Yaku : Object
         if (closed_hand && !round.ron)
             yaku.add(new Yaku(YakuType.MENZEN_TSUMO, 1, 0));
 
-        // Riichi / Double riichi
-        if (player.in_riichi)
-        {
-            if (player.open)
-                yaku.add(new Yaku(YakuType.OPEN_RIICHI, player.double_riichi ? 3 : 2, 0));
-            else if (player.double_riichi)
-                yaku.add(new Yaku(YakuType.DOUBLE_RIICHI, 2, 0));
-            else
-                yaku.add(new Yaku(YakuType.RIICHI, 1, 0));
-
-            if (player.ippatsu)
-                yaku.add(new Yaku(YakuType.IPPATSU, 1, 0));
-        }
-
-        // Haitei raoyue / Houtei raoyui
+        // Haitei raoyue / Houtei raoyui 海底撈月
         if (round.last_tile)
         {
             if (round.ron)
@@ -1450,7 +1531,7 @@ public class Yaku : Object
                 yaku.add(new Yaku(YakuType.HAITEI_RAOYUE, 1, 0));
         }
 
-        // Rinshan kaihou
+        // Rinshan kaihou 嶺上開花
         if (round.rinshan)
             yaku.add(new Yaku(YakuType.RINSHAN_KAIHOU, 1, 0));
 
@@ -1750,7 +1831,7 @@ public class Yaku : Object
                 yaku.add(new Yaku(YakuType.SHOU_SANGEN, 2, 0));
         }
 
-        // Honitsu / Chinitsu
+        // Honitsu / Chinitsu 混一色 清一色
         {
             bool chin = true;
             bool hon = true;
@@ -1923,10 +2004,10 @@ public enum YakuType // Han
     SANSHOKU_DOUKOU, // Three colour triplets
     CHIITOI, // Seven pairs
     SHOU_SANGEN, // Little three dragons
-    HONITSU, // Half flush
+    HONITSU, // Half flush 混一色
     JUNCHAN, // Terminal in each set
     RYANPEIKOU, // Two double sequences
-    CHINITSU, // Full flush
+    CHINITSU, // Full flush  清一色
 
     // Yakuman situations
     TENHOU, // Heavenly hand

@@ -18,6 +18,7 @@ class ServerMenuView : MenuSubView
     private ServerPlayerFieldView[] players = new ServerPlayerFieldView[4];
     private MenuTextButton? start_button;
     private MenuTextButton settings_button;
+    private bool bots_added = false;
 
     public signal void start(GameStartInfo info, ServerSettings settings, IGameConnection connection, int player_index);
 
@@ -104,7 +105,9 @@ class ServerMenuView : MenuSubView
             start_button.enabled = false;
 
         if (host)
+        {
             start_server();
+        }
         if (can_control)
             send_settings(settings);
         if (log != null)
@@ -123,6 +126,7 @@ class ServerMenuView : MenuSubView
 
     private void start_clicked()
     {
+        Environment.log(LogType.DEBUG, "ServerMenuView", "Start button clicked, sending game start message");
         connection.send_message(new ClientMessageMenuGameStart());
     }
 
@@ -215,6 +219,19 @@ class ServerMenuView : MenuSubView
     {
         settings = message.settings;
         settings_button.enabled = true;
+
+        // Auto-add JulianBots to empty slots after settings are received (server is ready)
+        if (host && !bots_added)
+        {
+            bots_added = true;
+            Environment.log(LogType.DEBUG, "ServerMenuView", "Auto-adding bots to slots 1, 2, 3");
+            for (int i = 1; i <= 3; i++)
+            {
+                Environment.log(LogType.DEBUG, "ServerMenuView", @"Adding bot to slot $i");
+                add_bot("JulianBot", i);
+            }
+            Environment.log(LogType.DEBUG, "ServerMenuView", "Finished adding bots");
+        }
     }
 
     private void game_log_message(ServerMessageMenuGameLog message)

@@ -6,6 +6,7 @@ subdir('Engine')
 dataDir = get_option('prefix') / get_option('datadir') / 'Northeast-Mahjong'
 add_project_arguments('-DDATA_SEARCH_DIR="' + dataDir +  '"', language: 'c')
 add_project_arguments('-Wno-int-conversion', language : 'c')
+add_project_arguments('-w', language: 'c')  # Disable all C warnings
 
 dependencies = [
     valac.find_library('os', dirs: meson.current_source_dir() + '/vapi', required: false)

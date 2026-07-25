@@ -264,7 +264,9 @@ namespace GameServer
             public int index { get; private set; }
         }
 
-        protected virtual void round_starting() {}
+        protected virtual void round_starting()
+        {
+        }
         protected virtual void processing() {}
         public virtual void message_received(ServerPlayer player, ClientMessage message) {}
     }

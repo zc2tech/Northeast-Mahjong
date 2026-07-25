@@ -7,8 +7,6 @@ public class ServerSettings : Serializable
 
     public ServerSettings.default()
     {
-        open_riichi = OnOffEnum.OFF;
-        aka_dora = OnOffEnum.ON;
         multiple_ron = OnOffEnum.ON;
         triple_ron_draw = OnOffEnum.ON;
         decision_time = 10;
@@ -67,8 +65,6 @@ public class ServerSettings : Serializable
     {
         ArrayList<string> settings = new ArrayList<string>();
 
-        settings.add("open_riichi = " + on_off_enum_to_string(open_riichi));
-        settings.add("aka_dora = " + on_off_enum_to_string(aka_dora));
         settings.add("multiple_ron = " + on_off_enum_to_string(multiple_ron));
         settings.add("triple_ron_draw = " + on_off_enum_to_string(triple_ron_draw));
         settings.add("decision_time = " + decision_time.to_string());
@@ -86,12 +82,6 @@ public class ServerSettings : Serializable
     {
         switch (name)
         {
-        case "open_riichi":
-            open_riichi = parse_on_off_enum(value);
-            break;
-        case "aka_dora":
-            aka_dora = parse_on_off_enum(value);
-            break;
         case "multiple_ron":
             multiple_ron = parse_on_off_enum(value);
             break;
@@ -104,8 +94,6 @@ public class ServerSettings : Serializable
         }
     }
 
-    public OnOffEnum open_riichi { get; set; }
-    public OnOffEnum aka_dora { get; set; }
     public OnOffEnum multiple_ron { get; set; }
     public OnOffEnum triple_ron_draw { get; set; }
     public int decision_time { get; set; }

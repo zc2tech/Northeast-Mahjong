@@ -98,9 +98,9 @@ public class RoundState : Object
                 TileType.SOU6,
             };
 
-            wall = new RoundStateWall.seeded(dealer, wall_index, settings.aka_dora == OnOffEnum.ON, true, rnd, p1, p2, p3, p4, draw_wall, dead_wall);
+            wall = new RoundStateWall.seeded(dealer, wall_index, rnd, p1, p2, p3, p4, draw_wall, dead_wall);
             /*/
-            wall = new RoundStateWall.shuffled(dealer, wall_index, settings.aka_dora == OnOffEnum.ON, rnd);
+            wall = new RoundStateWall.shuffled(dealer, wall_index, rnd);
             //*/
         }
         else if (tiles != null)
@@ -118,15 +118,15 @@ public class RoundState : Object
 
     public void start()
     {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++)  // first 3 draw round , 3 (i) * 4 (t)= 12 for every players
         {
-            for (int p = 0; p < 4; p++)
+            for (int p = 0; p < 4; p++)  // four players
             {
                 RoundStatePlayer player = current_player;
 
-                for (int t = 0; t < 4; t++)
+                for (int t = 0; t < 4; t++) // for tiles one draw
                 {
-                    Tile tile = wall.draw_wall();
+                    Tile tile = wall.draw_wall(); // always draw a tile from 0 position of wall(shuffled)
                     player.draw_initial(tile);
                 }
 
@@ -134,13 +134,19 @@ public class RoundState : Object
             }
         }
 
-        for (int p = 0; p < 4; p++)
+        for (int p = 0; p < 4; p++) // four players, 收尾
         {
             RoundStatePlayer player = current_player;
             Tile tile = wall.draw_wall();
             player.draw_initial(tile);
             current_index = (current_index + 1) % players.length;
         }
+
+        stdout.printf("wall size: %d\n", wall.tiles_size);
+        for (int p = 0; p < 4; p++) {
+            stdout.printf("player %d , hand: %d \n", p, players[p].hand.size); 
+        }
+         
     }
 
     public void tile_assign(Tile tile)
@@ -249,11 +255,6 @@ public class RoundState : Object
         chankan_call = ChankanCall.NONE;
 
         return true;
-    }
-
-    public void flip_dora()
-    {
-        wall.flip_dora();
     }
 
     public void ron(int[] player_indices)
@@ -504,7 +505,6 @@ public class RoundState : Object
     private void kan()
     {
         rinshan = true;
-        wall.flip_dora();
         tile_draw_dead_wall();
         interrupt_flow();
     }
@@ -549,8 +549,6 @@ public class RoundState : Object
 public class RoundStatePlayer
 {
     private bool revealed;
-    private bool double_riichi = false;
-    private bool do_riichi_discard = false;
     private bool do_chii_discard = false;
     private bool do_pon_discard = false;
     private bool ippatsu = false;
@@ -599,11 +597,6 @@ public class RoundStatePlayer
         hand.remove(tile);
         pond.add(tile);
 
-        if (do_riichi_discard)
-            do_riichi_discard = false;
-        else
-            ippatsu = false;
-
         first_turn = false;
         do_chii_discard = false;
         do_pon_discard = false;
@@ -622,16 +615,6 @@ public class RoundStatePlayer
     {
         ippatsu = false;
         first_turn = false;
-    }
-
-    public void do_riichi(bool open)
-    {
-        this.open = open;
-        ippatsu = true;
-        do_riichi_discard = true;
-
-        if (first_turn)
-            double_riichi = true;
     }
 
     public ArrayList<Tile>? do_late_kan(Tile tile)
@@ -974,18 +957,20 @@ class RoundStateWall
     private ArrayList<Tile> wall_tiles = new ArrayList<Tile>();
     private ArrayList<Tile> dead_wall_tiles = new ArrayList<Tile>();
     private int dora_index = 4;
+    private ArrayList<Tile> _dora = new ArrayList<Tile>();
+    private ArrayList<Tile> _ura_dora = new ArrayList<Tile>();
 
     public RoundStateWall(int dealer, int wall_index)
     {
         init(dealer, wall_index, TileType.HATSU, null, false, false, null, null, null, null, null, null, null);
     }
 
-    public RoundStateWall.shuffled(int dealer, int wall_index, bool aka_dora, RandomClass rnd)
+    public RoundStateWall.shuffled(int dealer, int wall_index, RandomClass rnd)
     {
         init(dealer, wall_index, TileType.HATSU, rnd, true, false, null, null, null, null, null, null, null);
     }
 
-    public RoundStateWall.seeded(int dealer, int wall_index, bool aka_dora, bool shuffle, RandomClass? rnd, TileType[] p1_tiles, TileType[] p2_tiles, TileType[] p3_tiles, TileType[] p4_tiles, TileType[] draw_tiles, TileType[] dead_wall)
+    public RoundStateWall.seeded(int dealer, int wall_index, bool shuffle, RandomClass? rnd, TileType[] p1_tiles, TileType[] p2_tiles, TileType[] p3_tiles, TileType[] p4_tiles, TileType[] draw_tiles, TileType[] dead_wall)
     {
         init(dealer, wall_index, TileType.HATSU, rnd, shuffle, true, null, p1_tiles, p2_tiles, p3_tiles, p4_tiles, draw_tiles, dead_wall);
     }
@@ -998,28 +983,36 @@ class RoundStateWall
     private void init(int dealer, int wall_index, TileType dragon, RandomClass? rnd, bool shuffled, bool seeded, Tile[]? custom_tiles, TileType[]? p1_tiles, TileType[]? p2_tiles, TileType[]? p3_tiles, TileType[]? p4_tiles, TileType[]? draw_tiles, TileType[]? dead_wall)
     {
         // 东北麻将张数应该是 9*3（万筒索）* 4 + 4 （中/发/白） = 112
+        // 按四面墙来算的话：14 * 2 * 4 = 112
         if (custom_tiles != null)
             tiles = custom_tiles;
         else
             tiles = new Tile[112];
 
+
+        stdout.printf("shuffled : %d  seeded: %d \n", (int)shuffled, (int)seeded);
         if (custom_tiles == null)
         {
             int iTile = 0;
             for (int i = TileType.MAN1; i < TileType.TON; i++)
             {
                 TileType type = (shuffled && !seeded) ? (TileType)(i) : TileType.BLANK;
+                //  TileType type = (TileType)(i);
                 tiles[iTile++] = new Tile(-1, type);
                 tiles[iTile++] = new Tile(-1, type);
                 tiles[iTile++] = new Tile(-1, type);
                 tiles[iTile++] = new Tile(-1, type);
             }
             // 中 发 白 中 选一个
-            tiles[iTile++] = new Tile(-1, dragon);
+            TileType typeDragon = (shuffled && !seeded) ? (TileType)(dragon) : TileType.BLANK;
+            tiles[iTile++] = new Tile(-1, typeDragon);
+            tiles[iTile++] = new Tile(-1, typeDragon);
+            tiles[iTile++] = new Tile(-1, typeDragon);
+            tiles[iTile++] = new Tile(-1, typeDragon);
         }
 
         int start_wall = (4 - dealer) % 4;
-        int index = start_wall * 34 + wall_index * 2;
+        int index = start_wall * 28 + wall_index * 2;
 
         if (seeded)
             seed(index, rnd, tiles, p1_tiles, p2_tiles, p3_tiles, p4_tiles, draw_tiles, dead_wall);
@@ -1027,40 +1020,16 @@ class RoundStateWall
             shuffle(tiles, rnd);
 
         for (int i = 0; i < tiles.length; i++)
-            tiles[i].ID = i;
-
-        for (int i = 0; i < 122; i++)
         {
-            int t = (index + i) % 136;
+            tiles[i].ID = i;
+        }
+
+        for (int i = 0; i < tiles.length; i++)
+        {
+            int t = (index + i) % 112;
             wall_tiles.add(tiles[t]);
         }
 
-        for (int i = 0; i < 14; i++)
-        {
-            int t = (index + i + 122) % 136;
-            if (i % 2 == 0)
-                t++;
-            else
-                t--;
-
-            dead_wall_tiles.insert(0, tiles[t]);
-        }
-
-        flip_dora();
-    }
-
-    public Tile flip_dora()
-    {
-        assert(dead_wall_tiles.size > dora_index + 1);
-
-        Tile tile = dead_wall_tiles[dora_index];
-        dora.add(tile);
-        ura_dora.add(dead_wall_tiles[dora_index + 1]);
-
-        dora_index += 2;
-
-        newest_dora = tile;
-        return tile;
     }
 
     public Tile draw_wall()
@@ -1204,13 +1173,14 @@ class RoundStateWall
         Environment.log(LogType.GAME, "RoundStateWall", "RoundState seed, did not find " + tile_type.to_string());
     }
 
+    public int tiles_size { get { return wall_tiles.size; } }
     public bool empty { get { return wall_tiles.size == 0; } }
     public bool can_kan { get { return dora.size < 5; } }
     public bool can_call { get { return wall_tiles.size > 0; } }
     public bool can_riichi { get { return wall_tiles.size >= 4; } }
     public Tile newest_dora { get; private set; }
-    public ArrayList<Tile> dora { get; private set; }
-    public ArrayList<Tile> ura_dora { get; private set; }
+    public ArrayList<Tile> dora { get { return _dora; } private set { _dora = value; } }
+    public ArrayList<Tile> ura_dora { get { return _ura_dora; } private set { _ura_dora = value; } }
     public Tile[] tiles { get; private set; }
 }
 

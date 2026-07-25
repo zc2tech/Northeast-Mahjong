@@ -3,7 +3,7 @@ using Gee;
 
 public class RenderPlayer : WorldObject
 {
-    private const float VIEW_ANGLE = 0.44f;
+    private const float VIEW_ANGLE = 0.46f;
 
     private GameRenderContext context;
     private bool dealer;

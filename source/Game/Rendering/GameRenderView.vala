@@ -40,7 +40,7 @@ public class GameRenderView : View3D, IGameRenderer
     public override void added()
     {
         // TODO: Improve this
-        float tile_scale = 1.5f;
+        float tile_scale = 2.6f;
         RenderTile t = new RenderTile();
         world.add_object(t);
         Vec3 tile_size = t.obb.mul_scalar(tile_scale);
@@ -61,6 +61,8 @@ public class GameRenderView : View3D, IGameRenderer
         observe_object.add_object(new WorldLight(){ intensity = 12, position = Vec3( 30, 10,  0) });
         observe_object.add_object(new WorldLight(){ intensity = 12, position = Vec3(-30, 10,  0) });
         observe_object.add_object(new WorldLight(){ intensity =  1, position = Vec3(  0,  8,  0) });
+        // Add extra light to illuminate hand tiles (closer to player view)
+        observe_object.add_object(new WorldLight(){ intensity = 10, position = Vec3(  0, 15, 15) });
 
         target = new WorldObject();
         observe_object.add_object(target);
@@ -70,17 +72,17 @@ public class GameRenderView : View3D, IGameRenderer
         observe_object.add_object(camera);
         world.active_camera = camera;
         camera.position = Vec3(0, 2, 4);
-        camera.view_angle = 80;
+        camera.view_angle = 79;
 
         float camera_animation_time = 3;
-        
+
         WorldObjectAnimation camera_animation = new WorldObjectAnimation(new AnimationTime.preset(camera_animation_time));
-        camera_animation.do_absolute_position(new LinearPath3D(Vec3(0, 16, 10)));
+        camera_animation.do_absolute_position(new LinearPath3D(Vec3(0, 20.5f, 10)));
         camera_animation.curve = new SCurve(0.5f);
         camera.animate(camera_animation, true);
-        
+
         WorldObjectAnimation target_animation = new WorldObjectAnimation(new AnimationTime.preset(camera_animation_time));
-        target_animation.do_absolute_position(new LinearPath3D(Vec3(0, -4, 0)));
+        target_animation.do_absolute_position(new LinearPath3D(Vec3(0, -2, 0)));
         target_animation.curve = new SCurve(0.5f);
         target.animate(target_animation, true);
 
@@ -99,7 +101,8 @@ public class GameRenderView : View3D, IGameRenderer
         for (int i = 0; i < 16; i++)
             buffer_action(new RenderActionInitialDraw(context.server_times.initial_draw, players[(i + dealer_index) % 4], i < 12 ? 4 : 1));
 
-        buffer_action(new RenderActionFlipDora());
+        // Don't flip dora in Northeast Mahjong - we'll manually reveal the last dead wall tile instead
+        // buffer_action(new RenderActionFlipDora());
     }
 
     protected override void process(DeltaArgs args)
@@ -111,7 +114,7 @@ public class GameRenderView : View3D, IGameRenderer
         }
     }
 
-    /*protected override void key_press(KeyArgs key)
+    protected override void key_press(KeyArgs key)
     {
         if (key.keycode == KeyCode.NUM_1)
         {
@@ -143,7 +146,7 @@ public class GameRenderView : View3D, IGameRenderer
             camera.view_angle -= 0.5f;
             Environment.log(LogType.DEBUG, "GameRenderView", "Camera fov: " + camera.view_angle.to_string());
         }
-    }*/
+    }
 
     public void load_options(Options options)
     {

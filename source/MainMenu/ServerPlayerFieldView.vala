@@ -3,7 +3,7 @@ using Gee;
 
 public class ServerPlayerFieldView : Control
 {
-    private const string[] BOTS = { "NullBot", "SimpleBot" };
+    private const string[] BOTS = { "JulianBot", "SimpleBot" };
 
     private bool editable;
     private int slot;
@@ -58,7 +58,7 @@ public class ServerPlayerFieldView : Control
                 control.clicked.connect(add_bot_clicked);
                 texts.add(control);
             }
-
+           
             for (int i = 0; i < texts.size; i++)
             {
                 var text = texts[i];

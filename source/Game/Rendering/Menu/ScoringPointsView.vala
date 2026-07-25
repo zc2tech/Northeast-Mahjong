@@ -129,8 +129,6 @@ class ScoringPointsView : View2D
             return;
         }
 
-        var s = score.result.scores[0];
-
         show_score_control();
 
         if (score.result.scores.length > 1)

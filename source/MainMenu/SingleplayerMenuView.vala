@@ -26,15 +26,29 @@ class SingleplayerMenuView : MenuSubView
         load_sub_view(view);
     }
 
+    protected override void key_press(KeyArgs key)
+    {
+        // Check if no modifier keys are pressed
+        if (key.down && key.modifiers == Modifier.NONE)
+        {
+            if (key.scancode == ScanCode.C)
+                create_game_clicked();
+            else if (key.scancode == ScanCode.L)
+                load_log_clicked();
+            else if (key.scancode == ScanCode.B)
+                do_back();
+        }
+    }
+
     protected override ArrayList<MenuTextButton>? get_main_buttons()
     {
         ArrayList<MenuTextButton> buttons = new ArrayList<MenuTextButton>();
 
-        MenuTextButton create_button = new MenuTextButton("MenuButtonBig", "Create Game");
+        MenuTextButton create_button = new MenuTextButton("MenuButtonBig", "Create Game (C)");
         create_button.clicked.connect(create_game_clicked);
         buttons.add(create_button);
 
-        MenuTextButton log_button = new MenuTextButton("MenuButtonBig", "Load Log");
+        MenuTextButton log_button = new MenuTextButton("MenuButtonBig", "Load Log (L)");
         log_button.clicked.connect(load_log_clicked);
         buttons.add(log_button);
 
@@ -45,7 +59,7 @@ class SingleplayerMenuView : MenuSubView
     {
         ArrayList<MenuTextButton> buttons = new ArrayList<MenuTextButton>();
 
-        MenuTextButton back_button = new MenuTextButton("MenuButton", "Back");
+        MenuTextButton back_button = new MenuTextButton("MenuButton", "Back (B)");
         back_button.clicked.connect(do_back);
         buttons.add(back_button);
 

@@ -235,9 +235,14 @@ namespace Engine
             if (material.spec.alpha == UniformType.DYNAMIC)
                 apply_uniform("alpha", &material.alpha, ApplyUniformType.FLOAT);
 
-            for (int i = 0; i < textures.length; i++)
+            for (int i = 0; i < textures.length && i < material.textures.length; i++)
             {
-                OpenGLRenderer.OpenGLTextureResourceHandle texture_handle = material.textures[i].handle as OpenGLRenderer.OpenGLTextureResourceHandle;
+                if (material.textures[i] == null)
+                    continue;
+
+                OpenGLRenderer.OpenGLTextureResourceHandle? texture_handle = material.textures[i].handle as OpenGLRenderer.OpenGLTextureResourceHandle;
+                if (texture_handle == null)
+                    continue;
 
                 if (textures[i] != texture_handle.handle)
                 {

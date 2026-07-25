@@ -14,6 +14,7 @@ abstract class MenuSubView : View2D
     protected virtual void load_finished() {}
     protected virtual string get_name() { return ""; }
     protected virtual void set_visibility(bool visible) {}
+    protected virtual void sub_view_closed(MenuSubView view) {}
     protected virtual ArrayList<MenuTextButton>? get_main_buttons() { return null; }
     protected virtual ArrayList<MenuTextButton>? get_menu_buttons() { return null; }
 
@@ -97,6 +98,7 @@ abstract class MenuSubView : View2D
         view.internal_back.disconnect(sub_back);
         remove_child(view);
         visibility_change(true);
+        sub_view_closed(view);
     }
 
     private void sub_back(MenuSubView view)
@@ -105,6 +107,7 @@ abstract class MenuSubView : View2D
         view.internal_back.disconnect(sub_back);
         remove_child(view);
         visibility_change(true);
+        sub_view_closed(view);
     }
 
     private void visibility_change(bool visible)

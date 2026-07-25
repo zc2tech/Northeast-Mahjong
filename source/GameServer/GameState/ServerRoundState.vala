@@ -570,6 +570,8 @@ namespace GameServer
         protected virtual void turn_decision_started() {}
         public virtual void buffer_action(ClientServerAction action) {}
 
+        public Tile newest_dora { get { return validator.newest_dora; } }
+
         protected float move_start_time { get; private set; }
         protected AnimationTimings timings { get; private set; }
     }

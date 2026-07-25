@@ -120,6 +120,20 @@ namespace Engine
                 return false;
             }
 
+            // Enable VSync AFTER context is current and GLEW is initialized
+            int result = SDL.GL.set_swapinterval(1);
+            if (result < 0)
+            {
+                EngineLog.log(EngineLogType.ENGINE, "Engine", "Warning: VSync not supported, trying adaptive VSync");
+                result = SDL.GL.set_swapinterval(-1);
+                if (result < 0)
+                    EngineLog.log(EngineLogType.ENGINE, "Engine", "Warning: VSync not available on this system");
+            }
+            else
+            {
+                EngineLog.log(EngineLogType.ENGINE, "Engine", "VSync enabled successfully");
+            }
+
             window = new SDLWindowTarget(gl_window, screen_type);
             renderer = new OpenGLRenderer(window, multithread_rendering, version_string, debug);
 

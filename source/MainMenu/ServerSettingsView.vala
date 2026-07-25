@@ -25,8 +25,6 @@ class ServerSettingsView : MenuSubView
     {
         ArrayList<OptionItemControl> opts = new ArrayList<OptionItemControl>();
 
-        riichi_option = new OptionItemControl(can_control, "Open riichi", enabled_disabled_choices, (int)settings.open_riichi);
-        aka_option = new OptionItemControl(can_control, "Aka dora", enabled_disabled_choices, (int)settings.aka_dora);
         multiple_ron_option = new OptionItemControl(can_control, "Multiple ron", enabled_disabled_choices, (int)settings.multiple_ron);
         triple_ron_option = new OptionItemControl(can_control, "Triple ron draw", enabled_disabled_choices, (int)settings.triple_ron_draw);
 
@@ -112,8 +110,6 @@ class ServerSettingsView : MenuSubView
 
     private void apply()
     {
-        settings.open_riichi = (OnOffEnum)riichi_option.index;
-        settings.aka_dora = (OnOffEnum)aka_option.index;
         settings.multiple_ron = (OnOffEnum)multiple_ron_option.index;
         settings.triple_ron_draw = (OnOffEnum)triple_ron_option.index;
         settings.decision_time = int.parse(decision_time_choices[decision_time_option.index]);

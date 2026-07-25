@@ -207,6 +207,10 @@ namespace Engine
             prepare_state_internal(state);
             render(state);
             window.swap();
+
+            // Manual frame rate limiting as VSync fallback
+            // Target 60 FPS = 16.67ms per frame
+            Thread.usleep(16667);
         }
 
         private void unload_resources()
