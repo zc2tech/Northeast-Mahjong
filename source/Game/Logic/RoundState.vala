@@ -142,10 +142,10 @@ public class RoundState : Object
             current_index = (current_index + 1) % players.length;
         }
 
-        stdout.printf("wall size: %d\n", wall.tiles_size);
-        for (int p = 0; p < 4; p++) {
-            stdout.printf("player %d , hand: %d \n", p, players[p].hand.size); 
-        }
+        //  stdout.printf("wall size: %d\n", wall.tiles_size);
+        //  for (int p = 0; p < 4; p++) {
+        //      stdout.printf("player %d , hand: %d \n", p, players[p].hand.size); 
+        //  }
          
     }
 

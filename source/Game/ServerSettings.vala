@@ -10,6 +10,7 @@ public class ServerSettings : Serializable
         multiple_ron = OnOffEnum.ON;
         triple_ron_draw = OnOffEnum.ON;
         decision_time = 10;
+        reveal_all_tiles = OnOffEnum.OFF;
     }
 
     public ServerSettings.from_disk()
@@ -68,6 +69,7 @@ public class ServerSettings : Serializable
         settings.add("multiple_ron = " + on_off_enum_to_string(multiple_ron));
         settings.add("triple_ron_draw = " + on_off_enum_to_string(triple_ron_draw));
         settings.add("decision_time = " + decision_time.to_string());
+        settings.add("reveal_all_tiles = " + on_off_enum_to_string(reveal_all_tiles));
 
         return settings.to_array();
     }
@@ -91,10 +93,14 @@ public class ServerSettings : Serializable
         case "decision_time":
             decision_time = int.parse(value).clamp(2, 120);
             break;
+        case "reveal_all_tiles":
+            reveal_all_tiles = parse_on_off_enum(value);
+            break;
         }
     }
 
     public OnOffEnum multiple_ron { get; set; }
     public OnOffEnum triple_ron_draw { get; set; }
     public int decision_time { get; set; }
+    public OnOffEnum reveal_all_tiles { get; set; }
 }

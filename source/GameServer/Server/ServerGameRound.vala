@@ -6,6 +6,7 @@ namespace GameServer
     abstract class ServerGameRound
     {
         private RoundStartInfo info;
+        protected ServerSettings settings;
 
         protected ArrayList<GameRoundServerPlayer> players = new ArrayList<GameRoundServerPlayer>();
         protected ServerRoundState round;
@@ -13,9 +14,10 @@ namespace GameServer
         public bool finished { get; private set; }
         public RoundFinishResult result { get; private set; }
 
-        protected ServerGameRound(RoundStartInfo info)
+        protected ServerGameRound(RoundStartInfo info, ServerSettings settings)
         {
             this.info = info;
+            this.settings = settings;
         }
 
         protected void init()
@@ -79,7 +81,7 @@ namespace GameServer
                 {
                     ServerMessageTileAssignment assignment = new ServerMessageTileAssignment(tile);
 
-                    if (p == player || p.server_player.state != ServerPlayer.State.PLAYER)
+                    if (settings.reveal_all_tiles == OnOffEnum.ON || p == player || p.server_player.state != ServerPlayer.State.PLAYER)
                         p.server_player.send_message(assignment);
                 }
             }
@@ -93,7 +95,7 @@ namespace GameServer
 
             foreach (GameRoundServerPlayer p in players)
             {
-                if (p == player || p.server_player.state != ServerPlayer.State.PLAYER || open)
+                if (settings.reveal_all_tiles == OnOffEnum.ON || p == player || p.server_player.state != ServerPlayer.State.PLAYER || open)
                     p.server_player.send_message(assignment);
 
                 p.server_player.send_message(draw);
@@ -124,7 +126,7 @@ namespace GameServer
 
             foreach (GameRoundServerPlayer p in players)
             {
-                if (p == player || p.server_player.state != ServerPlayer.State.PLAYER || open)
+                if (settings.reveal_all_tiles == OnOffEnum.ON || p == player || p.server_player.state != ServerPlayer.State.PLAYER || open)
                     p.server_player.send_message(assignment);
             }
         }
@@ -278,7 +280,7 @@ namespace GameServer
 
         public RegularServerGameRound(RoundStartInfo info, ServerSettings settings, ArrayList<ServerPlayer> players, ArrayList<ServerPlayer> spectators, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings)
         {
-            base(info);
+            base(info, settings);
 
             round = new RegularServerRoundState(settings, round_wind, dealer, info.wall_index, rnd, timings);
             tiles = round.get_tiles();
@@ -342,7 +344,7 @@ namespace GameServer
 
         public LogServerGameRound(ServerSettings settings, ArrayList<ServerPlayer> players, ArrayList<ServerPlayer> spectators, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings, GameLogRound log_round)
         {
-            base(log_round.start_info);
+            base(log_round.start_info, settings);
             this.log_round = log_round;
 
             round = new LogServerRoundState(settings, round_wind, dealer, rnd, timings, log_round);

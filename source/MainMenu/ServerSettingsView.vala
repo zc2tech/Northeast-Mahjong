@@ -8,6 +8,7 @@ class ServerSettingsView : MenuSubView
     private OptionItemControl multiple_ron_option;
     private OptionItemControl triple_ron_option;
     private OptionItemControl decision_time_option;
+    private OptionItemControl reveal_all_tiles_option;
 
     private MenuTextButton? log_button;
 
@@ -56,12 +57,14 @@ class ServerSettingsView : MenuSubView
         }
         
         decision_time_option = new OptionItemControl(can_control, "Decision time (seconds)", decision_time_choices, decision_time_selected);
+        reveal_all_tiles_option = new OptionItemControl(can_control, "Reveal all tiles", enabled_disabled_choices, (int)settings.reveal_all_tiles);
 
         opts.add(riichi_option);
         opts.add(aka_option);
         opts.add(multiple_ron_option);
         opts.add(triple_ron_option);
         opts.add(decision_time_option);
+        opts.add(reveal_all_tiles_option);
 
         int padding = 30;
 
@@ -113,6 +116,7 @@ class ServerSettingsView : MenuSubView
         settings.multiple_ron = (OnOffEnum)multiple_ron_option.index;
         settings.triple_ron_draw = (OnOffEnum)triple_ron_option.index;
         settings.decision_time = int.parse(decision_time_choices[decision_time_option.index]);
+        settings.reveal_all_tiles = (OnOffEnum)reveal_all_tiles_option.index;
         settings.save();
 
         do_finish();
