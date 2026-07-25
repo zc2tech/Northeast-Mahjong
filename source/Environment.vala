@@ -145,7 +145,7 @@ public class Environment
         typeof(RonClientAction).class_ref();
         typeof(TsumoClientAction).class_ref();
         typeof(VoidHandClientAction).class_ref();
-        typeof(RiichiClientAction).class_ref();
+        // typeof(RiichiClientAction).class_ref();  // Northeast Mahjong doesn't have riichi
         typeof(LateKanClientAction).class_ref();
         typeof(ClosedKanClientAction).class_ref();
         typeof(OpenKanClientAction).class_ref();

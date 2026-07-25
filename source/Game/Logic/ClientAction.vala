@@ -20,16 +20,6 @@ public class TsumoClientAction : ClientAction {}
 
 public class VoidHandClientAction : ClientAction {}
 
-public class RiichiClientAction : ClientAction
-{
-    public RiichiClientAction(bool open)
-    {
-        this.open = open;
-    }
-
-    public bool open { get; protected set; }
-}
-
 public class LateKanClientAction : ClientAction
 {
     public LateKanClientAction(int tile)

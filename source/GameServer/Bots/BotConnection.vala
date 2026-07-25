@@ -30,7 +30,6 @@ class BotConnection : Object
         bot.do_discard.connect(bot_do_discard);
         bot.do_void_hand.connect(bot_do_void_hand);
         bot.do_tsumo.connect(bot_do_tsumo);
-        bot.do_riichi.connect(bot_do_riichi);
         bot.do_late_kan.connect(bot_do_late_kan);
         bot.do_closed_kan.connect(bot_do_closed_kan);
         bot.call_nothing.connect(bot_call_nothing);
@@ -186,11 +185,6 @@ class BotConnection : Object
     private void bot_do_void_hand()
     {
         send_action(new VoidHandClientAction());
-    }
-
-    private void bot_do_riichi(bool open)
-    {
-        send_action(new RiichiClientAction(open));
     }
 
     private void bot_do_late_kan(Tile tile)

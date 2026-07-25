@@ -51,7 +51,7 @@ class GameScene : WorldObject
         chii_sound = audio.load_sound("chii");
         reveal_sound = audio.load_sound("reveal");
 
-        RenderTile[] tiles = new RenderTile[136];
+        RenderTile[] tiles = new RenderTile[112];
         for (int i = 0; i < tiles.length; i++)
         {
             tiles[i] = new RenderTile();
@@ -231,7 +231,8 @@ class GameScene : WorldObject
         if (action.open)
             reveal_sound.play();
 
-        action.player.riichi(action.open);
+        // Northeast Mahjong doesn't have riichi
+        // action.player.riichi(action.open);
     }
 
     // Non-blocking

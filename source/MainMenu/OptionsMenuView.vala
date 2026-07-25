@@ -376,9 +376,17 @@ private class AppearanceOptionsMenuView : SubOptionsMenuView
         MenuTextButton black = new MenuTextButton("MenuButtonSmall", "Black");
         add_child(black);
         black.inner_anchor = Vec2(0, 1);
+        
         black.outer_anchor = Vec2(0.5f, 1);
         black.position = Vec2(padding / 2, -(top_offset + padding + height * 8));
         black.clicked.connect(black_clicked);
+
+        MenuTextButton test = new MenuTextButton("MenuButtonSmall", "Test");
+        add_child(test);
+        test.inner_anchor = Vec2(0, 1);
+        test.outer_anchor = Vec2(0.5f, 1);
+        test.position = Vec2(padding / 2, -(top_offset + padding + height * 9));
+        test.clicked.connect(test_clicked);
         
         /////////////////
 
@@ -440,6 +448,10 @@ private class AppearanceOptionsMenuView : SubOptionsMenuView
     private void black_clicked()
     {
         tile.texture_type = TileTextureEnum.BLACK;
+    }
+    private void test_clicked()
+    {
+        tile.texture_type = TileTextureEnum.TEST;
     }
 
     private void fore_color_changed()

@@ -212,6 +212,8 @@ public static TileTextureEnum parse_tile_texture_enum(string value)
         return TileTextureEnum.REGULAR;
     case "black":
         return TileTextureEnum.BLACK;
+    case "test":
+        return TileTextureEnum.TEST;
     }
 }
 
@@ -224,6 +226,8 @@ public static string tile_texture_enum_to_string(TileTextureEnum texture)
         return "regular";
     case TileTextureEnum.BLACK:
         return "black";
+    case TileTextureEnum.TEST:
+        return "test";
     }
 }
 
@@ -279,5 +283,6 @@ public enum OnOffEnum
 public enum TileTextureEnum
 {
     REGULAR,
-    BLACK
+    BLACK,
+    TEST
 }
