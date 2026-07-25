@@ -4,7 +4,7 @@ using Gee;
 class GameMenuView : View2D
 {
     private ScoringView? score_view = null;
-    private ArrayList<MenuTextButton> buttons = new ArrayList<MenuTextButton>();
+    private ArrayList<Control> buttons = new ArrayList<Control>();
     private ArrayList<MenuTextButton> observer_buttons = new ArrayList<MenuTextButton>();
 
     private GameRenderContext context;
@@ -15,13 +15,13 @@ class GameMenuView : View2D
     private float start_time;
     private LabelControl timer;
 
-    private MenuTextButton chii;
-    private MenuTextButton pon;
-    private MenuTextButton kan;
-    private MenuTextButton tsumo;
-    private MenuTextButton ron;
-    private MenuTextButton conti; // "conti" is usually shorthand for continuance or dealer continuation
-    private MenuTextButton void_hand;
+    private MenuButton chii;
+    private MenuButton pon;
+    private MenuButton kan;
+    private MenuButton tsumo;
+    private MenuButton ron;
+    private MenuButton conti; // "conti" is usually shorthand for continuance or dealer continuation
+    private MenuButton void_hand;
 
     private MenuTextButton next;
     private MenuTextButton prev;
@@ -75,13 +75,13 @@ class GameMenuView : View2D
         timer.font_size = 60;
         timer.visible = false;
 
-        chii = new MenuTextButton("MenuButtonSmall", "Chii");
-        pon = new MenuTextButton("MenuButtonSmall", "Pon");
-        kan = new MenuTextButton("MenuButtonSmall", "Kan");
-        tsumo = new MenuTextButton("MenuButtonSmall", "Tsumo");
-        ron = new MenuTextButton("MenuButtonSmall", "Ron");
-        conti = new MenuTextButton("MenuButtonSmall", "Continue");
-        void_hand = new MenuTextButton("MenuButtonSmall", "Void Hand");
+        chii = new MenuButton("Chii");
+        pon = new MenuButton("Pon");
+        kan = new MenuButton("Kan");
+        tsumo = new MenuButton("Tsumo");
+        ron = new MenuButton("Ron");
+        conti = new MenuButton("Continue");
+        void_hand = new MenuButton("VoidHand");
 
         next = new MenuTextButton("MenuButtonSmall", "Next");
         prev = new MenuTextButton("MenuButtonSmall", "Previous");
@@ -114,7 +114,6 @@ class GameMenuView : View2D
             button.enabled = false;
             button.inner_anchor = Vec2(0.5f, 0);
             button.outer_anchor = Vec2(0.5f, 0);
-            button.font_size = 24;
             button.visible = !observing;
         }
 
@@ -123,7 +122,7 @@ class GameMenuView : View2D
             add_child(button);
             button.inner_anchor = Vec2(0.5f, 0);
             button.outer_anchor = Vec2(0.5f, 0);
-            button.font_size = 24;
+            button.font_size = 14;
             button.visible = observing;
         }
 
@@ -134,7 +133,7 @@ class GameMenuView : View2D
         add_child(score_view);
     }
 
-    private void position_buttons(ArrayList<MenuTextButton> buttons)
+    private void position_buttons(ArrayList<Control> buttons)
     {
         float p = 0;
         float width = 0;
@@ -148,7 +147,7 @@ class GameMenuView : View2D
             if (!button.visible)
                 continue;
 
-            button.position = Vec2(button.size.width / 2 - width + p, 0);
+            button.position = Vec2(button.size.width / 2 - width + p, 120);
             p += button.size.width;
         }
     }
