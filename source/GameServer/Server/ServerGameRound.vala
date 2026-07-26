@@ -5,7 +5,7 @@ namespace GameServer
 {
     abstract class ServerGameRound
     {
-        private RoundStartInfo info;
+        protected RoundStartInfo info;
         protected ServerSettings settings;
 
         protected ArrayList<GameRoundServerPlayer> players = new ArrayList<GameRoundServerPlayer>();
@@ -233,6 +233,7 @@ namespace GameServer
                 pl.server_player.send_message(message);
         }
 
+        // 流局
         public void game_draw(int[] tenpai_indices, int[] nagashi_indices, GameDrawType draw_type, ArrayList<Tile> all_tenpai_tiles)
         {
             foreach (Tile t in all_tenpai_tiles)
@@ -277,10 +278,12 @@ namespace GameServer
     {
         private ClientMessageParser parser = new ClientMessageParser();
         public signal void log(GameLogLine line);
+        private int dealer;
 
         public RegularServerGameRound(RoundStartInfo info, ServerSettings settings, ArrayList<ServerPlayer> players, ArrayList<ServerPlayer> spectators, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings)
         {
             base(info, settings);
+            this.dealer = dealer;
 
             round = new RegularServerRoundState(settings, round_wind, dealer, info.wall_index, rnd, timings);
             tiles = round.get_tiles();
@@ -305,6 +308,22 @@ namespace GameServer
         {
             log(line);
         }
+
+        protected override void round_starting()
+        {
+            // Reveal only the dead wall mark tile (not all 8 tiles)
+            // Calculate which physical tile is the mark
+            int start_wall = (4 - dealer) % 4;
+            int index = start_wall * 28 + info.wall_index * 2;
+            int mark_tile_id = (index + 104) % 112;
+
+            if (tiles != null && mark_tile_id >= 0 && mark_tile_id < tiles.length)
+            {
+                Tile mark = tiles[mark_tile_id];
+                game_reveal_tile(mark);
+            }
+        }
+
 
         private void client_action(ServerPlayer player, ClientMessage message)
         {

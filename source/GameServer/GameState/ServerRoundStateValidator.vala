@@ -384,6 +384,8 @@ namespace GameServer
 
         public Tile newest_dora { get { return state.newest_dora; } }
         public ArrayList<Tile> ura_dora{ get { return state.ura_dora; } }
+        public Tile? dead_wall_mark { owned get { return state.dead_wall_mark; } }
+        public ArrayList<Tile> dead_wall_tiles { get { return state.dead_wall_tiles; } }
         public bool game_over { get { return state.game_over; } }
         public bool game_draw { get { return state.game_draw_type != GameDrawType.NONE; } }
         public GameDrawType game_draw_type { get { return state.game_draw_type; } }

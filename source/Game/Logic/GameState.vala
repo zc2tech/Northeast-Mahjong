@@ -417,7 +417,7 @@ public class RoundFinishResult
         this.scores = new Scoring[] { score };
         this.winner_indices = new int[] { winner_index };
     }
-
+    // 平局 流局
     public RoundFinishResult.draw(int[] tenpai_indices, int[] nagashi_indices, GameDrawType draw_type)
     {
         result = RoundResultEnum.DRAW;

@@ -544,6 +544,8 @@ public class RoundState : Object
     public Tile newest_dora { get { return wall.newest_dora; } }
     public ArrayList<Tile> ura_dora { get { return wall.ura_dora; } }
     public bool tiles_empty { get { return wall.empty; } }
+    public Tile? dead_wall_mark { owned get { return wall.dead_wall_mark; } }
+    public ArrayList<Tile> dead_wall_tiles { get { return wall.dead_wall_tiles; } }
     public ChankanCall chankan_call { get; private set; }
 }
 
@@ -812,13 +814,14 @@ public class RoundStatePlayer
 
     public bool can_tsumo(RoundStateContext context)
     {
-        return !do_chii_discard && !do_pon_discard && TileRules.can_tsumo(create_context(true), context);
+        //  return !do_chii_discard && !do_pon_discard && TileRules.can_tsumo(create_context(true), context);
+        return TileRules.can_tsumo(create_context(true), context);
     }
 
     public bool can_late_kan()
     {
-        if (do_chii_discard || do_pon_discard )
-            return false;
+        //  if (do_chii_discard || do_pon_discard )
+        //      return false;
 
         return TileRules.can_late_kan(hand, calls);
     }
@@ -830,8 +833,8 @@ public class RoundStatePlayer
 
     public bool can_closed_kan()
     {
-        if (do_chii_discard || do_pon_discard)
-            return false;
+        //  if (do_chii_discard || do_pon_discard)
+        //      return false;
 
         return !revealed || TileRules.can_closed_kan(hand, calls);
     }
@@ -904,6 +907,7 @@ public class RoundStatePlayer
         return tiles[tiles.size - 1];
     }
 
+    //  Nagashi Mangan (流し満貫) is a special winning condition in Riichi Mahjong. It's not a normal yaku-based win. Instead, you can be awarded a Mangan if the hand ends in an exhaustive draw under specific conditions.
     public bool has_nagashi_mangan()
     {
         return !tiles_called_on && calls.size == 0 && TileRules.is_nagashi_mangan(pond);
@@ -956,7 +960,7 @@ public class RoundStatePlayer
 class RoundStateWall
 {
     private ArrayList<Tile> wall_tiles = new ArrayList<Tile>();
-    private ArrayList<Tile> dead_wall_tiles = new ArrayList<Tile>();
+    public ArrayList<Tile> dead_wall_tiles = new ArrayList<Tile>();
     private int dora_index = 4;
     private ArrayList<Tile> _dora = new ArrayList<Tile>();
     private ArrayList<Tile> _ura_dora = new ArrayList<Tile>();
@@ -1031,6 +1035,17 @@ class RoundStateWall
             wall_tiles.add(tiles[t]);
         }
 
+        // Initialize the dead wall: move the last 8 tiles from wall_tiles to dead_wall_tiles
+        // In Northeast Mahjong, the dead wall consists of 8 tiles (4 stacks)
+        // These are reserved for kan replacement tiles
+        int dead_wall_size = 8;
+        for (int i = 0; i < dead_wall_size; i++)
+        {
+            Tile tile = wall_tiles.remove_at(wall_tiles.size - 1);
+            dead_wall_tiles.insert(0, tile);  // Insert at beginning to maintain order
+        }
+        // Now wall_tiles has 104 tiles (112 - 8), and dead_wall_tiles has 8 tiles
+
     }
 
     public Tile draw_wall()
@@ -1044,9 +1059,20 @@ class RoundStateWall
     {
         assert(dead_wall_tiles.size > 0);
 
-        Tile tile = dead_wall_tiles.remove_at(0);
-        dead_tile_add();
-        dora_index--;
+        // Draw from the END of the dead wall, respecting stack structure
+        // In mahjong, tiles are stacked in pairs: [even=upper, odd=lower]
+        // Draw order: upper first, then lower from each stack
+        // For 8 tiles: 6(upper) → 7(lower) → 4(upper) → 5(lower) → 2 → 3 → 0 → 1
+
+        int size = dead_wall_tiles.size;
+        int last_idx = size - 1;
+
+        // Determine which tile to take based on whether we're at an even or odd stack
+        // If last index is odd (lower tile), take the upper tile first (last_idx - 1)
+        // If last index is even (upper tile), take it directly
+        int draw_idx = (last_idx % 2 == 1) ? (last_idx - 1) : last_idx;
+
+        Tile tile = dead_wall_tiles.remove_at(draw_idx);
         return tile;
     }
 
@@ -1183,6 +1209,22 @@ class RoundStateWall
     public ArrayList<Tile> dora { get { return _dora; } private set { _dora = value; } }
     public ArrayList<Tile> ura_dora { get { return _ura_dora; } private set { _ura_dora = value; } }
     public Tile[] tiles { get; private set; }
+
+    // Get the dead wall mark tile (always at the furthest position)
+    // In Northeast Mahjong, the mark is the last tile in the dead wall
+    // Initially at index 7 (the lower tile of the furthest stack)
+    // Even though we draw the upper tile (6) first during kan, the mark stays at position 7
+    public Tile? dead_wall_mark
+    {
+        owned get
+        {
+            // The mark is always at the last position
+            int size = dead_wall_tiles.size;
+            if (size > 0)
+                return dead_wall_tiles[size - 1];
+            return null;
+        }
+    }
 }
 
 public enum GameDrawType

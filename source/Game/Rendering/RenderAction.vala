@@ -278,6 +278,14 @@ public class RenderActionFlipDora : RenderAction
     }
 }
 
+public class RenderActionFlipDeadWallMark : RenderAction
+{
+    public RenderActionFlipDeadWallMark()
+    {
+        base(new AnimationTime.zero());
+    }
+}
+
 public class RenderActionFlipUraDora : RenderAction
 {
     public RenderActionFlipUraDora(AnimationTime time)

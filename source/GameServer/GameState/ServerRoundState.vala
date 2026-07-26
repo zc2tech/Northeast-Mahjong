@@ -198,6 +198,7 @@ namespace GameServer
             return true;
         }
 
+        // 有人说自己胡(荣)了
         private bool client_ron(ClientServerAction action)
         {
             int player_index = action.client;
@@ -500,16 +501,19 @@ namespace GameServer
             // Game over
             if (validator.game_draw)
             {
+                // 流局
                 draw_situation();
                 return;
             }
 
             ServerRoundStatePlayer player = validator.get_current_player();
 
+            // Chankan (槍槓) means "Robbing a Kan" and is a 1-han yaku in Riichi Mahjong
             if (validator.chankan_call)
                 kan(player.index);
             else
             {
+                // 从墙里抽一张牌
                 Tile tile = validator.draw_wall();
                 game_draw_tile(player.index, tile, player.open);
             }
@@ -571,6 +575,8 @@ namespace GameServer
         public virtual void buffer_action(ClientServerAction action) {}
 
         public Tile newest_dora { get { return validator.newest_dora; } }
+        public Tile? dead_wall_mark { owned get { return validator.dead_wall_mark; } }
+        public ArrayList<Tile> dead_wall_tiles { get { return validator.dead_wall_tiles; } }
 
         protected float move_start_time { get; private set; }
         protected AnimationTimings timings { get; private set; }

@@ -43,7 +43,8 @@ public class RenderWall : WorldObject
 
     public void split_dead_wall(AnimationTime time)
     {
-        float delta = context.tile_size.x / 2 * 3;
+        // No visual gap needed since dead wall mark is revealed
+        float delta = 0;
 
         int start_wall = (4 - context.dealer) % 4;
         ArrayList<WallPart> draw = new ArrayList<WallPart>();
@@ -86,22 +87,7 @@ public class RenderWall : WorldObject
 
         draw_parts = draw;
         dead_parts = dead;
-
-        // For Northeast Mahjong: flip the 8th tile (index 7) in dead wall face-up
-        // Dead wall has 8 tiles (4 pairs), we want tile at index 7 (8th/last tile, 0-indexed)
-        // Find the tile in the dead_parts and flip it
-        int tile_count = 0;
-        foreach (WallPart part in dead_parts)
-        {
-            if (tile_count + part.tile_count() > 7)
-            {
-                // The 8th tile is in this part
-                int index_in_part = 7 - tile_count;
-                part.flip_specific_tile(index_in_part, time);
-                break;
-            }
-            tile_count += part.tile_count();
-        }
+      
     }
 
     public RenderTile? draw_wall()
@@ -126,6 +112,23 @@ public class RenderWall : WorldObject
     {
         if (!dead_parts[0].flip_dora(context.server_times.dora_flip))
             dead_parts[1].flip_dora(context.server_times.dora_flip);
+    }
+    public void flip_dead_wall_mark()
+    {
+        // Dead wall has 8 tiles (4 pairs), we want tile at index 7 (8th/last tile, 0-indexed)
+        // Find the tile in the dead_parts and flip it
+        int tile_count = 0;
+        foreach (WallPart part in dead_parts)
+        {
+            if (tile_count + part.tile_count() > 7)
+            {
+                // The 8th tile is in this part
+                int index_in_part = 7 - tile_count;
+                part.flip_dead_wall_mark(index_in_part,context.server_times.dora_flip);
+                break;
+            }
+            tile_count += part.tile_count();
+        }
     }
 
     public void flip_ura_dora()
@@ -297,6 +300,17 @@ public class RenderWall : WorldObject
             return true;
         }
 
+        public bool flip_dead_wall_mark(int index,AnimationTime time)
+        {
+            if (index >= 0 && index < tiles.size)
+            {
+                RenderTile t = tiles[index];
+                Quat rot = Quat.from_euler(0, 1, 0).mul(t.rotation);
+                t.animate_towards(t.position, rot, time);
+            }
+            return true;
+        }
+
         public void flip_ura_dora(AnimationTime time)
         {
             // Don't reveal ura dora in Northeast Mahjong, just hide them
@@ -314,16 +328,6 @@ public class RenderWall : WorldObject
         public int tile_count()
         {
             return tiles.size;
-        }
-
-        public void flip_specific_tile(int index, AnimationTime time)
-        {
-            if (index >= 0 && index < tiles.size)
-            {
-                RenderTile t = tiles[index];
-                Quat rot = Quat.from_euler(0, 1, 0).mul(t.rotation);
-                t.animate_towards(t.position, rot, time);
-            }
         }
 
         public bool empty { get { return tiles.size == 0; } }

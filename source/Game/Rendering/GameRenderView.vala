@@ -103,6 +103,8 @@ public class GameRenderView : View3D, IGameRenderer
 
         // Don't flip dora in Northeast Mahjong - we'll manually reveal the last dead wall tile instead
         // buffer_action(new RenderActionFlipDora());
+
+        buffer_action(new RenderActionFlipDeadWallMark());
     }
 
     protected override void process(DeltaArgs args)

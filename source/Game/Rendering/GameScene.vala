@@ -139,6 +139,8 @@ class GameScene : WorldObject
             action_hand_reveal(action as RenderActionHandReveal);
         else if (action is RenderActionFlipDora)
             action_flip_dora(action as RenderActionFlipDora);
+        else if (action is RenderActionFlipDeadWallMark)
+            action_flip_dead_wall_mark(action as RenderActionFlipDeadWallMark);
         else if (action is RenderActionFlipUraDora)
             action_flip_ura_dora(action as RenderActionFlipUraDora);
         else if (action is RenderActionSetActive)
@@ -308,6 +310,11 @@ class GameScene : WorldObject
     {
         flip_sound.play();
         wall.flip_dora();
+    }
+    private void action_flip_dead_wall_mark(RenderActionFlipDeadWallMark action)
+    {
+        // No sound effect for dead wall mark reveal
+        wall.flip_dead_wall_mark();
     }
 
     private void action_flip_ura_dora(RenderActionFlipUraDora action)
