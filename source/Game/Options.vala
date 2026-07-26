@@ -23,6 +23,8 @@ public class Options
         window_height = 900;
         window_x = -1;
         window_y = -1;
+        camera_height = 20.5f;
+        target_height = -2.0f;
     }
 
     public Options.from_disk()
@@ -72,6 +74,8 @@ public class Options
         options.add("window_height = " + window_height.to_string());
         options.add("window_x = " + window_x.to_string());
         options.add("window_y = " + window_y.to_string());
+        options.add("camera_height = " + camera_height.to_string());
+        options.add("target_height = " + target_height.to_string());
 
         FileLoader.save(dir, options.to_array());
     }
@@ -130,6 +134,12 @@ public class Options
         case "window_y":
             window_y = int.parse(down_value);
             break;
+        case "camera_height":
+            camera_height = float.parse(down_value);
+            break;
+        case "target_height":
+            target_height = float.parse(down_value);
+            break;
         }
     }
 
@@ -149,6 +159,8 @@ public class Options
     public int window_height { get; set; }
     public int window_x { get; set; }
     public int window_y { get; set; }
+    public float camera_height { get; set; }
+    public float target_height { get; set; }
 }
 
 public static ScreenTypeEnum parse_screen_type_enum(string value)

@@ -27,6 +27,9 @@ public class GameRenderView : View3D, IGameRenderer
     public signal void game_loaded();
     private bool has_loaded = false;
 
+    private float camera_save_timer = 0;
+    private bool camera_settings_dirty = false;
+
     public GameRenderView(int observer_index, int dealer_index, GameStartInfo game_start, RoundStartInfo info, Options options, RoundScoreState score)
     {
         this.observer_index = observer_index;
@@ -77,12 +80,12 @@ public class GameRenderView : View3D, IGameRenderer
         float camera_animation_time = 3;
 
         WorldObjectAnimation camera_animation = new WorldObjectAnimation(new AnimationTime.preset(camera_animation_time));
-        camera_animation.do_absolute_position(new LinearPath3D(Vec3(0, 20.5f, 10)));
+        camera_animation.do_absolute_position(new LinearPath3D(Vec3(0, options.camera_height, 10)));
         camera_animation.curve = new SCurve(0.5f);
         camera.animate(camera_animation, true);
 
         WorldObjectAnimation target_animation = new WorldObjectAnimation(new AnimationTime.preset(camera_animation_time));
-        target_animation.do_absolute_position(new LinearPath3D(Vec3(0, -2, 0)));
+        target_animation.do_absolute_position(new LinearPath3D(Vec3(0, options.target_height, 0)));
         target_animation.curve = new SCurve(0.5f);
         target.animate(target_animation, true);
 
@@ -114,6 +117,19 @@ public class GameRenderView : View3D, IGameRenderer
             has_loaded = true;
             game_loaded();
         }
+
+        // Auto-save camera settings after 5 seconds of no changes
+        if (camera_settings_dirty)
+        {
+            camera_save_timer += args.delta;
+            if (camera_save_timer >= 5.0f)
+            {
+                options.save();
+                camera_settings_dirty = false;
+                camera_save_timer = 0;
+                Environment.log(LogType.DEBUG, "GameRenderView", "Camera settings saved");
+            }
+        }
     }
 
     protected override void key_press(KeyArgs key)
@@ -121,21 +137,33 @@ public class GameRenderView : View3D, IGameRenderer
         if (key.keycode == KeyCode.NUM_1)
         {
             camera.position = camera.position.plus(Vec3(0, 0.1f, 0));
+            options.camera_height = camera.position.y;
+            camera_settings_dirty = true;
+            camera_save_timer = 0;
             Environment.log(LogType.DEBUG, "GameRenderView", "Camera height: " + camera.position.y.to_string());
         }
         else if (key.keycode == KeyCode.NUM_2)
         {
             camera.position = camera.position.plus(Vec3(0, -0.1f, 0));
+            options.camera_height = camera.position.y;
+            camera_settings_dirty = true;
+            camera_save_timer = 0;
             Environment.log(LogType.DEBUG, "GameRenderView", "Camera height: " + camera.position.y.to_string());
         }
         else if (key.keycode == KeyCode.NUM_3)
         {
             target.position = target.position.plus(Vec3(0, 0.1f, 0));
+            options.target_height = target.position.y;
+            camera_settings_dirty = true;
+            camera_save_timer = 0;
             Environment.log(LogType.DEBUG, "GameRenderView", "Target height: " + target.position.y.to_string());
         }
         else if (key.keycode == KeyCode.NUM_4)
         {
             target.position = target.position.plus(Vec3(0, -0.1f, 0));
+            options.target_height = target.position.y;
+            camera_settings_dirty = true;
+            camera_save_timer = 0;
             Environment.log(LogType.DEBUG, "GameRenderView", "Target height: " + target.position.y.to_string());
         }
         if (key.keycode == KeyCode.NUM_5)

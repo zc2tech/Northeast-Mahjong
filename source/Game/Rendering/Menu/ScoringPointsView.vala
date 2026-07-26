@@ -113,8 +113,6 @@ class ScoringPointsView : View2D
                     text = "Four Winds";
                 else if (score.result.draw_type == GameDrawType.FOUR_KANS)
                     text = "Four Kans";
-                else if (score.result.draw_type == GameDrawType.FOUR_RIICHI)
-                    text = "Four Riichi";
                 else if (score.result.draw_type == GameDrawType.VOID_HAND)
                     text = "Void Hand";
                 else if (score.result.draw_type == GameDrawType.TRIPLE_RON)
@@ -408,37 +406,11 @@ class ScoringPointsView : View2D
 
         private void animate_items_finished()
         {
-            animation_han_start();
-        }
-
-        private void animation_han_start()
-        {
-            var animation = new Animation(context.server_times.han_fade);
-            animation.animate_start.connect(animation_han_animate_start);
-            animation.animate.connect(animation_han_animate);
-            animation.finished.connect(animation_han_finish);
-            add_animation(animation);
         }
 
         private void animation_han_animate_start()
         {
             fade_sound.play();
-        }
-
-        private void animation_han_animate(float time)
-        {
-            lines[animation_han_index].name.alpha = time;
-            lines[animation_han_index].han.alpha = time;
-        }
-
-        private void animation_han_finish()
-        {
-            animation_han_index++;
-
-            if (animation_han_index >= lines.size)
-                animation_score_fade_start();
-            else
-                animation_han_start();
         }
 
         private void animation_score_fade_start()
