@@ -21,7 +21,7 @@ class ScoringView : View2D
 
     public signal void score_finished();
 
-    public ScoringView(GameRenderContext context, int player_index)
+    public ScoringView(GameRenderContext context, int player_index, bool observing)
     {
         this.context = context;
         this.player_index = player_index;

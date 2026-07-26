@@ -43,7 +43,6 @@ sources = files(
     'source/Game/Rendering/Menu/GameEscapeMenuView.vala',
     'source/Game/Rendering/Menu/GameMenuButton.vala',
     'source/Game/Rendering/Menu/GameMenuView.vala',
-    'source/Game/Rendering/Menu/ScoringDoraView.vala',
     'source/Game/Rendering/Menu/ScoringHandView.vala',
     'source/Game/Rendering/Menu/ScoringInnerView.vala',
     'source/Game/Rendering/Menu/ScoringPlayerElement.vala',

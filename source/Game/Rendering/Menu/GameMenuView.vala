@@ -58,7 +58,7 @@ class GameMenuView : View2D
         this.player_index = player_index;
         this.observing = observing;
 
-        score_view = new ScoringView(context, player_index);
+        score_view = new ScoringView(context, player_index, observing);
         score_view.score_finished.connect(do_score_finished);
     }
 

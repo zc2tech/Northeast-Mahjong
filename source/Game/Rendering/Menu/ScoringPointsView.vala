@@ -10,8 +10,8 @@ class ScoringPointsView : View2D
     private GameMenuButton? next_button;
     private GameMenuButton? prev_button;
     private ScoringScoreControl? scoring_control;
-    private ScoringDoraView? dora;
-    private ScoringDoraView? ura;
+    //  private ScoringDoraView? dora;
+    //  private ScoringDoraView? ura;
     private Sound fade_sound;
     private int score_index;
 
@@ -202,10 +202,10 @@ class ScoringPointsView : View2D
 
     private void animation_items_fade_animate(float time)
     {
-        if (dora != null)
-            dora.alpha = time;
-        if (ura != null)
-            ura.alpha = time;
+        //  if (dora != null)
+        //      dora.alpha = time;
+        //  if (ura != null)
+        //      ura.alpha = time;
     }
 
     private void animation_items_fade_finish()
@@ -216,16 +216,17 @@ class ScoringPointsView : View2D
 
     private void scoring_control_animation_finished()
     {
-        if (switches > 0)
-        {
-            score_index = (score_index + 1) % score.result.scores.length;
-            show_score_control();
-            switches--;
+        //  if (switches > 0)
+        //  {
+        //      score_index = (score_index + 1) % score.result.scores.length;
+        //      show_score_control();
+        //      switches--;
 
-            scoring_control.animate();
-        }
-        else
-            score_animation_finished();
+        //      scoring_control.animate();
+        //  }
+        //  else
+        //      score_animation_finished();
+        score_animation_finished();
     }
 
     public void animation_finished()
@@ -255,7 +256,8 @@ class ScoringPointsView : View2D
         scoring_control.resize_style = ResizeStyle.ABSOLUTE;
         scoring_control.inner_anchor = Vec2(0.5f, 0);
         scoring_control.outer_anchor = Vec2(0.5f, 0);
-        scoring_control.position = Vec2(0, dora.size.height);
+        //  scoring_control.position = Vec2(0, dora.size.height);
+        scoring_control.position = Vec2(0, 2f);
         scoring_control.animation_finished.connect(scoring_control_animation_finished);
 
         score_selected(score.result.winner_indices[score_index]);
@@ -278,13 +280,14 @@ class ScoringPointsView : View2D
 
     protected override void resized()
     {
-        if (dora != null)
-            dora.size = Size2(ura.visible ? (size.width - padding) / 2 : size.width, dora.size.height);
-        if (ura != null)
-            ura.size  = Size2((size.width - padding) / 2,  ura.size.height);
+        //  if (dora != null)
+        //      dora.size = Size2(ura.visible ? (size.width - padding) / 2 : size.width, dora.size.height);
+        //  if (ura != null)
+        //      ura.size  = Size2((size.width - padding) / 2,  ura.size.height);
 
         if (scoring_control != null)
-            scoring_control.size = Size2(size.width, size.height - score_label.size.height - dora.size.height);
+            //  scoring_control.size = Size2(size.width, size.height - score_label.size.height - dora.size.height);
+            scoring_control.size = Size2(size.width, size.height - score_label.size.height - 2);
     }
 
     private class ScoringScoreControl : Control

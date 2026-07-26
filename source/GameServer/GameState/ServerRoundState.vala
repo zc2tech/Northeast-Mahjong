@@ -554,7 +554,7 @@ namespace GameServer
         private void kan(int player_index)
         {
             ServerRoundStatePlayer player = validator.get_player(player_index);
-            game_draw_dead_tile(player.index, player.newest_tile, player.open);
+            game_draw_dead_tile(player.index, player.newest_tile, false); // Dead wall tiles are never revealed to others
             add_animation_delay(timings.call.total() + timings.tile_draw.total());
         }
 

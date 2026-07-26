@@ -281,6 +281,7 @@ public class TileRules
         return list;
     }
 
+    // In the first turn only (before any calls), if a player has 9+ different terminal/honor tiles, they can declare a void hand and cause an abortive draw (流局). The hand is redealt.
     public static bool can_void_hand(ArrayList<Tile> hand_in)
     {
         ArrayList<Tile> hand = Tile.sort_tiles_type(hand_in);
@@ -394,10 +395,16 @@ public class TileRules
                 }
 
             }
-
+            ArrayList<TileMeld> melds = r.melds;
+            int cntSeq = 0; // 计算顺子的数量
+            foreach(TileMeld m in melds) {
+                if(!m.is_triplet) {
+                    cntSeq++;
+                }
+            }
             // Northeast Mahjong rule: must have at least one triplet and one terminal/honor
-            // Cannot be Chinitsu or Honitsu
-            if(hasTriplet && hasTerminalHonor && !isHonitsu_Chnitsu) {
+            // Cannot be Chinitsu or Honitsu , and should have at least one Sequence meld
+            if(hasTriplet && hasTerminalHonor && !isHonitsu_Chnitsu && cntSeq > 0) {
                 northeastReadings.add(r);
             }
         }
@@ -910,7 +917,7 @@ public class HandReading : Object
         is_kokushi = false;
         valid_keishiki = check_keishiki(tiles);
     }
-
+    // 七对
     public HandReading.chiitoi(ArrayList<TilePair> pairs)
     {
         tiles = new ArrayList<Tile>();
@@ -927,7 +934,7 @@ public class HandReading : Object
         is_kokushi = false;
         valid_keishiki = true;
     }
-
+    // 国士无双
     public HandReading.kokushi(ArrayList<Tile> tiles)
     {
         this.tiles = new ArrayList<Tile>();

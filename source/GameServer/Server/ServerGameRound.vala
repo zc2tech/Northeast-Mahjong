@@ -312,7 +312,7 @@ namespace GameServer
         protected override void round_starting()
         {
             // Reveal only the dead wall mark tile (not all 8 tiles)
-            // Calculate which physical tile is the mark
+            // Calculate which physical tile is the mark - this position is fixed for the entire hand
             int start_wall = (4 - dealer) % 4;
             int index = start_wall * 28 + info.wall_index * 2;
             int mark_tile_id = (index + 104) % 112;
