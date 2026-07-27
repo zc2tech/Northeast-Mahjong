@@ -660,6 +660,10 @@ class JulianBot : Bot
         ArrayList<Tile> tiles = round_state.self.get_discard_tiles();
         assert(tiles.size > 0);
 
+        ArrayList<Tile> sortedhand = Tile.sort_tiles_type(round_state.self.hand);
+        ArrayList<RoundStateCall> calls = round_state.self.calls;
+
+        HandStatistics stats =  analyze_hand(null, sortedhand, calls);
         ArrayList<Tile> backup = new ArrayList<Tile>();
         backup.add_all(tiles);
 

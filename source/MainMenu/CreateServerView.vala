@@ -14,15 +14,38 @@ class CreateServerView : MenuSubView
         add_child(name_text);
     }
 
+    protected override void key_press(KeyArgs key)
+    {
+        if (key.handled)
+            return;
+
+        // Only handle keys if our buttons are visible
+        if (!are_buttons_visible())
+            return;
+
+        // Check if no modifier keys are pressed
+        if (key.down && key.modifiers == Modifier.NONE)
+        {
+            key.handled = true;
+
+            if (key.scancode == ScanCode.C && create_button != null && create_button.enabled)
+                do_finish();
+            else if (key.scancode == ScanCode.B)
+                do_back();
+            else
+                key.handled = false;
+        }
+    }
+
     protected override ArrayList<MenuTextButton>? get_menu_buttons()
     {
         ArrayList<MenuTextButton> buttons = new ArrayList<MenuTextButton>();
 
-        create_button = new MenuTextButton("MenuButton", "Create");
+        create_button = new MenuTextButton("MenuButton", "Create (C)");
         create_button.clicked.connect(do_finish);
         buttons.add(create_button);
 
-        MenuTextButton back_button = new MenuTextButton("MenuButton", "Back");
+        MenuTextButton back_button = new MenuTextButton("MenuButton", "Back (B)");
         back_button.clicked.connect(do_back);
         buttons.add(back_button);
 

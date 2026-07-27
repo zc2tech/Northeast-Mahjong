@@ -23,6 +23,7 @@ abstract class MenuSubView : View2D
     private SizingControl menu_buttons_control = new SizingControl();
     private ArrayList<MenuTextButton>? main_buttons;
     private ArrayList<MenuTextButton>? menu_buttons;
+    private bool buttons_visible = true;
 
     protected override void added()
     {
@@ -112,6 +113,8 @@ abstract class MenuSubView : View2D
 
     private void visibility_change(bool visible)
     {
+        buttons_visible = visible;
+
         if (name_label != null)
             name_label.visible = visible;
         if (main_buttons != null)
@@ -123,6 +126,8 @@ abstract class MenuSubView : View2D
 
         set_visibility(visible);
     }
+
+    protected bool are_buttons_visible() { return buttons_visible; }
 
     public float top_offset { get { return name_label == null ? 0 : name_label.size.height; } }
     public float bottom_offset { get { return menu_buttons_control.size.height + menu_buttons_control.position.y; } }

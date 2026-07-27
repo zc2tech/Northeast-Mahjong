@@ -7,7 +7,7 @@ public class ServerSettings : Serializable
 
     public ServerSettings.default()
     {
-        multiple_ron = OnOffEnum.ON;
+        multiple_ron = OnOffEnum.OFF;  // Only first player wins
         triple_ron_draw = OnOffEnum.ON;
         decision_time = 10;
         reveal_all_tiles = OnOffEnum.OFF;

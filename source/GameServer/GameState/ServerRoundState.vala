@@ -417,7 +417,7 @@ namespace GameServer
             else if (result.call_type == CallDecisionType.RON)
             {
                 // Game over
-
+                // 有一炮双响的选项的(multiple_ron) 一般不开
                 int[] indices = new int[result.callers.length];
                 ArrayList<Tile>[] hands = new ArrayList<Tile>[result.callers.length];
                 for (int i = 0; i < result.callers.length; i++)

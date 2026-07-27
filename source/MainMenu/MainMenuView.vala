@@ -46,9 +46,18 @@ class MainMenuView : MenuSubView
 
     protected override void key_press(KeyArgs key)
     {
+        if (key.handled)
+            return;
+
+        // Only handle keys if our buttons are visible
+        if (!are_buttons_visible())
+            return;
+
         // Check if no modifier keys are pressed
         if (key.down && key.modifiers == Modifier.NONE)
         {
+            key.handled = true;
+
             if (key.scancode == ScanCode.S)
                 singleplayer();
             else if (key.scancode == ScanCode.M)
@@ -59,6 +68,8 @@ class MainMenuView : MenuSubView
                 about();
             else if (key.scancode == ScanCode.E)
                 do_finish();
+            else
+                key.handled = false;
         }
     }
 

@@ -67,22 +67,47 @@ class ServerMenuView : MenuSubView
     {
         ArrayList<MenuTextButton> buttons = new ArrayList<MenuTextButton>();
 
-        settings_button = new MenuTextButton("MenuButton", "Settings");
+        settings_button = new MenuTextButton("MenuButton", "Settings (S)");
         settings_button.clicked.connect(settings_clicked);
         buttons.add(settings_button);
 
         if (can_control || log != null)
         {
-            start_button = new MenuTextButton("MenuButton", "Start");
+            start_button = new MenuTextButton("MenuButton", "Start (T)");
             start_button.clicked.connect(start_clicked);
             buttons.add(start_button);
         }
 
-        MenuTextButton back_button = new MenuTextButton("MenuButton", "Back");
+        MenuTextButton back_button = new MenuTextButton("MenuButton", "Back (B)");
         back_button.clicked.connect(back_clicked);
         buttons.add(back_button);
 
         return buttons;
+    }
+
+    protected override void key_press(KeyArgs key)
+    {
+        if (key.handled)
+            return;
+
+        // Only handle keys if our buttons are visible
+        if (!are_buttons_visible())
+            return;
+
+        // Check if no modifier keys are pressed
+        if (key.down && key.modifiers == Modifier.NONE)
+        {
+            key.handled = true;
+
+            if (key.scancode == ScanCode.S && settings_button.enabled)
+                settings_clicked();
+            else if (key.scancode == ScanCode.T && start_button != null && start_button.enabled)
+                start_clicked();
+            else if (key.scancode == ScanCode.B)
+                back_clicked();
+            else
+                key.handled = false;
+        }
     }
 
     protected override void load_finished()

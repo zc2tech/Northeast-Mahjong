@@ -4,8 +4,7 @@ public class GameState : Object
 {
     private GameScorePlayer[] players;
     private int starting_score;
-    private int uma_higher;
-    private int uma_lower;
+    private int POINT_BASE = 5; // 5块钱 一手
 
     public GameState(GameStartInfo info, ServerSettings settings) // TODO: Remove settings if we don't need them
     {
@@ -88,61 +87,96 @@ public class GameState : Object
             sekinin_index = result.scores[0].player.sekinin_index;
         bool sekinin = sekinin_index != -1;
 
-        if (ron || (tsumo && sekinin))
+        if (ron)
         {
-            int loser  = result.loser_index;
+            int loser_index  = result.loser_index;
 
             for (int i = 0; i < result.winner_indices.length; i++)
             {
-                int winner = result.winner_indices[i];
+                int winner_index = result.winner_indices[i];
                 sekinin_index = result.scores[i].player.sekinin_index;
                 sekinin = sekinin_index != -1;
-
-                int transfer = result.scores[i].total_points + renchan * 300;
-                players[winner].transfer += transfer;
-                // 这个sekinin 包含最后的点炮选手 ？
-                if (sekinin)
-                {
-                    if (ron)
-                        transfer /= 2;
-                    players[sekinin_index].transfer -= transfer;
+              
+                players[loser_index].transfer -= POINT_BASE; // 点炮了
+                players[winner_index].transfer += POINT_BASE;
+                if( dealer_index == winner_index ) {
+                    for (int j = 0; i < players.length; i++)
+                    {
+                        if (j != winner_index) {
+                            players[j].transfer -= POINT_BASE * 2; // 庄家和了
+                            players[winner_index].transfer += POINT_BASE *2 ;
+                        }
+                    }
+                } else {
+                    // 闲家胡
+                    for (int j = 0; i < players.length; i++)
+                    {
+                        if (j != winner_index) {
+                            if (j == dealer_index ) {
+                                 players[j].transfer -= POINT_BASE * 2; // 庄家多给点
+                                 players[winner_index].transfer += POINT_BASE * 2;
+                            } else {
+                                players[j].transfer -= POINT_BASE; 
+                                players[winner_index].transfer += POINT_BASE;
+                            }
+                        }
+                           
+                    } 
                 }
+               
+                //  int transfer = result.scores[i].total_points + renchan * 300;
+                //  players[winner].transfer += transfer;
+                //  // 这个sekinin 包含最后的点炮选手 ？
+                //  if (sekinin)
+                //  {
+                //      if (ron)
+                //          transfer /= 2;
+                //      players[sekinin_index].transfer -= transfer;
+                //  }
 
-                if (ron)
-                    players[loser].transfer -= transfer;
+                //  if (ron)
+                //      players[loser].transfer -= transfer;
 
-                if (dealer_index == winner)
-                    do_renchan = true;
+                //  if (dealer_index == winner)
+                //      do_renchan = true;
             }
 
         }
-        else if (result.result == RoundFinishResult.RoundResultEnum.TSUMO)
+        else if (tsumo)  // 自摸
         {
             Scoring score = result.scores[0];
-            int winner = result.winner_indices[0];
+            int winner_index = result.winner_indices[0];
 
-            if (dealer_index == winner)
+            if (dealer_index == winner_index) // 庄家自摸
             {
                 for (int i = 0; i < players.length; i++)
-                    if (i != dealer_index)
-                        players[i].transfer -= score.tsumo_points + renchan * 100;
+                    if (i != dealer_index) {
+
+                        players[i].transfer -= POINT_BASE * 4;
+                        players[winner_index].transfer += POINT_BASE * 4;
+                    }
 
                 do_renchan = true;
             }
             else
             {
+                // 闲家自摸
                 for (int i = 0; i < players.length; i++)
                 {
-                    if (i == winner)
+                    if (i == winner_index)
                         continue;
-                    else if (i == dealer_index)
-                        players[i].transfer -= score.tsumo_points + renchan * 100;
-                    else
-                        players[i].transfer -= score.tsumo_points  + renchan * 100;
+                    else if (i == dealer_index) {
+                        players[i].transfer -= POINT_BASE * 4 ;
+                        players[winner_index].transfer += POINT_BASE * 4;
+                    }
+                    else {
+                        players[i].transfer -= POINT_BASE * 2 ;
+                        players[winner_index].transfer += POINT_BASE * 2;
+                    }
                 }
             }
 
-            players[winner].transfer += score.total_points + renchan * 300;
+            //  players[winner_index].transfer += score.total_points + renchan * 300;
         }
         // 流局
         else if (result.result == RoundFinishResult.RoundResultEnum.DRAW)
@@ -193,6 +227,7 @@ public class GameState : Object
             ordered_players[i] = players[a]; // 把庄家放到了 ordered_players[0]
         }
 
+        // 简单的排序
         for (int i = 1; i < players.length; i++)
         {
             int j = i;
@@ -205,26 +240,26 @@ public class GameState : Object
             }
         }
 
-        int sum = 0;
-        for (int i = 1; i < ordered_players.length; i++)
-        {
-            // Round to nearest 1000
-            int p = ordered_players[i].points;
-            if (ordered_players[i].points > 0)
-                p += 500;
-            else
-                p -= 500;
+        //  int sum = 0;
+        //  for (int i = 1; i < ordered_players.length; i++)
+        //  {
+        //      // Round to nearest 1000
+        //      int p = ordered_players[i].points;
+        //      if (ordered_players[i].points > 0)
+        //          p += 500;
+        //      else
+        //          p -= 500;
 
-            p = p / 1000 - starting_score / 1000 - 5;
-            sum -= p;
-            ordered_players[i].score += p;
-        }
+        //      p = p / 1000 - starting_score / 1000 - 5;
+        //      sum -= p;
+        //      ordered_players[i].score += p;
+        //  }
 
-        ordered_players[0].score += sum;
-        ordered_players[0].score += uma_higher;
-        ordered_players[1].score += uma_lower;
-        ordered_players[ordered_players.length - 2].score -= uma_lower;
-        ordered_players[ordered_players.length - 1].score -= uma_higher;
+        //  ordered_players[0].score += sum;
+        //  ordered_players[0].score += uma_higher;
+        //  ordered_players[1].score += uma_lower;
+        //  ordered_players[ordered_players.length - 2].score -= uma_lower;
+        //  ordered_players[ordered_players.length - 1].score -= uma_higher;
     }
 
     private RoundScoreState add_round_score_state(RoundFinishResult result)

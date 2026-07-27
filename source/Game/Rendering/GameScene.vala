@@ -191,21 +191,21 @@ class GameScene : WorldObject
         if (winners.length == 1 && action.tile != null)
             winners[0].ron(action.tile);
 
-        bool flip_ura_dora = false;
+        //  bool flip_ura_dora = false;
 
         foreach (RenderPlayer player in winners)
         {
             if (!player.open)
                 add_action(new RenderActionHandReveal(new AnimationTime.zero(), player));
-            if (player.in_riichi)
-                flip_ura_dora = true;
+            //  if (player.in_riichi)
+            //      flip_ura_dora = true;
         }
 
-        if (action.return_riichi_player != null)
-            add_action(new RenderActionReturnRiichi(new AnimationTime.zero(), action.return_riichi_player));
+        //  if (action.return_riichi_player != null)
+        //      add_action(new RenderActionReturnRiichi(new AnimationTime.zero(), action.return_riichi_player));
 
-        if (flip_ura_dora && action.allow_dora_flip)
-            add_action(new RenderActionFlipUraDora(new AnimationTime.zero()));
+        //  if (flip_ura_dora && action.allow_dora_flip)
+        //      add_action(new RenderActionFlipUraDora(new AnimationTime.zero()));
     }
 
     private void action_tsumo(RenderActionTsumo action)
@@ -216,19 +216,19 @@ class GameScene : WorldObject
         if (!action.player.open)
             add_action(new RenderActionHandReveal(context.server_times.hand_reveal, action.player));
 
-        if (action.player.in_riichi)
-            add_action(new RenderActionFlipUraDora(new AnimationTime.zero()));
+        //  if (action.player.in_riichi)
+        //      add_action(new RenderActionFlipUraDora(new AnimationTime.zero()));
     }
 
-    private void action_riichi(RenderActionRiichi action)
-    {
-        riichi_sound.play();
-        if (action.open)
-            reveal_sound.play();
+    //  private void action_riichi(RenderActionRiichi action)
+    //  {
+    //      riichi_sound.play();
+    //      if (action.open)
+    //          reveal_sound.play();
 
-        // Northeast Mahjong doesn't have riichi
-        // action.player.riichi(action.open);
-    }
+    //      // Northeast Mahjong doesn't have riichi
+    //      // action.player.riichi(action.open);
+    //  }
 
     private void action_late_kan(RenderActionLateKan action)
     {
