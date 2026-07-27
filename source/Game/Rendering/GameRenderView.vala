@@ -174,6 +174,46 @@ public class GameRenderView : View3D, IGameRenderer
             camera.view_angle -= 0.5f;
             Environment.log(LogType.DEBUG, "GameRenderView", "Camera fov: " + camera.view_angle.to_string());
         }
+        else if (key.keycode == KeyCode.NUM_7)
+        {
+            // Increase cross-player (seat 2) hand angle
+            players[2].adjust_hand_angle(0.02f);
+        }
+        else if (key.keycode == KeyCode.NUM_8)
+        {
+            // Decrease cross-player (seat 2) hand angle
+            players[2].adjust_hand_angle(-0.02f);
+        }
+        else if (key.keycode == KeyCode.NUM_9)
+        {
+            // Increase right-player (seat 1, shimocha) hand angle
+            players[1].adjust_hand_angle(0.02f);
+        }
+        else if (key.keycode == KeyCode.NUM_0)
+        {
+            // Decrease right-player (seat 1, shimocha) hand angle
+            players[1].adjust_hand_angle(-0.02f);
+        }
+        else if (key.keycode == KeyCode.MINUS)
+        {
+            // Increase left-player (seat 3, kamicha) hand angle
+            players[3].adjust_hand_angle(0.02f);
+        }
+        else if (key.keycode == KeyCode.EQUALS)
+        {
+            // Decrease left-player (seat 3, kamicha) hand angle
+            players[3].adjust_hand_angle(-0.02f);
+        }
+        else if (key.keycode == KeyCode.LEFTBRACKET)
+        {
+            // Increase your own (seat 0) hand angle
+            players[0].adjust_hand_angle(0.02f);
+        }
+        else if (key.keycode == KeyCode.RIGHTBRACKET)
+        {
+            // Decrease your own (seat 0) hand angle
+            players[0].adjust_hand_angle(-0.02f);
+        }
     }
 
     public void load_options(Options options)

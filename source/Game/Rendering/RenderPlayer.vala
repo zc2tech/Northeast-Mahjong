@@ -4,6 +4,9 @@ using Gee;
 public class RenderPlayer : WorldObject
 {
     private const float VIEW_ANGLE = 0.46f;
+    private const float CROSS_PLAYER_VIEW_ANGLE = 0.54f;
+    private const float RIGHT_PLAYER_VIEW_ANGLE = 0.5f;
+    private const float LEFT_PLAYER_VIEW_ANGLE = 0.5f;
 
     private GameRenderContext context;
     private bool dealer;
@@ -32,7 +35,20 @@ public class RenderPlayer : WorldObject
 
     protected override void added()
     {
-        hand = new RenderHand(context, observed ? VIEW_ANGLE : 0);
+        // Different angles for different seats for better visibility from high camera
+        float angle = 0;
+        if (observed)
+        {
+            if (seat == 2)  // Cross-player (toimen, opposite)
+                angle = CROSS_PLAYER_VIEW_ANGLE;
+            else if (seat == 1)  // Right player (shimocha)
+                angle = RIGHT_PLAYER_VIEW_ANGLE;
+            else if (seat == 3)  // Left player (kamicha)
+                angle = LEFT_PLAYER_VIEW_ANGLE;
+            else  // Seat 0 (you)
+                angle = VIEW_ANGLE;
+        }
+        hand = new RenderHand(context, angle);
 
         add_object(hand);
         hand.position = Vec3(0, 0, hand_offset);
@@ -113,6 +129,11 @@ public class RenderPlayer : WorldObject
 
         if (open)
             hand.open_hand();
+    }
+
+    public void adjust_hand_angle(float delta)
+    {
+        hand.adjust_angle(delta);
     }
 
     public void return_riichi(AnimationTime time)

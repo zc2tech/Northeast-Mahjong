@@ -9,6 +9,8 @@ struct HandStatistics
     public int pair_count;
     public int triplet_count;
     public int half_sequence_count_by_tile; // Tile相关半顺子数量
+    public bool hasTerminalSeq;
+    public bool hasTerminalTriplet;
 }
 
 class JulianBot : Bot
@@ -109,6 +111,8 @@ class JulianBot : Bot
         stats.single_count = 0;
         stats.pair_count = 0;
         stats.triplet_count = 0;
+        stats.hasTerminalSeq = false; // 这个指标实在太关键了
+        stats.hasTerminalTriplet= false; // 这个指标实在太关键了
 
         // Count tiles by suit
         foreach (Tile t in sorted_hand)
@@ -117,6 +121,7 @@ class JulianBot : Bot
             {
                 stats.terminal_count++;
             }
+
 
             // Fixed bug: was using mapMan for all suits
             if (t.tile_type >= TileType.MAN1 && t.tile_type <= TileType.MAN9)
@@ -137,6 +142,41 @@ class JulianBot : Bot
                 stats.dragon_count++;
             }
         }
+
+        // 找到含幺九的顺子就走
+        foreach (Tile t in sorted_hand)
+        {
+            if(t.tile_type == TileType.MAN1 && map_man[TileType.MAN2] > 0 && map_man[TileType.MAN3] > 0) {
+                stats.hasTerminalSeq = true;
+                break;
+            }
+            if(t.tile_type == TileType.MAN9 && map_man[TileType.MAN8] > 0 && map_man[TileType.MAN7] > 0) {
+                stats.hasTerminalSeq = true;
+                break;
+            }
+            if(t.tile_type == TileType.PIN1 && map_pin[TileType.PIN2] > 0 && map_pin[TileType.PIN3] > 0) {
+                stats.hasTerminalSeq = true;
+                break;
+            }
+            if(t.tile_type == TileType.PIN9 && map_pin[TileType.PIN8] > 0 && map_pin[TileType.PIN7] > 0) {
+                stats.hasTerminalSeq = true;
+                break;
+            }
+            if(t.tile_type == TileType.SOU1 && map_sou[TileType.SOU2] > 0 && map_sou[TileType.SOU3] > 0) {
+                stats.hasTerminalSeq = true;
+                break;
+            }
+            if(t.tile_type == TileType.SOU9 && map_sou[TileType.SOU8] > 0 && map_sou[TileType.SOU7] > 0) {
+                stats.hasTerminalSeq = true;
+                break;
+            }
+        }
+        if(map_man[TileType.MAN1] >= 3 || map_man[TileType.MAN9] >= 3
+             || map_pin[TileType.PIN1] >=3 || map_pin[TileType.PIN9] >= 3
+             || map_sou[TileType.SOU1] >=3 || map_sou[TileType.SOU9] >= 3
+            ) {
+                stats.hasTerminalTriplet = true;
+            }
 
         // Analyze patterns for each suit
         count_suit_patterns(map_man, TileType.MAN1, TileType.MAN9,
@@ -183,7 +223,22 @@ class JulianBot : Bot
                 || c.call_type ==  RoundStateCall.CallType.PON
             ) {
                 stats.triplet_count++;
+                if(c.tiles[0].is_terminal_tile()) {
+                    stats.hasTerminalTriplet = true;
+                    stats.terminal_count += 3;
+                }
+                if(c.tiles[0].is_dragon_tile()) {
+                   stats.dragon_count = c.call_type ==  RoundStateCall.CallType.PON ? 3: 4;
+                }
             }
+
+            if(c.call_type == RoundStateCall.CallType.CHII) {
+                if(c.tiles[0].is_terminal_tile() || c.tiles[1].is_terminal_tile() || c.tiles[2].is_terminal_tile()) {
+                    stats.hasTerminalSeq = true;
+                    stats.terminal_count++;
+                }
+            }
+            
         }
        
         foreach (RoundStateCall c in calls)
@@ -191,11 +246,7 @@ class JulianBot : Bot
             foreach(Tile t in c.tiles) {
                 if (t.is_terminal_tile())
                 {
-                    stats.terminal_count++;
-                }
-                if (t.is_dragon_tile())
-                {
-                    stats.dragon_count++;
+                   
                 }
             }
         }
@@ -281,13 +332,17 @@ class JulianBot : Bot
             return false;
         }
         // 牌好吗 其实如果那一对子正好是 幺九 对的话,其实还行
-        if ((pairCnt <= 1 && tripletCnt < 1) || singleCnt >= 3 || terminalCnt <= 2)
+        if ((pairCnt <= 1 && tripletCnt < 1) || singleCnt >= 3 || terminalCnt <= 1)
         {
             if(shimocha_index == discarder_index) {
                 return true;
             } else if(toimen_index == discarder_index) {
                 return Random.boolean();
             } else {
+                // 上家打过来的
+                if(singleCnt <= 1 && tripletCnt < 1) {
+                    return true;
+                }
                 // 等着摸牌吧
                 return false;
             }
@@ -449,15 +504,29 @@ class JulianBot : Bot
         {
             return false;
         }
+ 
+        ArrayList<ArrayList<Tile>> groups = TileRules.get_chii_groups(round_state.self.hand, tile);
 
-        // 牌好吗 其实如果那一对子正好是 幺九 对的话,其实还行
-        if ((stats.pair_count <= 1 && stats.triplet_count < 1) || stats.single_count >= 3 || stats.terminal_count <= 2)
-        {
+        // 能填补 幺九牌 空白的话, 或者把 幺九 吃定型的 , 必须吃
+        // 但我如果已经是顺子牌型呢?
+        if(stats.dragon_count < 2 && !stats.hasTerminalSeq && !stats.hasTerminalTriplet) {
+            foreach(ArrayList<Tile> g in groups) {
+                // 我都没有幺九牌了, 肯定没法吃啥吐啥的
+                if(g[0].is_terminal_tile() || g[1].is_terminal_tile() || tile.is_terminal_tile()) {
+                    return true;
+                }
+            }
+
             // 等着摸牌吧
             return false;
+           
         }
 
-        ArrayList<ArrayList<Tile>> groups = TileRules.get_chii_groups(round_state.self.hand, tile);
+        // 到这里就算有 幺九刻子或者对子了
+        if (stats.single_count >= 3)
+        {
+            return false;
+        }
 
         foreach (ArrayList<Tile> g in groups)
         {
@@ -513,7 +582,7 @@ class JulianBot : Bot
                 }
             }
 
-            if(stats.terminal_count >=1 && newStats.triplet_count == 0) {
+            if(stats.triplet_count >=1 && newStats.triplet_count == 0) {
                 // 把刻子吃没了
                 return false;
             }
@@ -532,8 +601,9 @@ class JulianBot : Bot
                     return true;
                 }
             }
-        }
+        } // groups loop
 
+        // 全试玩了 该吃 还是 过 ?
         return false;
     }
 
@@ -545,6 +615,7 @@ class JulianBot : Bot
             do_tsumo();
             return;
         }
+
         // 没有九种九牌 就流局的概念
         //  else if (round_state.can_void_hand())
         //  {
@@ -591,36 +662,43 @@ class JulianBot : Bot
         //  }
 
         // 既然到了这里,说明你没有办法和牌或者听牌
+        ArrayList<Tile> sorted_hand = Tile.sort_tiles_type(round_state.self.hand); 
+        ArrayList<RoundStateCall> calls = round_state.self.calls;
         if (round_state.can_late_kan()) // 后杠
         {
 
             ArrayList<Tile> tiles = TileRules.get_late_kan_tiles(round_state.self.hand, round_state.self.calls);
             assert(tiles.size > 0);
-            //  assert(t4 != null);
-            if (is_tile_safe(tiles[0], false, 4)) {
-                do_discard(tiles[0]);
-            } else {
-                //  assert(t4.tile_type == tiles[0].tile_type);
-                do_late_kan(tiles[0]);
+            
+            HandStatistics stats = analyze_hand(tiles[0], sorted_hand, calls);
+            if(stats.half_sequence_count_by_tile < 2) {
+                // 粘连不多,随机一下
+                if(Random.boolean()) {
+                    do_late_kan(tiles[0]);
+                }
             }
-           
+            return;
         }
-        else if (round_state.can_closed_kan())
+
+        if (round_state.can_closed_kan())
         {
             ArrayList<ArrayList<Tile>> groups = round_state.self.get_closed_kan_groups();
             assert(groups.size > 0);
-            Tile tile = groups[0][0];
-            if(is_tile_safe(tile, false, 4)) {
-                do_discard(tile);
-            } else {
-                 do_closed_kan(tile.tile_type);
+            foreach(ArrayList<Tile> g in groups) {
+                HandStatistics stats = analyze_hand(g[0], sorted_hand, calls);
+                if(stats.half_sequence_count_by_tile < 2) {
+                    // 粘连不多,随机一下
+                    if(Random.boolean()) {
+                        do_closed_kan(g[0].tile_type);
+                    }
+                }
             }
         }
-        else
-        {
-            Tile  tile = get_discard_tile();
-            do_discard(tile);
-        }
+        
+        // 没杠 没听 没胡
+        Tile  tile = get_discard_tile();
+        do_discard(tile);
+        
     }
 
     // 别人打牌之后，做个处理决定

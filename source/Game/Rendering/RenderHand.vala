@@ -133,6 +133,15 @@ private class RenderHand : WorldObject
         animate(animation, true);
     }
 
+    public void adjust_angle(float delta)
+    {
+        view_angle += delta;
+        Environment.log(LogType.INFO, "RenderHand", "Hand angle adjusted: view_angle = " + view_angle.to_string());
+
+        // Update rotation immediately
+        rotation = Quat.from_euler(0, 0.5f - view_angle, 0);
+    }
+
     private void order_tile(RenderTile tile, float tile_position, bool animate)
     {
         Vec3 pos = Vec3((tile_position - (tiles.size - 1) / 2.0f) * tile_size.x, 0, 0);
