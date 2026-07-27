@@ -270,7 +270,7 @@ namespace GameServer
         private GameStartInfo create_start_info(GamePlayer[] players)
         {
             int starting_dealer = 0;
-            int starting_score = 25000;
+            int starting_score = 500;
             int round_count = 8;
             int hanchan_count = 1;
             int uma_higher = 20;

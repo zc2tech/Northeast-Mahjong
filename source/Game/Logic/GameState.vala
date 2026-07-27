@@ -10,8 +10,6 @@ public class GameState : Object
     public GameState(GameStartInfo info, ServerSettings settings) // TODO: Remove settings if we don't need them
     {
         starting_score = info.starting_score;
-        uma_higher = info.uma_higher;
-        uma_lower = info.uma_lower;
         dealer_index = starting_dealer_index = info.starting_dealer;
         round_count = info.round_count;
         hanchan_count = info.hanchan_count;

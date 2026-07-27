@@ -189,6 +189,26 @@ class GameMenuView : View2D
             else
                 hide_score();
         }
+        else if (key.down && !key.repeat)
+        {
+            // Keyboard shortcuts for game action buttons
+            if (key.scancode == ScanCode.C && chii.enabled && chii.visible)
+                press_chii();
+            else if (key.scancode == ScanCode.P && pon.enabled && pon.visible)
+                press_pon();
+            else if (key.scancode == ScanCode.K && kan.enabled && kan.visible)
+                press_kan();
+            else if (key.scancode == ScanCode.T && tsumo.enabled && tsumo.visible)
+                press_tsumo();
+            else if (key.scancode == ScanCode.R && ron.enabled && ron.visible)
+                press_ron();
+            else if (key.scancode == ScanCode.SPACE && conti.enabled && conti.visible)
+                press_continue();
+            else if (key.scancode == ScanCode.V && void_hand.enabled && void_hand.visible)
+                press_void_hand();
+            else
+                key.handled = false;
+        }
         else
             key.handled = false;
     }
