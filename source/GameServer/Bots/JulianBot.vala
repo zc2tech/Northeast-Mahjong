@@ -203,6 +203,48 @@ class JulianBot : Bot
         return stats;
     }
 
+    // 只分析幺九牌状态,其他的不想看
+    private HandStatistics analyze_only_terminal_honor(ArrayList<Tile> hand, ArrayList<RoundStateCall> calls)
+    {
+        HandStatistics stats = HandStatistics();
+
+        stats.terminal_count = 0;
+        stats.dragon_count = 0;
+        stats.single_count = 0;
+        stats.pair_count = 0;
+        stats.triplet_count = 0;
+
+        // Count tiles by suit
+        foreach (Tile t in hand)
+        {
+            if (t.is_terminal_tile())
+            {
+                stats.terminal_count++;
+            }
+
+            if (t.is_dragon_tile())
+            {
+                stats.dragon_count++;
+            }
+        }
+
+        foreach (RoundStateCall c in calls)
+        {
+            foreach(Tile t in c.tiles) {
+                if (t.is_terminal_tile())
+                {
+                    stats.terminal_count++;
+                }
+                if (t.is_dragon_tile())
+                {
+                    stats.dragon_count++;
+                }
+            }
+        }
+
+        return stats;
+    }
+
     // Evaluate whether to call pon (碰) on a tile
     // Returns true if should call pon, false otherwise
     private bool should_call_pon(Tile tile,
@@ -221,6 +263,7 @@ class JulianBot : Bot
         int tripletCnt = stats.triplet_count;
         int singleCnt = stats.single_count;
         int terminalCnt = stats.terminal_count;
+        int dragonCnt = stats.dragon_count;
 
          // Get s (下家 - shimocha)
         int shimocha_index = (round_state.self.index + 1) % 4;
@@ -233,6 +276,10 @@ class JulianBot : Bot
 
         int discarder_index = discarding_player.index;
 
+        if( dragonCnt < 2 && terminalCnt == 0 ) {
+            // 牌太烂了
+            return false;
+        }
         // 牌好吗 其实如果那一对子正好是 幺九 对的话,其实还行
         if ((pairCnt <= 1 && tripletCnt < 1) || singleCnt >= 3 || terminalCnt <= 2)
         {
@@ -654,16 +701,13 @@ class JulianBot : Bot
     // 找出需要舍弃的牌 能听牌的我都不进这里
     private Tile get_discard_tile()
     {
-    //      ArrayList<Tile> sortedhand = Tile.sort_tiles_type(round_state.self.hand);
-    //      ArrayList<RoundStateCall> calls = round_state.self.calls;
-
         ArrayList<Tile> tiles = round_state.self.get_discard_tiles();
         assert(tiles.size > 0);
 
         ArrayList<Tile> sortedhand = Tile.sort_tiles_type(round_state.self.hand);
         ArrayList<RoundStateCall> calls = round_state.self.calls;
 
-        HandStatistics stats =  analyze_hand(null, sortedhand, calls);
+        HandStatistics stats =  analyze_only_terminal_honor(sortedhand, calls);
         ArrayList<Tile> backup = new ArrayList<Tile>();
         backup.add_all(tiles);
 
@@ -675,17 +719,17 @@ class JulianBot : Bot
         }
 
         if (tiles.size == 0)
-            return RandomTile(backup);
+            return RandomTileSmart(stats,backup);
 
         foreach (Tile tile in tiles)
         {
-            if (tile.is_wind_tile())
-            {
-                if (!tile.is_wind(round_state.self.wind) && !tile.is_wind(round_state.round_wind))
-                    return tile;
-                else if (count(tile) <= 1)
-                    return tile;
-            }
+            //  if (tile.is_wind_tile())
+            //  {
+            //      if (!tile.is_wind(round_state.self.wind) && !tile.is_wind(round_state.round_wind))
+            //          return tile;
+            //      else if (count(tile) <= 1)
+            //          return tile;
+            //  }
             if (tile.is_dragon_tile())
             {
                 if(count(tile) <= 1)
@@ -699,12 +743,15 @@ class JulianBot : Bot
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (tile.is_dragon_tile() || tile.is_wind(round_state.self.wind) || tile.is_wind(round_state.round_wind))
+            //  if (tile.is_dragon_tile() || tile.is_wind(round_state.self.wind) || tile.is_wind(round_state.round_wind))
+            //      tiles.remove_at(i--);
+            // 到这里肯定不是单数了 就留着
+            if (tile.is_dragon_tile())
                 tiles.remove_at(i--);
         }
 
         if (tiles.size == 0)
-            return RandomTile(backup);
+            return RandomTileSmart(stats,backup);
 
         backup.clear();
         backup.add_all(tiles);
@@ -717,7 +764,7 @@ class JulianBot : Bot
         }
 
         if (tiles.size == 0)
-            return RandomTile(backup);
+            return RandomTileSmart(stats, backup);
 
         backup.clear();
         backup.add_all(tiles);
@@ -730,7 +777,7 @@ class JulianBot : Bot
         }
 
         if (tiles.size == 0)
-            return RandomTile(backup);
+            return RandomTileSmart(stats, backup);
 
         backup.clear();
         backup.add_all(tiles);
@@ -743,7 +790,7 @@ class JulianBot : Bot
         }
 
         if (tiles.size == 0)
-            return RandomTile(backup);
+            return RandomTileSmart(stats, backup);
 
         backup.clear();
         backup.add_all(tiles);
@@ -755,15 +802,38 @@ class JulianBot : Bot
                 tiles.remove_at(i--);
         }
 
-        if (tiles.size == 0)
-            return RandomTile(backup);
+        if (tiles.size == 0) // 竟然全是非幺九牌的单张, 所以回退到 backup, backup 还是可能有幺九牌的,所以还是 RandomTileSmart函数 
+            return RandomTileSmart(stats,backup);
 
-        return RandomTile(tiles);
+        return RandomTileSmart(stats, tiles);
     }
 
     private Tile RandomTile(ArrayList<Tile> tiles)
     {
         return tiles[rnd.int_range(0, tiles.size)];
+    }
+
+    private Tile RandomTileSmart(HandStatistics stats, ArrayList<Tile> tiles)
+    {
+        if(stats.terminal_count + stats.dragon_count <= 2) {
+            return RandomNonTerminalHonor(tiles);
+        } else {
+            return RandomTile(tiles);
+        }
+    }
+    private Tile RandomNonTerminalHonor(ArrayList<Tile> tiles)
+    {
+        ArrayList<Tile> tmpTiles = new ArrayList<Tile>();
+        foreach(Tile t in tiles) {
+            if(!(t.is_terminal_tile() || t.is_honor_tile())) {
+                tmpTiles.add(t);
+            }
+        }
+        if(tmpTiles.size > 0) {
+            return tmpTiles[rnd.int_range(0, tmpTiles.size)];
+        } else {
+            return tiles[rnd.int_range(0, tiles.size)];
+        }
     }
 
     // 我手牌里有多少这样的牌

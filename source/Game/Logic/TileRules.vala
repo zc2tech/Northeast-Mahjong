@@ -336,6 +336,54 @@ public class TileRules
         return hand_readings(hand, calls, false, true).size > 0;
     }
 
+    // 快速排除一些情况, 刻子判断有点耗CPU ,就不放进去了
+    public static bool win_necessary_condition(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls, bool tenpai_only) {
+            bool hasTerminalHonor = false;
+            bool isHonitsu_Chnitsu = true;
+            bool has_2_8 = false; // 如果只是为了听牌,这里还有点机会, 不愿整太细,比如看看有没有对应的 3 和 7 , 反正有后续算法垫底
+            Tile firstSuitTile = null;
+            ArrayList<Tile> merged = new ArrayList<Tile>();
+            merged.add_all(hand);
+            foreach (RoundStateCall call in calls) {
+                merged.add_all(call.tiles);
+            }
+            foreach(Tile t in merged) {
+                if(t.is_terminal_tile() || t.is_honor_tile()) {
+                    hasTerminalHonor = true;
+                }
+                if(t.tile_type == TileType.MAN2
+                || t.tile_type == TileType.MAN8
+                || t.tile_type == TileType.PIN2
+                || t.tile_type == TileType.PIN8
+                || t.tile_type == TileType.SOU2
+                || t.tile_type == TileType.SOU8) {
+                    has_2_8 = true;
+                }
+
+                if(t.is_suit_tile()) {
+                    if(firstSuitTile == null) {
+                        firstSuitTile = t;
+                    } else {
+                        if(!t.is_same_sort(firstSuitTile)) {
+                           isHonitsu_Chnitsu = false; 
+                        }
+                    }
+                }
+            }
+            if( tenpai_only) {
+                if( (!hasTerminalHonor && !has_2_8) || isHonitsu_Chnitsu) {
+                    // 即使只是为了听牌,也是没有机会的
+                    return false;
+                }
+            } else {
+                // 和牌更严格
+               if( !hasTerminalHonor || isHonitsu_Chnitsu) {
+                    return false;
+                } 
+            }
+           
+            return true; // 必要条件还是满足的, 等后续检查
+    }
     // 手牌如果只剩小于等于两张的话，东北麻将里是不能胡的
     // 杠上开花 判断不了， 所以有Readings还是会返回的
     public static ArrayList<HandReading> hand_readings(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls, bool tenpai_only, bool early_return)
@@ -343,6 +391,11 @@ public class TileRules
         // 东北麻将的话，已经没机会和了，不能剩 一张或者两张牌的
         if(hand.size <= 2) {
            return new ArrayList<HandReading>(); 
+        }
+       
+        // quick pass
+        if(!win_necessary_condition(hand,calls,tenpai_only)) {
+             return new ArrayList<HandReading>(); 
         }
 
         ArrayList<TileMeld> call_melds = new ArrayList<TileMeld>();

@@ -33,6 +33,7 @@ public class RenderPlayer : WorldObject
     protected override void added()
     {
         hand = new RenderHand(context, observed ? VIEW_ANGLE : 0);
+
         add_object(hand);
         hand.position = Vec3(0, 0, hand_offset);
 

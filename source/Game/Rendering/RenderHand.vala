@@ -98,7 +98,7 @@ private class RenderHand : WorldObject
         PathQuat rot = new LinearPathQuat(Quat());
         animation.do_absolute_rotation(rot);
         animation.curve = new SmoothDepartCurve();
-        
+
         cancel_buffered_animations();
         animate(animation, true);
     }
