@@ -31,10 +31,10 @@ public class ClientRoundState : Object
     public signal void game_finished(RoundFinishResult result);
     public signal void game_tile_assignment(Tile tile);
     public signal void game_tile_draw(int player_index);
-    public signal void game_dead_tile_draw(int player_index);
+    public signal void game_dead_tile_draw(int player_index, int tile_ID);
     public signal void game_tile_discard(int player_index, int tile_ID);
     public signal void game_late_kan(int player_index, int tile_ID);
-    public signal void game_closed_kan(int player_index, TileType type);
+    public signal void game_closed_kan(int player_index, TileType type, int tile_1_ID, int tile_2_ID, int tile_3_ID, int tile_4_ID);
     public signal void game_open_kan(int player_index, int discard_player_index, int tile_ID, int tile_1_ID, int tile_2_ID, int tile_3_ID);
     public signal void game_pon(int player_index, int discard_player_index, int tile_ID, int tile_1_ID, int tile_2_ID);
     public signal void game_chii(int player_index, int discard_player_index, int tile_ID, int tile_1_ID, int tile_2_ID);
@@ -458,7 +458,7 @@ public class ClientRoundState : Object
         ServerMessageClosedKan kan = (ServerMessageClosedKan)message;
         TileType type = kan.tile_type;
         state.closed_kan(type);
-        game_closed_kan(state.current_player.index, type);
+        game_closed_kan(state.current_player.index, type, kan.tile_1_ID, kan.tile_2_ID, kan.tile_3_ID, kan.tile_4_ID);
     }
 
     private void server_open_kan(ServerMessage message)
@@ -505,8 +505,11 @@ public class ClientRoundState : Object
         state.calls_finished();
 
         if (kan)
-            game_dead_tile_draw(state.current_player.index);
-
+        {
+            // The last tile in the hand is the one drawn from the dead wall
+            Tile dead_tile = state.current_player.hand[state.current_player.hand.size - 1];
+            game_dead_tile_draw(state.current_player.index, dead_tile.ID);
+        }
     }
 
     public void server_turn_decision(ServerMessage message)

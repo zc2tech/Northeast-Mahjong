@@ -46,7 +46,9 @@ public class RoundStartInfo : Serializable
     public RoundStartInfo(int wall_index)
     {
         this.wall_index = wall_index;
+        this.dead_wall_mark_tile_id = -1; // Will be set after wall initialization
     }
 
     public int wall_index { get; protected set; }
+    public int dead_wall_mark_tile_id { get; set; }
 }

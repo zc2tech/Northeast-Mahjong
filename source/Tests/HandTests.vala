@@ -18,8 +18,6 @@ public void hands1()
 
     RoundStateContext round = new RoundStateContext(
         Wind.EAST,
-        new ArrayList<Tile>(),// dora
-        new ArrayList<Tile>(),// ura_dora,
         true,
         new Tile(-1, TileType.PEI),
         false,
@@ -88,8 +86,6 @@ public void hands2()
 
     RoundStateContext round = new RoundStateContext(
         Wind.EAST,
-        new ArrayList<Tile>(),// dora
-        new ArrayList<Tile>(),// ura_dora,
         true,
         new Tile(-1, TileType.PEI),
         false,
@@ -158,8 +154,6 @@ public void hands3()
 
     RoundStateContext round = new RoundStateContext(
         Wind.EAST,
-        new ArrayList<Tile>(),// dora
-        new ArrayList<Tile>(),// ura_dora,
         true,
         new Tile(-1, TileType.PEI),
         false,
@@ -227,8 +221,6 @@ public void hands4()
 
     RoundStateContext round = new RoundStateContext(
         Wind.EAST,
-        new ArrayList<Tile>(),// dora
-        new ArrayList<Tile>(),// ura_dora,
         true,
         new Tile(-1, TileType.PEI),
         false,
@@ -297,8 +289,6 @@ public void hands5()
 
     RoundStateContext round = new RoundStateContext(
         Wind.EAST,
-        new ArrayList<Tile>(),// dora
-        new ArrayList<Tile>(),// ura_dora,
         true,
         new Tile(-1, TileType.PEI),
         false,
@@ -374,8 +364,6 @@ public void hands6()
 
     RoundStateContext round = new RoundStateContext(
         Wind.EAST,
-        new ArrayList<Tile>(),// dora
-        new ArrayList<Tile>(),// ura_dora,
         true,
         new Tile(-1, TileType.PEI),
         false,

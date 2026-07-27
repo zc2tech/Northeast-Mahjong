@@ -49,7 +49,7 @@ public class GameRenderView : View3D, IGameRenderer
         Vec3 tile_size = t.obb.mul_scalar(tile_scale);
         world.remove_object(t);
 
-        context = new GameRenderContext(game_start.timings, tile_scale, tile_size, observer_index, dealer_index, info.wall_index);
+        context = new GameRenderContext(game_start.timings, tile_scale, tile_size, observer_index, dealer_index, info.wall_index); // wall_index is wall_split
         observer_index = observer_index != -1 ? observer_index : 0;
 
         scene = new GameScene(context, observer_index, options, store.audio_player, score);
@@ -104,10 +104,8 @@ public class GameRenderView : View3D, IGameRenderer
         for (int i = 0; i < 16; i++)
             buffer_action(new RenderActionInitialDraw(context.server_times.initial_draw, players[(i + dealer_index) % 4], i < 12 ? 4 : 1));
 
-        // Don't flip dora in Northeast Mahjong - we'll manually reveal the last dead wall tile instead
-        // buffer_action(new RenderActionFlipDora());
-
-        buffer_action(new RenderActionFlipDeadWallMark());
+        // Flip the dead wall mark tile using the tile ID from the server
+        buffer_action(new RenderActionFlipDeadWallMark(info.dead_wall_mark_tile_id));
     }
 
     protected override void process(DeltaArgs args)
@@ -293,10 +291,16 @@ public class GameRenderView : View3D, IGameRenderer
         buffer_action(new RenderActionDraw(context.server_times.tile_draw, player));
     }
 
-    public void dead_tile_draw(int player_index)
+    public void dead_tile_draw(int player_index, int tile_ID)
     {
         RenderPlayer player = players[player_index];
-        buffer_action(new RenderActionDrawDeadWall(context.server_times.tile_draw, player));
+        RenderTile tile = tiles[tile_ID];
+
+        Environment.log(LogType.DEBUG, "GameRenderView",
+            "DEAD_WALL_DRAW: player=%d drew tile_ID=%d (%s)".printf(
+                player_index, tile_ID, tile.tile_type.tile_type.to_string()));
+
+        buffer_action(new RenderActionDrawDeadWall(context.server_times.tile_draw, player, tile));
     }
 
     private void tile_discard(int player_index, int tile_ID)
@@ -306,15 +310,9 @@ public class GameRenderView : View3D, IGameRenderer
         buffer_action(new RenderActionDiscard(context.server_times.tile_discard, player, tile));
     }
 
-    private void flip_dora()
+    private void flip_dead_wall_mark(int mark_tile_id)
     {
-        scene.wall.flip_dora();
-    }
-
-    private void riichi(int player_index, bool open)
-    {
-        RenderPlayer player = players[player_index];
-        buffer_action(new RenderActionRiichi(context.server_times.riichi, player, open));
+        scene.wall.flip_dead_wall_mark(mark_tile_id);
     }
 
     private void late_kan(int player_index, int tile_ID)
@@ -324,10 +322,16 @@ public class GameRenderView : View3D, IGameRenderer
         buffer_action(new RenderActionLateKan(context.server_times.call, player, tile));
     }
 
-    private void closed_kan(int player_index, TileType type)
+    private void closed_kan(int player_index, TileType type, int tile_1_ID, int tile_2_ID, int tile_3_ID, int tile_4_ID)
     {
         RenderPlayer player = players[player_index];
-        buffer_action(new RenderActionClosedKan(context.server_times.call, player, type));
+
+        RenderTile tile_1 = tiles[tile_1_ID];
+        RenderTile tile_2 = tiles[tile_2_ID];
+        RenderTile tile_3 = tiles[tile_3_ID];
+        RenderTile tile_4 = tiles[tile_4_ID];
+
+        buffer_action(new RenderActionClosedKan(context.server_times.call, player, tile_1, tile_2, tile_3, tile_4));
     }
 
     private void open_kan(int player_index, int discard_player_index, int tile_ID, int tile_1_ID, int tile_2_ID, int tile_3_ID)
@@ -342,7 +346,7 @@ public class GameRenderView : View3D, IGameRenderer
 
         buffer_action(new RenderActionOpenKan(context.server_times.call, player, discard_player, tile, tile_1, tile_2, tile_3));
 
-        dead_tile_draw(player_index);
+        // Dead tile draw will happen through game_dead_tile_draw signal from server_calls_finished
     }
 
     private void pon(int player_index, int discard_player_index, int tile_ID, int tile_1_ID, int tile_2_ID)

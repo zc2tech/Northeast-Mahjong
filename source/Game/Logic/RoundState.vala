@@ -21,7 +21,8 @@ public class RoundState : Object
 
     public RoundState.server(ServerSettings settings, Wind round_wind, int dealer, int wall_index, RandomClass rnd)
     {
-        init(true, settings, -1, round_wind, dealer, wall_index, rnd, true, null);
+        bool shuffled = (settings.shuffle_tiles == OnOffEnum.ON);
+        init(shuffled, settings, -1, round_wind, dealer, wall_index, rnd, true, null);
     }
 
     public RoundState.custom(ServerSettings settings, Wind round_wind, int dealer, int wall_index, Tile[] tiles)
@@ -422,7 +423,7 @@ public class RoundState : Object
             wall.can_call &&
             wall.can_kan &&
             player != current_player &&
-            chankan_call == ChankanCall.NONE &&
+            chankan_call == ChankanCall.NONE && // 抢杠
             TileRules.can_open_kan(player.hand, discard_tile);
     }
 
@@ -518,8 +519,6 @@ public class RoundState : Object
         return new RoundStateContext
         (
             round_wind,
-            wall.dora,
-            wall.ura_dora,
             ron,
             win_tile,
             last_tile,
@@ -541,8 +540,6 @@ public class RoundState : Object
     public Wind round_wind { get; private set; }
     public bool game_over { get; private set; }
     public GameDrawType game_draw_type { get; private set; }
-    public Tile newest_dora { get { return wall.newest_dora; } }
-    public ArrayList<Tile> ura_dora { get { return wall.ura_dora; } }
     public bool tiles_empty { get { return wall.empty; } }
     public Tile? dead_wall_mark { owned get { return wall.dead_wall_mark; } }
     public ArrayList<Tile> dead_wall_tiles { get { return wall.dead_wall_tiles; } }
@@ -961,9 +958,6 @@ class RoundStateWall
 {
     private ArrayList<Tile> wall_tiles = new ArrayList<Tile>();
     public ArrayList<Tile> dead_wall_tiles = new ArrayList<Tile>();
-    private int dora_index = 4;
-    private ArrayList<Tile> _dora = new ArrayList<Tile>();
-    private ArrayList<Tile> _ura_dora = new ArrayList<Tile>();
 
     public RoundStateWall(int dealer, int wall_index)
     {
@@ -1001,15 +995,15 @@ class RoundStateWall
             int iTile = 0;
             for (int i = TileType.MAN1; i < TileType.TON; i++)
             {
-                TileType type = (shuffled && !seeded) ? (TileType)(i) : TileType.BLANK;
-                //  TileType type = (TileType)(i);
+                // Always initialize with real tile types, whether shuffled or not
+                TileType type = !seeded ? (TileType)(i) : TileType.BLANK;
                 tiles[iTile++] = new Tile(-1, type);
                 tiles[iTile++] = new Tile(-1, type);
                 tiles[iTile++] = new Tile(-1, type);
                 tiles[iTile++] = new Tile(-1, type);
             }
             // 中 发 白 中 选一个
-            TileType typeDragon = (shuffled && !seeded) ? (TileType)(dragon) : TileType.BLANK;
+            TileType typeDragon = !seeded ? (TileType)(dragon) : TileType.BLANK;
             tiles[iTile++] = new Tile(-1, typeDragon);
             tiles[iTile++] = new Tile(-1, typeDragon);
             tiles[iTile++] = new Tile(-1, typeDragon);
@@ -1037,14 +1031,30 @@ class RoundStateWall
 
         // Initialize the dead wall: move the last 8 tiles from wall_tiles to dead_wall_tiles
         // In Northeast Mahjong, the dead wall consists of 8 tiles (4 stacks)
-        // These are reserved for kan replacement tiles
-        int dead_wall_size = 8;
-        for (int i = 0; i < dead_wall_size; i++)
+        // Physical positions 104-111 after reordering
+        // wall_tiles currently has positions [0...111], so we remove [104...111]
+        int dead_wall_start_pos = 104;
+        for (int i = 0; i < 8; i++)
         {
-            Tile tile = wall_tiles.remove_at(wall_tiles.size - 1);
-            dead_wall_tiles.insert(0, tile);  // Insert at beginning to maintain order
+            // Remove position (104+i) from wall_tiles
+            // Since wall_tiles.size is shrinking, position 104 is always at index 104
+            Tile tile = wall_tiles.remove_at(dead_wall_start_pos);
+            dead_wall_tiles.add(tile);
         }
-        // Now wall_tiles has 104 tiles (112 - 8), and dead_wall_tiles has 8 tiles
+        // Now wall_tiles has 104 tiles (0-103), and dead_wall_tiles has 8 tiles (104-111)
+
+        // REVERSE the dead_wall_tiles array so drawing from index 0 draws from the far end
+        // But swap pairs so upper tiles come before lower tiles in each stack
+        // Original: [104=upper, 105=lower, 106=upper, 107=lower, 108=upper, 109=lower, 110=upper, 111=lower]
+        // Want: [110=upper, 111=lower, 108=upper, 109=lower, 106=upper, 107=lower, 104=upper, 105=lower]
+        // This draws: 110(upper) first, then 111(lower), then 108(upper), etc.
+        ArrayList<Tile> reversed = new ArrayList<Tile>();
+        for (int i = dead_wall_tiles.size - 2; i >= 0; i -= 2)
+        {
+            reversed.add(dead_wall_tiles[i]);     // Add upper tile of this stack
+            reversed.add(dead_wall_tiles[i + 1]); // Add lower tile of this stack
+        }
+        dead_wall_tiles = reversed;
 
     }
 
@@ -1059,27 +1069,23 @@ class RoundStateWall
     {
         assert(dead_wall_tiles.size > 0);
 
-        // Draw from the END of the dead wall, respecting stack structure
-        // In mahjong, tiles are stacked in pairs: [even=upper, odd=lower]
-        // Draw order: upper first, then lower from each stack
-        // For 8 tiles: 6(upper) → 7(lower) → 4(upper) → 5(lower) → 2 → 3 → 0 → 1
+        int idx = 0;
+        Tile tile = dead_wall_tiles.remove_at(idx);
 
-        int size = dead_wall_tiles.size;
-        int last_idx = size - 1;
-
-        // Determine which tile to take based on whether we're at an even or odd stack
-        // If last index is odd (lower tile), take the upper tile first (last_idx - 1)
-        // If last index is even (upper tile), take it directly
-        int draw_idx = (last_idx % 2 == 1) ? (last_idx - 1) : last_idx;
-
-        Tile tile = dead_wall_tiles.remove_at(draw_idx);
         return tile;
     }
 
     private Tile dead_tile_add()
     {
-        Tile tile = wall_tiles.remove_at(wall_tiles.size - 1);
+        // Remove from the HEAD (index 0) of the draw wall when adding to dead wall
+        Tile tile = wall_tiles.remove_at(0);
+        // Add to the end of dead_wall_tiles
         dead_wall_tiles.insert(dead_wall_tiles.size, tile);
+
+        Environment.log(LogType.DEBUG, "RoundStateWall",
+            "dead_tile_add: Moved tile %s (ID=%d) from draw_wall head to dead_wall, new dead_wall size: %d"
+            .printf(tile.tile_type.to_string(), tile.ID, dead_wall_tiles.size));
+
         return tile;
     }
 
@@ -1202,26 +1208,26 @@ class RoundStateWall
 
     public int tiles_size { get { return wall_tiles.size; } }
     public bool empty { get { return wall_tiles.size == 0; } }
-    public bool can_kan { get { return dora.size < 5; } }
+    public bool can_kan { get { return dead_wall_tiles.size > 2; } }  // Must keep at least 2 tiles (the mark stack)
     public bool can_call { get { return wall_tiles.size > 0; } }
     public bool can_riichi { get { return wall_tiles.size >= 4; } }
-    public Tile newest_dora { get; private set; }
-    public ArrayList<Tile> dora { get { return _dora; } private set { _dora = value; } }
-    public ArrayList<Tile> ura_dora { get { return _ura_dora; } private set { _ura_dora = value; } }
     public Tile[] tiles { get; private set; }
 
-    // Get the dead wall mark tile (always at the furthest position)
-    // In Northeast Mahjong, the mark is the last tile in the dead wall
-    // Initially at index 7 (the lower tile of the furthest stack)
-    // Even though we draw the upper tile (6) first during kan, the mark stays at position 7
+    // Get the dead wall mark tile (the tile near the draw wall that gets revealed)
+    // In Northeast Mahjong, the mark is tile 104 (the first dead wall tile logically, upper layer)
+    // After reversal with pair swapping: [110, 111, 108, 109, 106, 107, 104, 105]
+    // Tile 104 is at index 6 (second to last), tile 105 is at index 7 (last)
     public Tile? dead_wall_mark
     {
         owned get
         {
-            // The mark is always at the last position
             int size = dead_wall_tiles.size;
-            if (size > 0)
-                return dead_wall_tiles[size - 1];
+            if (size >= 2)
+            {
+                int mark_idx = size - 2;
+                Tile mark = dead_wall_tiles[mark_idx];
+                return mark;
+            }
             return null;
         }
     }

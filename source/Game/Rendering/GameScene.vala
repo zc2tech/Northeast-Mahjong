@@ -137,12 +137,8 @@ class GameScene : WorldObject
             action_game_draw(action as RenderActionGameDraw);
         else if (action is RenderActionHandReveal)
             action_hand_reveal(action as RenderActionHandReveal);
-        else if (action is RenderActionFlipDora)
-            action_flip_dora(action as RenderActionFlipDora);
         else if (action is RenderActionFlipDeadWallMark)
             action_flip_dead_wall_mark(action as RenderActionFlipDeadWallMark);
-        else if (action is RenderActionFlipUraDora)
-            action_flip_ura_dora(action as RenderActionFlipUraDora);
         else if (action is RenderActionSetActive)
             action_set_active(action as RenderActionSetActive);
     }
@@ -169,12 +165,13 @@ class GameScene : WorldObject
             active = true;
     }
 
+    // 这是在杠牌吧
     private void action_draw_dead_wall(RenderActionDrawDeadWall action)
     {
-        wall.flip_dora();
-        wall.dead_tile_add();
+        // Don't add replacement tiles in Northeast Mahjong - dead wall just gets exhausted
+        // wall.dead_tile_add();
         draw_sound.play();
-        action.player.draw_tile(wall.draw_dead_wall());
+        action.player.draw_tile(action.tile);
 
         if (action.player.seat == context.observer_index)
             active = true;
@@ -241,7 +238,7 @@ class GameScene : WorldObject
 
     private void action_closed_kan(RenderActionClosedKan action)
     {
-        action.player.closed_kan(action.tile_type, action.time);
+        action.player.closed_kan(action.tile_1, action.tile_2, action.tile_3, action.tile_4, action.time);
         kan_sound.play();
     }
 
@@ -306,21 +303,10 @@ class GameScene : WorldObject
         action.player.open_hand();
     }
 
-    private void action_flip_dora(RenderActionFlipDora action)
-    {
-        flip_sound.play();
-        wall.flip_dora();
-    }
     private void action_flip_dead_wall_mark(RenderActionFlipDeadWallMark action)
     {
         // No sound effect for dead wall mark reveal
-        wall.flip_dead_wall_mark();
-    }
-
-    private void action_flip_ura_dora(RenderActionFlipUraDora action)
-    {
-        flip_sound.play();
-        wall.flip_ura_dora();
+        wall.flip_dead_wall_mark(action.mark_tile_id);
     }
 
     private void action_set_active(RenderActionSetActive action)

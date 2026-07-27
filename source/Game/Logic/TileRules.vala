@@ -775,8 +775,6 @@ public class RoundStateContext : Object
     public RoundStateContext
     (
         Wind round_wind,
-        ArrayList<Tile> dora,
-        ArrayList<Tile> ura_dora,
         bool ron,
         Tile win_tile,
         bool last_tile,

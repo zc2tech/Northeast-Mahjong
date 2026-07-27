@@ -55,14 +55,16 @@ public class RenderActionDraw : RenderAction
 
 public class RenderActionDrawDeadWall : RenderAction
 {
-    public RenderActionDrawDeadWall(AnimationTime time, RenderPlayer player)
+    public RenderActionDrawDeadWall(AnimationTime time, RenderPlayer player, RenderTile tile)
     {
         base(time);
 
         this.player = player;
+        this.tile = tile;
     }
 
     public RenderPlayer player { get; private set; }
+    public RenderTile tile { get; private set; }
 }
 
 public class RenderActionDiscard : RenderAction
@@ -158,16 +160,22 @@ public class RenderActionLateKan : RenderAction
 
 public class RenderActionClosedKan : RenderAction
 {
-    public RenderActionClosedKan(AnimationTime time, RenderPlayer player, TileType tile_type)
+    public RenderActionClosedKan(AnimationTime time, RenderPlayer player, RenderTile tile_1, RenderTile tile_2, RenderTile tile_3, RenderTile tile_4)
     {
         base(time);
 
         this.player = player;
-        this.tile_type = tile_type;
+        this.tile_1 = tile_1;
+        this.tile_2 = tile_2;
+        this.tile_3 = tile_3;
+        this.tile_4 = tile_4;
     }
 
     public RenderPlayer player { get; private set; }
-    public TileType tile_type { get; private set; }
+    public RenderTile tile_1 { get; private set; }
+    public RenderTile tile_2 { get; private set; }
+    public RenderTile tile_3 { get; private set; }
+    public RenderTile tile_4 { get; private set; }
 }
 
 public class RenderActionOpenKan : RenderAction
@@ -280,10 +288,13 @@ public class RenderActionFlipDora : RenderAction
 
 public class RenderActionFlipDeadWallMark : RenderAction
 {
-    public RenderActionFlipDeadWallMark()
+    public RenderActionFlipDeadWallMark(int mark_tile_id)
     {
         base(new AnimationTime.zero());
+        this.mark_tile_id = mark_tile_id;
     }
+
+    public int mark_tile_id { get; private set; }
 }
 
 public class RenderActionFlipUraDora : RenderAction

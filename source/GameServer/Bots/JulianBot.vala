@@ -8,6 +8,7 @@ struct HandStatistics
     public int single_count;
     public int pair_count;
     public int triplet_count;
+    public int half_sequence_count_by_tile; // Tile相关半顺子数量
 }
 
 class JulianBot : Bot
@@ -60,8 +61,41 @@ class JulianBot : Bot
         }
     }
 
+    // Helper: Count half-sequences involving a specific tile
+    // A half-sequence is two tiles that need one more to form a sequence (e.g., 3-5 needs 4, or 4-5 needs 3 or 6)
+    private void count_half_sequences(HashMap<TileType, int> suit_map,
+                                      int target_tile,
+                                      int start_tile,
+                                      int end_tile,
+                                      ref int half_sequence_count)
+    {
+        // Check all tiles in this suit
+        for (int i = start_tile; i <= end_tile; i++)
+        {
+            if (i == target_tile)
+                continue;
+
+            int tile_count = suit_map.get((TileType)i);
+            int target_count = suit_map.get((TileType)target_tile);
+            int distance = (i - target_tile).abs();
+
+            // Check if this tile forms a half-sequence with the target tile
+            // Case 1: i and target are 2 apart (e.g., 3 and 5 need 4)
+            if (distance == 2)
+            {
+                half_sequence_count += int.min(tile_count, target_count);
+            }
+            // Case 2: i and target are 1 apart (e.g., 4 and 5 need 3 or 6)
+            else if (distance == 1)
+            {
+                half_sequence_count += int.min(tile_count, target_count);
+            }
+        }
+    }
+
     // Analyze hand and return statistics
-    private HandStatistics analyze_hand(ArrayList<Tile> sorted_hand, ArrayList<RoundStateCall> calls)
+    // param tile, 吃碰杠 对象, 可以为 null 表示这是 turn decision
+    private HandStatistics analyze_hand(Tile? tile, ArrayList<Tile> sorted_hand, ArrayList<RoundStateCall> calls)
     {
         HandStatistics stats = HandStatistics();
 
@@ -111,6 +145,25 @@ class JulianBot : Bot
                            ref stats.single_count, ref stats.pair_count, ref stats.triplet_count);
         count_suit_patterns(map_sou, TileType.SOU1, TileType.SOU9,
                            ref stats.single_count, ref stats.pair_count, ref stats.triplet_count);
+
+
+        // Count half-sequences involving the given tile (for pon/kan decisions)
+        // A half-sequence is two tiles that can form a sequence with one more tile
+        if (tile != null)
+        {
+            if (tile.is_same_sort(new Tile(-1, TileType.MAN1)))
+            {
+                count_half_sequences(map_man, tile.tile_type, TileType.MAN1, TileType.MAN9, ref stats.half_sequence_count_by_tile);
+            }
+            else if (tile.is_same_sort(new Tile(-1, TileType.PIN1)))
+            {
+                count_half_sequences(map_pin, tile.tile_type, TileType.PIN1, TileType.PIN9, ref stats.half_sequence_count_by_tile);
+            }
+            else if (tile.is_same_sort(new Tile(-1, TileType.SOU1)))
+            {
+                count_half_sequences(map_sou, tile.tile_type, TileType.SOU1, TileType.SOU9, ref stats.half_sequence_count_by_tile);
+            }
+        }
 
         // Handle dragon tiles
         if (stats.dragon_count == 2)
@@ -169,11 +222,28 @@ class JulianBot : Bot
         int singleCnt = stats.single_count;
         int terminalCnt = stats.terminal_count;
 
+         // Get s (下家 - shimocha)
+        int shimocha_index = (round_state.self.index + 1) % 4;
+
+        // Get cross/opposite player (对面 - toimen)
+        int toimen_index = (round_state.self.index + 2) % 4;
+
+        // Get (上家 - kamicha)
+        int kamicha_index = (round_state.self.index + 3) % 4;
+
+        int discarder_index = discarding_player.index;
+
         // 牌好吗 其实如果那一对子正好是 幺九 对的话,其实还行
         if ((pairCnt <= 1 && tripletCnt < 1) || singleCnt >= 3 || terminalCnt <= 2)
         {
-            // 等着摸牌吧
-            return false;
+            if(shimocha_index == discarder_index) {
+                return true;
+            } else if(toimen_index == discarder_index) {
+                return Random.boolean();
+            } else {
+                // 等着摸牌吧
+                return false;
+            }
         }
 
         // 碰掉试试 , 外围逻辑已经确认我们手中只有两个同种牌
@@ -235,17 +305,82 @@ class JulianBot : Bot
         }
 
         // 碰了之后什么状态? 刻子肯定是多了的
-        HandStatistics newStats = analyze_hand(newHand, newCalls);
+        HandStatistics newStats = analyze_hand(null, newHand, newCalls);
         if (newStats.single_count - stats.single_count >= 2)
         {
             // 散牌增多两张以上啊,不值得
             return false;
-        } else {
-            return true;
+        }
+
+        if( kamicha_index == discarder_index) {
+            // 上家的牌,一般不想碰
+            if(tripletCnt < 1 || singleCnt <=1 ) {
+                return true;
+            }
         }
 
         // 默认就不碰啦
         return false;
+    }
+
+    private bool should_call_kan(Tile tile,
+                                  ArrayList<Tile> sortedhand,
+                                  ArrayList<RoundStateCall> calls,
+                                  ArrayList<HandReading> beforeCallReading,
+                                  HandStatistics stats,
+                                  RoundStatePlayer discarding_player)
+    {
+        if (!round_state.can_open_kan(round_state.self))
+        {
+            return false;
+        }
+
+        int pairCnt = stats.pair_count;
+        int tripletCnt = stats.triplet_count;
+        int singleCnt = stats.single_count;
+        int terminalCnt = stats.terminal_count;
+
+         // Get s (下家 - shimocha)
+        int shimocha_index = (round_state.self.index + 1) % 4;
+
+        // Get cross/opposite player (对面 - toimen)
+        int toimen_index = (round_state.self.index + 2) % 4;
+
+        // Get (上家 - kamicha)
+        int kamicha_index = (round_state.self.index + 3) % 4;
+
+        int discarder_index = discarding_player.index;
+
+        // 杠掉试试
+        ArrayList<Tile> newHand = new ArrayList<Tile>();
+        ArrayList<RoundStateCall> newCalls = new ArrayList<RoundStateCall>();
+        newCalls.add_all(calls);
+        ArrayList<Tile> kan = new ArrayList<Tile>();
+        kan.add(tile);
+
+        foreach (Tile t in sortedhand)
+        {
+            if (t.tile_type == tile.tile_type)
+            {
+                kan.add(t);
+            }
+            else
+            {
+                newHand.add(t);
+            }
+        }
+
+        newCalls.add(new RoundStateCall(RoundStateCall.CallType.OPEN_KAN, kan, tile, discarder_index));
+
+        HandStatistics newStats = analyze_hand(tile, newHand, newCalls);
+        if (newStats.half_sequence_count_by_tile <  stats.half_sequence_count_by_tile)
+        {
+            // 牌变差了
+            return false;
+        }
+
+        // 默认就不杠吧
+        return true;
     }
 
     // Evaluate whether to call chii (吃) on a tile
@@ -320,7 +455,7 @@ class JulianBot : Bot
                 return true;
             }
 
-            HandStatistics newStats = analyze_hand(newHand, newCalls);
+            HandStatistics newStats = analyze_hand(null, newHand, newCalls);
             if (stats.terminal_count == 0 && stats.dragon_count < 2)
             {
                 // 我没幺九牌, 看吃完之后能不能好一点
@@ -376,7 +511,7 @@ class JulianBot : Bot
         Tile discard_for_tenpai = null;
         foreach (Tile tile in tiles_allowed)
         {
-            copy_for_tenpai.add_all(tiles_allowed);
+            copy_for_tenpai.add_all(round_state.self.hand);
             copy_for_tenpai.remove(tile);
             // 能听牌当然就打你了
             if (TileRules.in_tenpai(copy_for_tenpai, round_state.self.calls)) {
@@ -457,22 +592,8 @@ class JulianBot : Bot
             call_ron();
             return;
         }
-
-        // Get s (下家 - shimocha)
-        int shimocha_index = (round_state.self.index + 1) % 4;
-        //  RoundStatePlayer left_player = round_state.get_player(left_index);
-        //  ArrayList<Tile> left_discards = left_player.pond;
-
-        // Get cross/opposite player (对面 - toimen)
-        int toimen_index = (round_state.self.index + 2) % 4;
-        //    RoundStatePlayer cross_player = round_state.get_player(cross_index);
-        //    ArrayList<Tile> cross_discards = cross_player.pond;
-
-        // Get (上家 - kamicha)
-        int kamicha_index = (round_state.self.index + 3) % 4;
-
         // Analyze hand statistics
-        HandStatistics stats = analyze_hand(sortedhand,calls);
+        HandStatistics stats = analyze_hand(tile, sortedhand, calls);
         ArrayList<HandReading> beforeCallReading = TileRules.hand_readings(sortedhand,calls,true,false);
 
         // Evaluate pon decision
@@ -488,6 +609,13 @@ class JulianBot : Bot
         if (should_call_chii(tile, sortedhand, calls, beforeCallReading, stats, discarding_player, out chii_tile1, out chii_tile2))
         {
             call_chii(chii_tile1, chii_tile2);
+            return;
+        }
+
+         // Evaluate pon decision
+        if (should_call_kan(tile, sortedhand, calls, beforeCallReading, stats, discarding_player))
+        {
+            call_open_kan();
             return;
         }
 

@@ -11,6 +11,7 @@ public class ServerSettings : Serializable
         triple_ron_draw = OnOffEnum.ON;
         decision_time = 10;
         reveal_all_tiles = OnOffEnum.OFF;
+        shuffle_tiles = OnOffEnum.ON;  // Default: shuffle tiles
     }
 
     public ServerSettings.from_disk()
@@ -70,6 +71,7 @@ public class ServerSettings : Serializable
         settings.add("triple_ron_draw = " + on_off_enum_to_string(triple_ron_draw));
         settings.add("decision_time = " + decision_time.to_string());
         settings.add("reveal_all_tiles = " + on_off_enum_to_string(reveal_all_tiles));
+        settings.add("shuffle_tiles = " + on_off_enum_to_string(shuffle_tiles));
 
         return settings.to_array();
     }
@@ -96,6 +98,9 @@ public class ServerSettings : Serializable
         case "reveal_all_tiles":
             reveal_all_tiles = parse_on_off_enum(value);
             break;
+        case "shuffle_tiles":
+            shuffle_tiles = parse_on_off_enum(value);
+            break;
         }
     }
 
@@ -103,4 +108,5 @@ public class ServerSettings : Serializable
     public OnOffEnum triple_ron_draw { get; set; }
     public int decision_time { get; set; }
     public OnOffEnum reveal_all_tiles { get; set; }
+    public OnOffEnum shuffle_tiles { get; set; }
 }

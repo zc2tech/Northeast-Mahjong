@@ -554,7 +554,13 @@ namespace GameServer
         private void kan(int player_index)
         {
             ServerRoundStatePlayer player = validator.get_player(player_index);
-            game_draw_dead_tile(player.index, player.newest_tile, false); // Dead wall tiles are never revealed to others
+            Tile dead_tile = player.newest_tile;
+
+            debug_log("KAN: Player %d drew tile_ID=%d (%s) from dead_wall"
+                .printf(player_index, dead_tile.ID, dead_tile.tile_type.to_string()));
+
+            // Dead wall tile should be revealed to the player who drew it
+            game_draw_dead_tile(player.index, dead_tile, true);
             add_animation_delay(timings.call.total() + timings.tile_draw.total());
         }
 
@@ -574,7 +580,6 @@ namespace GameServer
         protected virtual void turn_decision_started() {}
         public virtual void buffer_action(ClientServerAction action) {}
 
-        public Tile newest_dora { get { return validator.newest_dora; } }
         public Tile? dead_wall_mark { owned get { return validator.dead_wall_mark; } }
         public ArrayList<Tile> dead_wall_tiles { get { return validator.dead_wall_tiles; } }
 

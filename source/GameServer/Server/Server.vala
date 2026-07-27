@@ -189,7 +189,11 @@ namespace GameServer
 
         protected override RoundStartInfo get_round_start_info()
         {
+            // why not range 1,6 to emulate the real world dice ?
+            // and we confirmed it's a stack index like real world
+            // a stack should contain upper and lower layers
             int wall_index = rnd.int_range(1, 7) + rnd.int_range(1, 7); // Emulate dual die roll probability
+            //  int wall_index = 0; 
             return new RoundStartInfo(wall_index);
         }
 

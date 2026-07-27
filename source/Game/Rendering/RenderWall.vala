@@ -9,14 +9,14 @@ public class RenderWall : WorldObject
 
     private ArrayList<WallPart> draw_parts;
     private ArrayList<WallPart> dead_parts;
-    private int split;
+    private int split_stack;
     private int TILE_COUNT_PER_WALL = 28;
 
     public RenderWall(GameRenderContext context, RenderTile[] tiles)
     {
         this.context = context;
         this.tiles = tiles;
-        this.split = context.wall_split;
+        this.split_stack = context.wall_split;
     }
 
     protected override void added()
@@ -45,42 +45,44 @@ public class RenderWall : WorldObject
     {
         // No visual gap needed since dead wall mark is revealed
         float delta = 0;
-
+        // 从庄家(东风位)位置推算  0 -> 0 , 1 -> 3 , 2 -> 2 , 3 -> 1
         int start_wall = (4 - context.dealer) % 4;
-        ArrayList<WallPart> draw = new ArrayList<WallPart>();
-        ArrayList<WallPart> dead = new ArrayList<WallPart>();
+        ArrayList<WallPart> draw = new ArrayList<WallPart>(); // 正常 抽牌 墩
+        ArrayList<WallPart> dead = new ArrayList<WallPart>(); // 杠牌墩
 
         for (int i = 0; i < 4; i++)
-            draw.add(walls[(start_wall + i) % 4]);
+            draw.add(walls[(start_wall + i) % 4]); /// start_wall 偏移开始加
 
-        WallPart left = draw.remove_at(0);
-        WallPart p = left.dead_split(split);
+        WallPart dealer_wall_left = draw.remove_at(0); // 0 is the start_wall in draw     left: 剩余
+        WallPart p = dealer_wall_left.dead_split(split_stack); // this.split = context.wall_split = wall_index from dice;
         draw.insert(0, p);
         p.animate_move(-delta, time);
 
         // For 28 tiles per wall, dead wall is 4 pairs (8 tiles)
         // Split at position 4 (counted from the right side of the wall)
-        if (split > 4)
+        if (split_stack > 4)
         {
-            var part = left.dead_split(split - 4);
-            part.to_dead_wall(2); // 2 dora indicators
+            var part = dealer_wall_left.dead_split(split_stack - 4); // 退4墩再割,割出来正好用来做dead wall
+            part.to_dead_wall(); 
             dead.add(part);
-            draw.add(left);
+            draw.add(dealer_wall_left);
 
-            left.animate_move(delta, time);
+            dealer_wall_left.animate_move(delta, time);
         }
         else
         {
-            dead.add(left);
-            left.to_dead_wall(2); // 2 dora indicators
+            // left: 剩余
+            dead.add(dealer_wall_left);
+            dealer_wall_left.to_dead_wall(); 
 
-            if (split != 4)
+            if (split_stack != 4)
             {
+                // 跨墙往 dead wall 放
                 // For 28-tile walls: 14 pairs - 4 dead wall pairs = 10 draw pairs
                 // Split from the end of the opposite wall
-                var part = draw[3].dead_split(10 + split);
+                var part = draw[3].dead_split(10 + split_stack);
                 dead.add(part);
-                part.to_dead_wall(0);
+                part.to_dead_wall();
                 part.animate_move(-delta, time);
             }
         }
@@ -101,6 +103,7 @@ public class RenderWall : WorldObject
 
     public RenderTile? draw_dead_wall()
     {
+        // Draw from dead_parts[0] which is the far end (away from draw wall and mark)
         if (dead_parts[0].empty)
             dead_parts.remove_at(0);
         if (dead_parts.size == 0)
@@ -108,33 +111,18 @@ public class RenderWall : WorldObject
         return dead_parts[0].dead_draw();
     }
 
-    public void flip_dora()
+    public void flip_dead_wall_mark(int mark_tile_id)
     {
-        if (!dead_parts[0].flip_dora(context.server_times.dora_flip))
-            dead_parts[1].flip_dora(context.server_times.dora_flip);
-    }
-    public void flip_dead_wall_mark()
-    {
-        // Dead wall has 8 tiles (4 pairs), we want tile at index 7 (8th/last tile, 0-indexed)
-        // Find the tile in the dead_parts and flip it
-        int tile_count = 0;
+        // Flip the mark tile specified by the server
         foreach (WallPart part in dead_parts)
         {
-            if (tile_count + part.tile_count() > 7)
+            int index = part.find_tile_index(mark_tile_id);
+            if (index >= 0)
             {
-                // The 8th tile is in this part
-                int index_in_part = 7 - tile_count;
-                part.flip_dead_wall_mark(index_in_part,context.server_times.dora_flip);
-                break;
+                part.flip_dead_wall_mark(index, context.server_times.dead_wall_mark_flip);
+                return;
             }
-            tile_count += part.tile_count();
         }
-    }
-
-    public void flip_ura_dora()
-    {
-        foreach (WallPart part in dead_parts)
-            part.flip_ura_dora(context.server_times.dora_flip);
     }
 
     public void dead_tile_add()
@@ -144,7 +132,7 @@ public class RenderWall : WorldObject
         if (last.empty)
             draw_parts.remove_at(i--);
 
-        dead_parts[dead_parts.size - 1].dead_tile_add(draw_parts[i].remove_last(context.server_times.dora_flip), context.server_times.dora_flip);
+        dead_parts[dead_parts.size - 1].dead_tile_add(draw_parts[i].remove_last(context.server_times.dead_wall_mark_flip), context.server_times.dead_wall_mark_flip);
     }
 
     public class WallPart : WorldObject
@@ -153,7 +141,6 @@ public class RenderWall : WorldObject
         private Vec3 tile_size;
         private int removed_tiles;
 
-        private int dora_index;
         private int tiles_added;
         private int dead_drawn;
         private ArrayList<RenderTile> doras = new ArrayList<RenderTile>();
@@ -184,32 +171,32 @@ public class RenderWall : WorldObject
             animate(animation, true);
         }
 
-        public void to_dead_wall(int dora_index)
+        // The server has already reversed the logical order to match drawing from the far end
+        // Tiles arrive: [0]=far end (upper), [1]=far end (lower), ..., [6]=mark (upper), [7]=near (lower)
+        // Visual positions are set by order() which places tiles based on array index
+        public void to_dead_wall()
         {
-            this.dora_index = dora_index + 1;
-
-            ArrayList<RenderTile> tiles = new ArrayList<RenderTile>();
-            while (this.tiles.size > 0)
-                tiles.add(this.tiles.remove_at(this.tiles.size - 1));
-            this.tiles = tiles;
+            // Server already reversed - just keep the order
         }
 
-        public WallPart dead_split(int index)
+        // from the wall, remove the dead wall part
+        public WallPart dead_split(int index_stack)
         {
             ArrayList<RenderTile> split = new ArrayList<RenderTile>();
 
-            index *= 2;
+            int index = index_stack * 2; // a stack contains upper and lower tiles
 
             while (index < tiles.size)
+                 // continues remove from same position which will be filled from follow-up tiles
                 split.add(tiles.remove_at(index));
 
             Vec3 pos = Vec3(split[0].position.x, 0, 0);
 
-            WallPart wall = new WallPart(split.to_array(), tile_size);
+            WallPart wall = new WallPart(split.to_array(), tile_size); // the wall without dead wall
             get_parent().add_object(wall);
             wall.position = position.plus(pos);
 
-            return wall;
+            return wall; // the wall without dead wall
         }
 
         public RenderTile remove_last(AnimationTime time)
@@ -241,13 +228,11 @@ public class RenderWall : WorldObject
         {
             assert(!empty);
 
-            int i = ++dead_drawn % 2;
-
-            if (i >= tiles.size)
+            if (empty)
                 return null;
 
-            dora_index--;
-            return tiles.remove_at(i);
+            RenderTile tile = tiles.remove_at(0);
+            return tile;
         }
 
         private void order()
@@ -282,22 +267,23 @@ public class RenderWall : WorldObject
             tiles_added++;
         }
 
-        public bool flip_dora(AnimationTime time)
+        public RenderTile? get_tile_at(int index)
         {
-            if (dora_index >= tiles.size)
-                return false;
+            if (index >= 0 && index < tiles.size)
+                return tiles[index];
+            return null;
+        }
 
-            RenderTile t = tiles[dora_index];
-            doras.add(t);
-            ura_doras.add(tiles[dora_index - 1]);
-
-            // Flip the tile face-up
-            Quat rot = Quat.from_euler(0, 1, 0).mul(t.rotation);
-            t.animate_towards(t.position, rot, time);
-
-            dora_index += 2;
-
-            return true;
+        public int find_tile_index(int tile_ID)
+        {
+            for (int i = 0; i < tiles.size; i++)
+            {
+                if (tiles[i].tile_type.ID == tile_ID)
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         public bool flip_dead_wall_mark(int index,AnimationTime time)

@@ -186,7 +186,13 @@ namespace GameServer
             foreach (Tile t in tiles)
                 game_reveal_tile(t);
 
-            ServerMessageClosedKan message = new ServerMessageClosedKan(tiles[0].tile_type);
+            ServerMessageClosedKan message = new ServerMessageClosedKan(
+                tiles[0].tile_type,
+                tiles[0].ID,
+                tiles[1].ID,
+                tiles[2].ID,
+                tiles[3].ID
+            );
 
             foreach (GameRoundServerPlayer pl in players)
                 pl.server_player.send_message(message);
@@ -270,6 +276,7 @@ namespace GameServer
         protected virtual void round_starting()
         {
         }
+
         protected virtual void processing() {}
         public virtual void message_received(ServerPlayer player, ClientMessage message) {}
     }
@@ -287,6 +294,13 @@ namespace GameServer
 
             round = new RegularServerRoundState(settings, round_wind, dealer, info.wall_index, rnd, timings);
             tiles = round.get_tiles();
+
+            // Set the dead wall mark tile ID after wall initialization
+            Tile? mark = round.dead_wall_mark;
+            if (mark != null)
+            {
+                info.dead_wall_mark_tile_id = mark.ID;
+            }
 
             init();
             round.log.connect(do_log);
@@ -314,7 +328,7 @@ namespace GameServer
             // Reveal only the dead wall mark tile (not all 8 tiles)
             // Calculate which physical tile is the mark - this position is fixed for the entire hand
             int start_wall = (4 - dealer) % 4;
-            int index = start_wall * 28 + info.wall_index * 2;
+            int index = start_wall * 28 + info.wall_index * 2; // why times 2, is the index stack index ?
             int mark_tile_id = (index + 104) % 112;
 
             if (tiles != null && mark_tile_id >= 0 && mark_tile_id < tiles.length)

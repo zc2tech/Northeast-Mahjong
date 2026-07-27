@@ -108,6 +108,7 @@ namespace GameServer
                 log = menu.log;
                 settings = log.settings;
                 this.info = log.start_info;
+                server = new LogServer(observers, rnd, settings, log);
             }
             else
             {
@@ -118,6 +119,8 @@ namespace GameServer
 
                 foreach (ServerPlayer player in players)
                     player.receive_message.connect(message_received);
+
+                server = new RegularServer(players, observers, rnd, info, settings);
             }
 
             foreach (ServerPlayer player in observers)

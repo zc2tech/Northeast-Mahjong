@@ -26,7 +26,7 @@ public class AnimationTimings : Serializable
         AnimationTime call,
         AnimationTime hand_reveal,
         AnimationTime split_wall,
-        AnimationTime dora_flip,
+        AnimationTime dead_wall_mark_flip,
         AnimationTime win,
         AnimationTime riichi,
 
@@ -56,7 +56,7 @@ public class AnimationTimings : Serializable
         this.call = call;
         this.hand_reveal = hand_reveal;
         this.split_wall = split_wall;
-        this.dora_flip = dora_flip;
+        this.dead_wall_mark_flip = dead_wall_mark_flip;
         this.win = win;
         this.riichi = riichi;
 
@@ -130,7 +130,7 @@ public class AnimationTimings : Serializable
     public AnimationTime call { get; protected set; }
     public AnimationTime hand_reveal { get; protected set; }
     public AnimationTime split_wall { get; protected set; }
-    public AnimationTime dora_flip { get; protected set; }
+    public AnimationTime dead_wall_mark_flip { get; protected set; }
     public AnimationTime win { get; protected set; }
     public AnimationTime riichi { get; protected set; }
 

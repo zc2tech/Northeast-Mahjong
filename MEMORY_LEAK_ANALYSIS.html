@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Northeast Mahjong - Memory Leak Analysis</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+            border-left: 4px solid #3498db;
+            padding-left: 10px;
+        }
+        h3 {
+            color: #34495e;
+            margin-top: 20px;
+        }
+        .risk-high {
+            background: #ffe6e6;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .risk-medium {
+            background: #fff4e6;
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .risk-low {
+            background: #e8f8f5;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .risk-label {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85em;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .example {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .good {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .bad {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .recommendation {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        ul {
+            line-height: 1.8;
+        }
+        .file-ref {
+            color: #6c757d;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+        .summary {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Northeast Mahjong - Memory Leak Analysis</h1>
+        <p><strong>Project:</strong> Northeast Mahjong (Vala/GTK)</p>
+        <p><strong>Analysis Date:</strong> July 26, 2026</p>
+        <p><strong>Total Vala Files:</strong> 83</p>
+
+        <div class="summary">
+            <strong>⚠️ Critical Finding:</strong> The biggest risk in this project is the <strong>ServerGameRound signal connections</strong> that are never disconnected. This could cause memory leaks if rounds are created and destroyed frequently during gameplay.
+        </div>
+
+        <h2>1. Signal Connection Leaks</h2>
+        <div class="risk-high">
+            <p class="risk-label">Risk Level: HIGH</p>
+            <p>When you connect signals but don't disconnect them when objects are destroyed, the signal connection holds a reference and prevents garbage collection.</p>
+        </div>
+
+        <h3><span class="good">✓ Good Examples in Your Code:</span></h3>
+        <div class="example">
+            <p class="file-ref">BotConnection.vala lines 44-45, 68:</p>
+            <pre><code>connection.received_message.disconnect(message_received);
+bot.poll.disconnect(poll);</code></pre>
+
+            <p class="file-ref">ServerPlayer.vala lines 50-51, 154-155:</p>
+            <pre><code>connection.receive_message.disconnect(forward_message);
+connection.disconnected.disconnect(forward_disconnected);</code></pre>
+        </div>
+
+        <h3><span class="bad">✗ Potential Issues:</span></h3>
+        <div class="example">
+            <p class="file-ref">ServerGameRound.vala lines 25-39:</p>
+            <p>Connects 16 signals in <code>init()</code> but <strong>NO disconnect method exists</strong></p>
+            <pre><code>round.game_initial_draw.connect(game_initial_draw);
+round.game_draw_tile.connect(game_draw_tile);
+round.game_discard_tile.connect(game_discard_tile);
+round.game_draw_dead_tile.connect(game_draw_dead_tile);
+round.game_get_turn_decision.connect(game_get_turn_decision);
+round.game_get_call_decision.connect(game_get_call_decision);
+round.game_ron.connect(game_ron);
+round.game_tsumo.connect(game_tsumo);
+round.game_late_kan.connect(game_late_kan);
+round.game_closed_kan.connect(game_closed_kan);
+round.game_open_kan.connect(game_open_kan);
+round.game_pon.connect(game_pon);
+round.game_chii.connect(game_chii);
+round.game_calls_finished.connect(game_calls_finished);
+round.game_draw.connect(game_draw);</code></pre>
+
+            <p class="file-ref">MainWindow.vala:</p>
+            <p>Multiple signal connections with no cleanup</p>
+        </div>
+
+        <div class="recommendation">
+            <h4>Recommendation: Add Cleanup Method</h4>
+            <pre><code>// In ServerGameRound class
+public virtual void cleanup()
+{
+    if (round != null)
+    {
+        round.game_initial_draw.disconnect(game_initial_draw);
+        round.game_draw_tile.disconnect(game_draw_tile);
+        round.game_discard_tile.disconnect(game_discard_tile);
+        round.game_draw_dead_tile.disconnect(game_draw_dead_tile);
+        round.game_get_turn_decision.disconnect(game_get_turn_decision);
+        round.game_get_call_decision.disconnect(game_get_call_decision);
+        round.game_ron.disconnect(game_ron);
+        round.game_tsumo.disconnect(game_tsumo);
+        round.game_late_kan.disconnect(game_late_kan);
+        round.game_closed_kan.disconnect(game_closed_kan);
+        round.game_open_kan.disconnect(game_open_kan);
+        round.game_pon.disconnect(game_pon);
+        round.game_chii.disconnect(game_chii);
+        round.game_calls_finished.disconnect(game_calls_finished);
+        round.game_draw.disconnect(game_draw);
+    }
+}
+
+// Call cleanup when round is finished or destroyed
+~ServerGameRound()
+{
+    cleanup();
+}</code></pre>
+        </div>
+
+        <h2>2. Circular References in UI Hierarchy</h2>
+        <div class="risk-medium">
+            <p class="risk-label">Risk Level: MEDIUM</p>
+            <p>Parent-child relationships in UI (add_child/remove_child) can cause circular references if not properly managed.</p>
+        </div>
+
+        <h3><span class="good">✓ Good Pattern in Your Code:</span></h3>
+        <div class="example">
+            <p class="file-ref">ScoringView.vala lines 158, 172:</p>
+            <pre><code>if (scoring_view != null)
+    remove_child(scoring_view);
+scoring_view = null;</code></pre>
+            <p>Properly removes child views before replacing them.</p>
+        </div>
+
+        <div class="warning">
+            <h4>⚠️ Watch For:</h4>
+            <p>Views that keep references to their children AND children keep references back to parent without using <code>weak</code> or <code>unowned</code>.</p>
+        </div>
+
+        <div class="recommendation">
+            <h4>Use Weak References When Appropriate:</h4>
+            <pre><code>// Use weak reference for parent-child cycles
+public class ChildView : View2D
+{
+    private weak ParentView parent;  // Won't prevent garbage collection
+
+    public ChildView(ParentView parent)
+    {
+        this.parent = parent;
+    }
+}</code></pre>
+        </div>
+
+        <h2>3. Timer/Animation Leaks</h2>
+        <div class="risk-medium">
+            <p class="risk-label">Risk Level: MEDIUM</p>
+            <p>Timers and animations that aren't stopped can keep objects alive indefinitely.</p>
+        </div>
+
+        <div class="example">
+            <p class="file-ref">GameRenderView.vala:</p>
+            <p>Animation objects should be stopped when views are destroyed.</p>
+        </div>
+
+        <div class="recommendation">
+            <h4>Stop Animations on Cleanup:</h4>
+            <pre><code>private Animation? camera_animation;
+
+public void cleanup()
+{
+    if (camera_animation != null)
+    {
+        camera_animation.stop();
+        camera_animation = null;
+    }
+}</code></pre>
+        </div>
+
+        <h2>4. ArrayList/HashMap Growth</h2>
+        <div class="risk-low">
+            <p class="risk-label">Risk Level: LOW-MEDIUM</p>
+            <p>Collections that grow indefinitely without clearing.</p>
+        </div>
+
+        <h3>Watch these areas:</h3>
+        <ul>
+            <li>Game logs - consider limiting history size</li>
+            <li>Tile collections - clear when rounds end</li>
+            <li>Player action history - cap at reasonable size</li>
+            <li>Pond (discarded tiles) - already bounded by game rules</li>
+        </ul>
+
+        <div class="example">
+            <p class="file-ref">JulianBot.vala:</p>
+            <p><span class="good">✓ Good:</span> ArrayLists are created as local variables in methods - these are automatically garbage collected.</p>
+            <pre><code>ArrayList&lt;Tile&gt; newHand = new ArrayList&lt;Tile&gt;();
+newHand.add_all(sortedhand);
+// Automatically freed when method returns</code></pre>
+        </div>
+
+        <div class="recommendation">
+            <h4>Clear Collections When Done:</h4>
+            <pre><code>// When round finishes
+public void round_finished()
+{
+    tiles.clear();
+    players.clear();
+    call_history.clear();
+}</code></pre>
+        </div>
+
+        <h2>5. Network Connection Objects</h2>
+        <div class="risk-medium">
+            <p class="risk-label">Risk Level: MEDIUM</p>
+            <p><code>ServerPlayer</code>, <code>BotConnection</code>, <code>Connection</code> objects need proper cleanup.</p>
+        </div>
+
+        <h3><span class="good">✓ Good:</span></h3>
+        <div class="example">
+            <p class="file-ref">ServerPlayer.vala:</p>
+            <p>Your code properly disconnects connections when cleaning up.</p>
+            <pre><code>public void close()
+{
+    connection.receive_message.disconnect(forward_message);
+    connection.disconnected.disconnect(forward_disconnected);
+}</code></pre>
+        </div>
+
+        <h2>General Recommendations</h2>
+
+        <div class="recommendation">
+            <h3>1. Add Cleanup Methods to Key Classes</h3>
+            <p>Every class that connects signals should have a cleanup method:</p>
+            <pre><code>public class MyClass
+{
+    public void init()
+    {
+        object.signal.connect(handler);
+    }
+
+    public void cleanup()
+    {
+        if (object != null)
+            object.signal.disconnect(handler);
+    }
+
+    ~MyClass()
+    {
+        cleanup();
+    }
+}</code></pre>
+        </div>
+
+        <div class="recommendation">
+            <h3>2. Use Weak References Appropriately</h3>
+            <pre><code>// Prevent circular references
+weak ParentObject parent;
+unowned ChildObject child;  // When you don't own the object</code></pre>
+        </div>
+
+        <div class="recommendation">
+            <h3>3. Profile Memory Usage Periodically</h3>
+            <p>Use Valgrind to detect memory leaks during development:</p>
+            <pre><code>valgrind --leak-check=full --show-leak-kinds=all ./bin/Northeast-Mahjong
+
+# Or use Massif for heap profiling
+valgrind --tool=massif ./bin/Northeast-Mahjong
+ms_print massif.out.&lt;pid&gt;</code></pre>
+        </div>
+
+        <div class="recommendation">
+            <h3>4. Clear Collections Explicitly</h3>
+            <pre><code>// When transitioning between game states
+public void reset_round()
+{
+    tiles.clear();
+    players.clear();
+    call_history.clear();
+    animations.clear();
+}</code></pre>
+        </div>
+
+        <div class="recommendation">
+            <h3>5. Test for Leaks During Long Sessions</h3>
+            <ul>
+                <li>Play multiple rounds and check memory usage</li>
+                <li>Monitor with <code>top</code> or Activity Monitor</li>
+                <li>Look for steadily increasing memory usage</li>
+                <li>Test reconnection scenarios (disconnect/reconnect multiple times)</li>
+            </ul>
+        </div>
+
+        <h2>Priority Action Items</h2>
+
+        <div class="warning">
+            <h3>🔴 High Priority:</h3>
+            <ol>
+                <li><strong>Add cleanup method to ServerGameRound</strong> - This is the biggest leak risk</li>
+                <li><strong>Disconnect signals in RegularServerGameRound</strong> when round finishes</li>
+                <li><strong>Review MainWindow signal connections</strong> - ensure cleanup on exit</li>
+            </ol>
+        </div>
+
+        <div class="recommendation">
+            <h3>🟡 Medium Priority:</h3>
+            <ol>
+                <li>Review animation lifecycle in GameRenderView</li>
+                <li>Add cleanup to BotConnection if bots are created/destroyed frequently</li>
+                <li>Verify UI view hierarchies don't have circular refs</li>
+            </ol>
+        </div>
+
+        <div class="risk-low">
+            <h3>🟢 Low Priority (Monitoring):</h3>
+            <ol>
+                <li>Monitor collection sizes during gameplay</li>
+                <li>Profile with Valgrind during testing</li>
+                <li>Add logging for object creation/destruction counts</li>
+            </ol>
+        </div>
+
+        <h2>Testing Strategy</h2>
+
+        <div class="example">
+            <h3>Memory Leak Test Scenario:</h3>
+            <pre><code># 1. Start the game
+./bin/Northeast-Mahjong
+
+# 2. In another terminal, monitor memory
+watch -n 1 'ps aux | grep Northeast-Mahjong | grep -v grep'
+
+# 3. Play 10+ rounds continuously
+# 4. Check if memory usage keeps growing
+# 5. Expected: Memory should stabilize after a few rounds
+
+# 6. Run with Valgrind
+valgrind --leak-check=full \
+         --show-leak-kinds=all \
+         --track-origins=yes \
+         --log-file=valgrind.log \
+         ./bin/Northeast-Mahjong
+
+# 7. Review valgrind.log for "definitely lost" and "possibly lost"</code></pre>
+        </div>
+
+        <h2>Summary</h2>
+
+        <div class="summary">
+            <p><strong>Main Findings:</strong></p>
+            <ul>
+                <li>✅ Network connections are properly cleaned up</li>
+                <li>✅ UI views properly remove children</li>
+                <li>✅ Local collections in methods are fine</li>
+                <li>⚠️ <strong>ServerGameRound has 15+ signal connections never disconnected</strong></li>
+                <li>⚠️ Animation lifecycle needs review</li>
+                <li>⚠️ MainWindow signal connections lack cleanup</li>
+            </ul>
+
+            <p><strong>Next Steps:</strong></p>
+            <ol>
+                <li>Add <code>cleanup()</code> method to ServerGameRound</li>
+                <li>Add <code>cleanup()</code> method to RegularServerGameRound</li>
+                <li>Call cleanup when rounds finish</li>
+                <li>Test with Valgrind</li>
+                <li>Monitor memory during long play sessions</li>
+            </ol>
+        </div>
+
+        <hr style="margin: 40px 0; border: none; border-top: 2px solid #ddd;">
+
+        <p style="color: #6c757d; font-size: 0.9em; text-align: center;">
+            Generated for Northeast Mahjong project<br>
+            Review this document when implementing memory management improvements
+        </p>
+    </div>
+</body>
+</html>

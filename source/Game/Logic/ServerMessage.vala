@@ -168,12 +168,20 @@ public class ServerMessageLateKan : ServerMessage
 
 public class ServerMessageClosedKan : ServerMessage
 {
-    public ServerMessageClosedKan(TileType tile_type)
+    public ServerMessageClosedKan(TileType tile_type, int tile_1_ID, int tile_2_ID, int tile_3_ID, int tile_4_ID)
     {
         this.tile_type = tile_type;
+        this.tile_1_ID = tile_1_ID;
+        this.tile_2_ID = tile_2_ID;
+        this.tile_3_ID = tile_3_ID;
+        this.tile_4_ID = tile_4_ID;
     }
 
     public TileType tile_type { get; protected set; }
+    public int tile_1_ID { get; protected set; }
+    public int tile_2_ID { get; protected set; }
+    public int tile_3_ID { get; protected set; }
+    public int tile_4_ID { get; protected set; }
 }
 
 public class ServerMessageOpenKan : ServerMessage

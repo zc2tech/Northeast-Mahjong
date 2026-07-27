@@ -134,12 +134,18 @@ public class RenderPlayer : WorldObject
         calls.late_kan(pon, new RenderCalls.RenderCallLateKan(pon.tiles, tile, tile_size, alignment));
     }
 
-    public void closed_kan(TileType type, AnimationTime time)
+    public void closed_kan(RenderTile tile_1, RenderTile tile_2, RenderTile tile_3, RenderTile tile_4, AnimationTime time)
     {
-        ArrayList<RenderTile> tiles = hand.get_tiles_type(type);
+        hand.remove(tile_1);
+        hand.remove(tile_2);
+        hand.remove(tile_3);
+        hand.remove(tile_4);
 
-        foreach (RenderTile tile in tiles)
-            hand.remove(tile);
+        ArrayList<RenderTile> tiles = new ArrayList<RenderTile>();
+        tiles.add(tile_1);
+        tiles.add(tile_2);
+        tiles.add(tile_3);
+        tiles.add(tile_4);
 
         calls.add_call(new RenderCalls.RenderCallClosedKan(tiles, tile_size));
     }
