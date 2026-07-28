@@ -272,9 +272,10 @@ namespace GameServer
             int starting_dealer = 0;
             int starting_score = 500;
             int round_count = 8;
+            //  Unlike a single hand, a hanchan is won by having the highest total score at the end of the game.
             int hanchan_count = 1;
-            int uma_higher = 20;
-            int uma_lower = 10;
+            //  int uma_higher = 20;
+            //  int uma_lower = 10;
 
 
             float winning_draw_animation_time = 0.5f;
@@ -368,9 +369,9 @@ namespace GameServer
                 starting_dealer,
                 starting_score,
                 round_count,
-                hanchan_count,
-                uma_higher,
-                uma_lower
+                hanchan_count
+                //  ,uma_higher,
+                //  uma_lower
             );
 
             return info;

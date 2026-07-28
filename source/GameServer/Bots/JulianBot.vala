@@ -5,7 +5,7 @@ struct HandStatistics
 {
     public int terminal_count;
     public int dragon_count;
-    public int single_count;
+    public ArrayList<TileType> singles;
     public int pair_count;
     public int triplet_count;
     public int half_sequence_count_by_tile; // Tile相关半顺子数量
@@ -32,7 +32,7 @@ class JulianBot : Bot
     private void count_suit_patterns(HashMap<TileType, int> suit_map,
                                      int start_tile,
                                      int end_tile,
-                                     ref int single_count,
+                                     ref ArrayList<TileType> singles,
                                      ref int pair_count,
                                      ref int triplet_count)
     {
@@ -49,7 +49,7 @@ class JulianBot : Bot
                 case 1:
                     if (m1 == 0 && m2 == 0 && p1 == 0 && p2 == 0)
                     {
-                        single_count++;
+                        singles.add(i);
                     }
                     break;
                 case 2:
@@ -108,7 +108,7 @@ class JulianBot : Bot
 
         stats.terminal_count = 0;
         stats.dragon_count = 0;
-        stats.single_count = 0;
+        stats.singles = new ArrayList<TileType>();
         stats.pair_count = 0;
         stats.triplet_count = 0;
         stats.hasTerminalSeq = false; // 这个指标实在太关键了
@@ -121,8 +121,6 @@ class JulianBot : Bot
             {
                 stats.terminal_count++;
             }
-
-
             // Fixed bug: was using mapMan for all suits
             if (t.tile_type >= TileType.MAN1 && t.tile_type <= TileType.MAN9)
             {
@@ -144,47 +142,39 @@ class JulianBot : Bot
         }
 
         // 找到含幺九的顺子就走
-        foreach (Tile t in sorted_hand)
-        {
-            if(t.tile_type == TileType.MAN1 && map_man[TileType.MAN2] > 0 && map_man[TileType.MAN3] > 0) {
-                stats.hasTerminalSeq = true;
-                break;
-            }
-            if(t.tile_type == TileType.MAN9 && map_man[TileType.MAN8] > 0 && map_man[TileType.MAN7] > 0) {
-                stats.hasTerminalSeq = true;
-                break;
-            }
-            if(t.tile_type == TileType.PIN1 && map_pin[TileType.PIN2] > 0 && map_pin[TileType.PIN3] > 0) {
-                stats.hasTerminalSeq = true;
-                break;
-            }
-            if(t.tile_type == TileType.PIN9 && map_pin[TileType.PIN8] > 0 && map_pin[TileType.PIN7] > 0) {
-                stats.hasTerminalSeq = true;
-                break;
-            }
-            if(t.tile_type == TileType.SOU1 && map_sou[TileType.SOU2] > 0 && map_sou[TileType.SOU3] > 0) {
-                stats.hasTerminalSeq = true;
-                break;
-            }
-            if(t.tile_type == TileType.SOU9 && map_sou[TileType.SOU8] > 0 && map_sou[TileType.SOU7] > 0) {
-                stats.hasTerminalSeq = true;
-                break;
-            }
+        if( map_man[TileType.MAN1] > 0  && map_man[TileType.MAN2] > 0 && map_man[TileType.MAN3] > 0) {
+            stats.hasTerminalSeq = true;
         }
-        if(map_man[TileType.MAN1] >= 3 || map_man[TileType.MAN9] >= 3
+        if( map_man[TileType.MAN9] > 0  && map_man[TileType.MAN8] > 0 && map_man[TileType.MAN7] > 0) {
+            stats.hasTerminalSeq = true;
+        }
+        if( map_pin[TileType.PIN1] > 0  && map_pin[TileType.PIN2] > 0 && map_pin[TileType.PIN3] > 0) {
+            stats.hasTerminalSeq = true;
+        }
+        if( map_pin[TileType.PIN9] > 0 && map_pin[TileType.PIN8] > 0 && map_pin[TileType.PIN7] > 0) {
+            stats.hasTerminalSeq = true;
+        }
+        if( map_sou[TileType.SOU1] > 0 && map_sou[TileType.SOU2] > 0 && map_sou[TileType.SOU3] > 0) {
+            stats.hasTerminalSeq = true;
+        }
+        if( map_sou[TileType.SOU9] > 0 && map_sou[TileType.SOU8] > 0 && map_sou[TileType.SOU7] > 0) {
+            stats.hasTerminalSeq = true;
+        }
+        if( map_man[TileType.MAN1] >= 3 || map_man[TileType.MAN9] >= 3
              || map_pin[TileType.PIN1] >=3 || map_pin[TileType.PIN9] >= 3
              || map_sou[TileType.SOU1] >=3 || map_sou[TileType.SOU9] >= 3
-            ) {
-                stats.hasTerminalTriplet = true;
-            }
+            ) 
+        {
+            stats.hasTerminalTriplet = true;
+        }
 
         // Analyze patterns for each suit
         count_suit_patterns(map_man, TileType.MAN1, TileType.MAN9,
-                           ref stats.single_count, ref stats.pair_count, ref stats.triplet_count);
+                           ref stats.singles, ref stats.pair_count, ref stats.triplet_count);
         count_suit_patterns(map_pin, TileType.PIN1, TileType.PIN9,
-                           ref stats.single_count, ref stats.pair_count, ref stats.triplet_count);
+                           ref stats.singles, ref stats.pair_count, ref stats.triplet_count);
         count_suit_patterns(map_sou, TileType.SOU1, TileType.SOU9,
-                           ref stats.single_count, ref stats.pair_count, ref stats.triplet_count);
+                           ref stats.singles, ref stats.pair_count, ref stats.triplet_count);
 
 
         // Count half-sequences involving the given tile (for pon/kan decisions)
@@ -240,17 +230,7 @@ class JulianBot : Bot
             }
             
         }
-       
-        foreach (RoundStateCall c in calls)
-        {
-            foreach(Tile t in c.tiles) {
-                if (t.is_terminal_tile())
-                {
-                   
-                }
-            }
-        }
-
+      
         return stats;
     }
 
@@ -261,7 +241,7 @@ class JulianBot : Bot
 
         stats.terminal_count = 0;
         stats.dragon_count = 0;
-        stats.single_count = 0;
+        stats.singles = new ArrayList<TileType>();
         stats.pair_count = 0;
         stats.triplet_count = 0;
 
@@ -305,6 +285,9 @@ class JulianBot : Bot
                                   HandStatistics stats,
                                   RoundStatePlayer discarding_player)
     {
+        if(sortedhand.size <= 4 ) {
+            return false;
+        }
         if (!round_state.can_pon(round_state.self) || count(tile) != 2)
         {
             return false;
@@ -312,7 +295,7 @@ class JulianBot : Bot
 
         int pairCnt = stats.pair_count;
         int tripletCnt = stats.triplet_count;
-        int singleCnt = stats.single_count;
+        int singleCnt = stats.singles.size;
         int terminalCnt = stats.terminal_count;
         int dragonCnt = stats.dragon_count;
 
@@ -331,6 +314,15 @@ class JulianBot : Bot
             // 牌太烂了
             return false;
         }
+
+        // 没听牌，你又没幺九刻子时，赶紧碰
+        if( stats.dragon_count < 3 && !stats.hasTerminalTriplet
+             && (tile.is_dragon_tile() || tile.is_terminal_tile())
+            && beforeCallReading.size == 0) {
+            // 必碰
+            return true;
+        }
+
         // 牌好吗 其实如果那一对子正好是 幺九 对的话,其实还行
         if ((pairCnt <= 1 && tripletCnt < 1) || singleCnt >= 3 || terminalCnt <= 1)
         {
@@ -408,7 +400,7 @@ class JulianBot : Bot
 
         // 碰了之后什么状态? 刻子肯定是多了的
         HandStatistics newStats = analyze_hand(null, newHand, newCalls);
-        if (newStats.single_count - stats.single_count >= 2)
+        if (newStats.singles.size - stats.singles.size >= 2)
         {
             // 散牌增多两张以上啊,不值得
             return false;
@@ -432,6 +424,9 @@ class JulianBot : Bot
                                   HandStatistics stats,
                                   RoundStatePlayer discarding_player)
     {
+        if(sortedhand.size <= 4) {
+            return false;
+        }
         if (!round_state.can_open_kan(round_state.self))
         {
             return false;
@@ -439,7 +434,7 @@ class JulianBot : Bot
 
         int pairCnt = stats.pair_count;
         int tripletCnt = stats.triplet_count;
-        int singleCnt = stats.single_count;
+        int singleCnt = stats.singles.size;
         int terminalCnt = stats.terminal_count;
 
          // Get s (下家 - shimocha)
@@ -499,31 +494,47 @@ class JulianBot : Bot
     {
         tiles1 = null;
         tiles2 = null;
+        bool alreadyHave = false;
+
+        if(sortedhand.size <= 4) {
+            return false;
+        }
 
         if (!round_state.can_chii(round_state.self))
         {
             return false;
+        }
+
+        foreach( Tile t in sortedhand ) {
+            if(t.tile_type == tile.tile_type) {
+                alreadyHave = true;
+                break;
+            }
         }
  
         ArrayList<ArrayList<Tile>> groups = TileRules.get_chii_groups(round_state.self.hand, tile);
 
         // 能填补 幺九牌 空白的话, 或者把 幺九 吃定型的 , 必须吃
         // 但我如果已经是顺子牌型呢?
-        if(stats.dragon_count < 2 && !stats.hasTerminalSeq && !stats.hasTerminalTriplet) {
-            foreach(ArrayList<Tile> g in groups) {
-                // 我都没有幺九牌了, 肯定没法吃啥吐啥的
-                if(g[0].is_terminal_tile() || g[1].is_terminal_tile() || tile.is_terminal_tile()) {
+        //  if(stats.dragon_count < 2 && !stats.hasTerminalSeq && !stats.hasTerminalTriplet 
+        //      && (stats.terminal_count <=1 || stats.dragon_count <=1 )) {
+                
+        //      }
+        foreach(ArrayList<Tile> g in groups) {
+            // alreadyHave 确保 没法吃啥吐啥的
+            if(!alreadyHave && (g[0].is_terminal_tile() || g[1].is_terminal_tile() || tile.is_terminal_tile())) {
+                // 998 我 吃 7 ， 889 未必就吃  9998 也会去吃，但没办法，判断太难
+                if(stats.dragon_count < 2 && !stats.hasTerminalSeq && !stats.hasTerminalTriplet) {
+                    // 定型再说吧， 以后AI能判断好一点
+                    tiles1 = g[0];
+                    tiles2 = g[1];
                     return true;
                 }
             }
-
-            // 等着摸牌吧
-            return false;
-           
         }
 
         // 到这里就算有 幺九刻子或者对子了
-        if (stats.single_count >= 3)
+        if (stats.singles.size >= 3)
         {
             return false;
         }
@@ -544,6 +555,30 @@ class JulianBot : Bot
 
             newCalls.add(new RoundStateCall(RoundStateCall.CallType.CHII, chii, tile, discarding_player.index));
 
+            HandStatistics newStats = analyze_hand(null, newHand, newCalls);
+
+            // 再分析 hand_readings 之前,先简单分析一下
+            if(newStats.singles.size > stats.singles.size) {
+                // 单张竟然多了, 估计是吃啥吐啥类型的 继续分析
+                foreach(TileType iType in newStats.singles) {
+                    if(iType == tile.tile_type) {
+                        // 多出来的正好是吃进去的
+                        return false;
+                    }
+                }
+                
+            }
+
+            // 不能保证两个 对子 是很危险的 原来如果本来没对子也就算了， 吃少了不行
+            if(newStats.triplet_count < 1 && stats.pair_count >= 2 && newStats.pair_count < 2) {
+                return false;
+            }
+
+            if(stats.hasTerminalTriplet && !newStats.hasTerminalTriplet) {
+                // 把 “唯一的” 幺九刻给吃没了
+                return false;
+            }
+            
             // 找一下该打什么牌
             Tile bestDiscard = null;
             int bestReadingCnt = beforeCallReading.size;
@@ -570,8 +605,7 @@ class JulianBot : Bot
                 tiles2 = g[1];
                 return true;
             }
-
-            HandStatistics newStats = analyze_hand(null, newHand, newCalls);
+     
             if (stats.terminal_count == 0 && stats.dragon_count < 2)
             {
                 // 我没幺九牌, 看吃完之后能不能好一点
@@ -583,27 +617,38 @@ class JulianBot : Bot
             }
 
             if(stats.triplet_count >=1 && newStats.triplet_count == 0) {
-                // 把刻子吃没了
+                // 把刻子吃没了 这回不是看幺九刻了
                 return false;
             }
 
             // 上面的检查既然没要求吃,说明吃了也不能听牌,但如果孤张没变多的话,也还行啊
-            if (newStats.single_count == stats.single_count) {
-                tiles1 = g[0];
-                tiles2 = g[1];
-                return true; 
-            } else if(newStats.single_count -1 == stats.single_count) {
-                // 吃的时候,多了一张孤张也很正常
-                bool random_bool = Random.boolean();
-                if(random_bool) {
+            // 吃的时候,多了一张孤张也很正常, 吃啥吐啥已经在上面判断过了
+            if (!alreadyHave && (stats.triplet_count >= 1 || stats.pair_count >= 2)) {
+                if (newStats.singles.size <= stats.singles.size + 1) {
                     tiles1 = g[0];
                     tiles2 = g[1];
-                    return true;
+                    return true; 
+                } else if(newStats.singles.size == stats.singles.size + 2) {
+                    // 多出来两张孤张啊， 实在不知道该不该吃
+                    bool random_bool = Random.boolean();
+                    if(random_bool) {
+                        tiles1 = g[0];
+                        tiles2 = g[1];
+                        return true;
+                    }
                 }
+            } else {
+                // 已经有的话，吃了还不损对子 56778 吃 7  3445 吃 4
+                //  if(newStats.pair_count >= stats.pair_count && newStats.singles.size <= stats.singles.size) {
+                //      tiles1 = g[0];
+                //      tiles2 = g[1];
+                //      return true;
+                //  }              
             }
+            
         } // groups loop
 
-        // 全试玩了 该吃 还是 过 ?
+        // 全试玩了 该吃 还是 过 ? 要吃记得设上 Tile1 Tile2
         return false;
     }
 
@@ -622,62 +667,65 @@ class JulianBot : Bot
         //      do_void_hand();
         //  }
 
-   
-        // 如果打掉某张可以听牌的话
-        ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();
-        ArrayList<Tile> tiles_allowed = round_state.self.get_discard_tiles();
-        Tile discard_for_tenpai = null;
-        foreach (Tile tile in tiles_allowed)
-        {
-            copy_for_tenpai.add_all(round_state.self.hand);
-            copy_for_tenpai.remove(tile);
-            // 能听牌当然就打你了
-            if (TileRules.in_tenpai(copy_for_tenpai, round_state.self.calls)) {
-                discard_for_tenpai = tile;
-                copy_for_tenpai.clear();
-                break;
-            }
-            copy_for_tenpai.clear();
-        }
-        if (discard_for_tenpai != null) {
-           do_discard(discard_for_tenpai); 
-           return;
-        }
-             
-        //  Tile t4 = null; // has four same tile_type
-        //  ArrayList<Tile> copy = new ArrayList<Tile>();
-        //  ArrayList<RoundStateCall> calls = round_state.self.calls;
-        //  copy.add_all(round_state.self.hand);
-        //  foreach(RoundStateCall c in calls) {
-        //     if(c.call_type == RoundStateCall.CallType.PON) {
-        //          // 碰过的是有机会再杠的
-        //          copy.add_all(c.tiles);
-        //     }
-        //  }
-        //  ArrayList<Tile> sortedhand = Tile.sort_tiles_type(copy);
-        //  for(int i=0; i < sortedhand.size - 3 ; i++) {
-        //      if(sortedhand[i].tile_type == sortedhand[i+1].tile_type == sortedhand[i+2].tile_type == sortedhand[i+3].tile_type) {
-        //          t4 = sortedhand[i];
-        //      }
-        //  }
-
-        // 既然到了这里,说明你没有办法和牌或者听牌
         ArrayList<Tile> sorted_hand = Tile.sort_tiles_type(round_state.self.hand); 
-        ArrayList<RoundStateCall> calls = round_state.self.calls;
+        ArrayList<RoundStateCall> calls = round_state.self.calls;   
+
+        HandStatistics stats = analyze_hand(null, sorted_hand, calls);
+
+        // win_necessary_condition 就当听牌, 所以条件不是特别严格
+        // 已经尽力了
+        if( TileRules.win_necessary_condition(sorted_hand, calls, true) 
+            && stats.triplet_count >= 1
+        ){
+            // 如果打掉某张可以听牌的话 太耗时了...
+            ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();
+            ArrayList<Tile> tiles_allowed = round_state.self.get_discard_tiles();
+            Tile discard_for_tenpai = null;
+            foreach (Tile tile in tiles_allowed)
+            {
+                copy_for_tenpai.add_all(round_state.self.hand);
+                copy_for_tenpai.remove(tile);
+                // 能听牌当然就打你了
+                if (TileRules.in_tenpai(copy_for_tenpai, round_state.self.calls)) {
+                    discard_for_tenpai = tile;
+                    copy_for_tenpai.clear();
+                    break;
+                }
+                copy_for_tenpai.clear();
+            }
+            if (discard_for_tenpai != null) {
+            do_discard(discard_for_tenpai); 
+            return;
+            }
+        }
+    
+        // 既然到了这里,说明你没有办法和牌或者听牌 
         if (round_state.can_late_kan()) // 后杠
         {
 
             ArrayList<Tile> tiles = TileRules.get_late_kan_tiles(round_state.self.hand, round_state.self.calls);
             assert(tiles.size > 0);
-            
-            HandStatistics stats = analyze_hand(tiles[0], sorted_hand, calls);
-            if(stats.half_sequence_count_by_tile < 2) {
-                // 粘连不多,随机一下
-                if(Random.boolean()) {
-                    do_late_kan(tiles[0]);
-                }
+            if(tiles[0].is_dragon_tile()) {
+                    do_closed_kan(tiles[0].tile_type);
+                    return;
             }
-            return;
+            
+            bool hasNeigh = has_neighbours(tiles[0]);
+            bool hasSecNeigh = has_second_neighbours(tiles[0]);
+
+            if(!hasNeigh && !hasSecNeigh) {
+                if(tiles[0].is_terminal_tile()) {
+                    do_late_kan(tiles[0]);
+                    return; 
+                }
+
+                if(tiles[0].is_terminal_neighbour_tile() || tiles[0].is_terminal_second_neighbour_tile()) {
+                    if(stats.dragon_count < 1 && stats.singles.size <= 1) {
+                        do_late_kan(tiles[0]);
+                        return;
+                    }
+                }      
+            }
         }
 
         if (round_state.can_closed_kan())
@@ -685,13 +733,28 @@ class JulianBot : Bot
             ArrayList<ArrayList<Tile>> groups = round_state.self.get_closed_kan_groups();
             assert(groups.size > 0);
             foreach(ArrayList<Tile> g in groups) {
-                HandStatistics stats = analyze_hand(g[0], sorted_hand, calls);
-                if(stats.half_sequence_count_by_tile < 2) {
-                    // 粘连不多,随机一下
-                    if(Random.boolean()) {
-                        do_closed_kan(g[0].tile_type);
-                    }
+                if(g[0].is_dragon_tile()) {
+                    do_closed_kan(g[0].tile_type);
+                    return;
                 }
+            
+                bool hasNeigh = has_neighbours(g[0]);
+                bool hasSecNeigh = has_second_neighbours(g[0]);
+
+                if(!hasNeigh && !hasSecNeigh) {
+                    if(g[0].is_terminal_tile()) {
+                        do_closed_kan(g[0].tile_type);
+                        return; 
+                    }
+
+                    if(g[0].is_terminal_neighbour_tile() || g[0].is_terminal_second_neighbour_tile()) {
+                        if(stats.dragon_count < 1 && stats.singles.size <= 1) {
+                            do_closed_kan(g[0].tile_type);
+                            return;
+                        }
+                    }      
+                }
+               
             }
         }
         

@@ -10,9 +10,9 @@ public class GameStartInfo : Serializable
         int starting_dealer,
         int starting_score,
         int round_count,
-        int hanchan_count,
-        int uma_higher,
-        int uma_lower
+        int hanchan_count
+        //  ,int uma_higher,
+        //  int uma_lower
     )
     {
         player_list = new SerializableList<GamePlayer>(players);

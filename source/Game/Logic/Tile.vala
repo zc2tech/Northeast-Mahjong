@@ -85,6 +85,31 @@ public class Tile : Serializable
         return false;
     }
 
+    public bool is_terminal_neighbour_tile()
+    {
+        if (tile_type == TileType.MAN2 ||
+            tile_type == TileType.MAN8 ||
+            tile_type == TileType.PIN2 ||
+            tile_type == TileType.PIN8 ||
+            tile_type == TileType.SOU2 ||
+            tile_type == TileType.SOU8)
+            return true;
+
+        return false;
+    }
+    public bool is_terminal_second_neighbour_tile()
+    {
+        if (tile_type == TileType.MAN3 ||
+            tile_type == TileType.MAN7 ||
+            tile_type == TileType.PIN3 ||
+            tile_type == TileType.PIN7 ||
+            tile_type == TileType.SOU3 ||
+            tile_type == TileType.SOU7)
+            return true;
+
+        return false;
+    }
+
     public bool is_wind(Wind wind)
     {
         return ((tile_type == TileType.TON  && wind == Wind.EAST)  ||

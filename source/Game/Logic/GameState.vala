@@ -24,6 +24,7 @@ public class GameState : Object
 
     public void start_round(RoundStartInfo info)
     {
+        // game means one game hand ?
         if (game_is_finished || !round_is_finished)
             return;
 
@@ -191,15 +192,20 @@ public class GameState : Object
         for (int i = 0; i < players.length; i++)
             players[i].points += players[i].transfer;
 
+        // decide hanchan finished, either someone lost all points , or reached the round_count limit
         if (!do_renchan)
-            hanchan_is_finished = (current_round + 1) >= round_count; // 半庄是什么鬼？
+            hanchan_is_finished = (current_round + 1) >= round_count; 
 
-        for (int i = 0; i < players.length; i++)
+        for (int i = 0; i < players.length; i++) {
+            
             if (players[i].points < 0)
             {
+                // someone lost all points
                 hanchan_is_finished = true;
                 break;
             }
+        }
+        // hanchan finished judge end
 
         if (hanchan_is_finished)
         {
@@ -378,7 +384,7 @@ public class RoundScoreState
         this.renchan = renchan;
         this.current_hanchan = current_hanchan;
         this.hanchan_count = hanchan_count;
-        this.riichi_count = riichi_count;
+        //  this.riichi_count = riichi_count;
         this.round_is_finished = round_is_finished;
         this.hanchan_is_finished = hanchan_is_finished;
         this.game_is_started = game_is_started;
