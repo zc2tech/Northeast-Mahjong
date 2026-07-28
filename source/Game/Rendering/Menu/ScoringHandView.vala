@@ -7,6 +7,7 @@ public class ScoringHandView : View3D
 
     private ArrayList<RenderTile> tiles = new ArrayList<RenderTile>();
     private float width = 1;
+    private const float TILE_GAP = 0.08f;  // Gap between tiles in scoring view
 
     public ScoringHandView(GameRenderContext context, Scoring score)
     {
@@ -23,7 +24,7 @@ public class ScoringHandView : View3D
         Vec3 tile_size = size_tile.obb;
         world.remove_object(size_tile);
 
-        width = (score.player.hand.size + 2) * tile_size.x;
+        width = (score.player.hand.size + 2) * (tile_size.x + TILE_GAP);
 
         ArrayList<RenderCalls.RenderCall> calls = new ArrayList<RenderCalls.RenderCall>();
 
@@ -31,9 +32,12 @@ public class ScoringHandView : View3D
         {
             RoundStateCall call = score.player.calls[score.player.calls.size - i - 1];
             RenderCalls.RenderCall c = create_call(call, score.player.index, tile_size);
+            c.set_tile_gap(TILE_GAP);  // Apply gap to call tiles
+
+            Environment.log(LogType.DEBUG, "ScoringHandView", @"Call width after gap: $(c.width), tile_gap: $(TILE_GAP)");
 
             calls.add(c);
-            width += c.width + tile_size.x;
+            width += c.width + tile_size.x + TILE_GAP;  // Reduced group spacing
         }
 
         float p = -width / 2;
@@ -60,24 +64,26 @@ public class ScoringHandView : View3D
         for (int i = 0; i < tiles.size; i++)
         {
             world.add_object(tiles[i]);
-            tiles[i].set_absolute_location(Vec3(p + tile_size.x * 0.5f, 0, 0), Quat());
-            p += tile_size.x;
+            Quat tile_rot = Quat.from_euler(0, 0.5f - 0.44f, 0);  // Slightly more tilt toward viewer
+            tiles[i].set_absolute_location(Vec3(p + (tile_size.x + TILE_GAP) * 0.5f, -tile_size.y / 4, 0), tile_rot);
+            p += tile_size.x + TILE_GAP;
         }
 
         RenderTile tile = new RenderTile() { tile_type = score.round.win_tile };
         world.add_object(tile);
-        tile.set_absolute_location(Vec3(p + tile_size.x * 1.5f, 0, 0), Quat());
-        p += tile_size.x * 2;
+        Quat win_tile_rot = Quat.from_euler(0, 0.5f - 0.44f, 0);  // Slightly more tilt toward viewer
+        tile.set_absolute_location(Vec3(p + (tile_size.x + TILE_GAP) * 1.5f, -tile_size.y / 4, 0), win_tile_rot);
+        p += (tile_size.x + TILE_GAP) * 2;
         tiles.add(tile);
 
         foreach (RenderCalls.RenderCall call in calls)
         {
-            p += call.width + tile_size.x;
+            p += call.width + tile_size.x + TILE_GAP;  // Reduced group spacing
             foreach (RenderTile t in call.tiles)
                 tiles.add(t);
             world.add_object(call);
-            call.transform.position = Vec3(p, 0, tile_size.z / 2);
-            call.arrange(new AnimationTime.zero());
+            call.transform.position = Vec3(p, -tile_size.y / 4, tile_size.z / 2);  // Lowered to match hand tiles
+            call.arrange(new AnimationTime.zero());  // Re-arrange with the gap applied
         }
 
         foreach (var t in tiles)
@@ -89,8 +95,16 @@ public class ScoringHandView : View3D
             t.reload();
         }
 
+        // Adjust camera distance based on total width to fit everything
         float len = 4;
-        Vec3 pos = Vec3(0, len, len / 2);
+        float width_ratio = width / 4.0f;  // Base width is around 4 units
+        if (width_ratio > 1.0f)
+        {
+            len = len * width_ratio * 0.8f;  // Scale camera distance with width
+            Environment.log(LogType.DEBUG, "ScoringHandView", @"Adjusted camera distance: len=$(len) for width=$(width)");
+        }
+
+        Vec3 pos = Vec3(0, len * 0.8f, len * 0.6f);  // Lower angle for better tile face view
 
         WorldObject target = new WorldObject();
         world.add_object(target);

@@ -101,7 +101,7 @@ public class GameState : Object
                 players[loser_index].transfer -= POINT_BASE; // 点炮了
                 players[winner_index].transfer += POINT_BASE;
                 if( dealer_index == winner_index ) {
-                    for (int j = 0; i < players.length; i++)
+                    for (int j = 0; j < players.length; j++)
                     {
                         if (j != winner_index) {
                             players[j].transfer -= POINT_BASE * 2; // 庄家和了
@@ -110,19 +110,19 @@ public class GameState : Object
                     }
                 } else {
                     // 闲家胡
-                    for (int j = 0; i < players.length; i++)
+                    for (int j = 0; j < players.length; j++)
                     {
                         if (j != winner_index) {
                             if (j == dealer_index ) {
                                  players[j].transfer -= POINT_BASE * 2; // 庄家多给点
                                  players[winner_index].transfer += POINT_BASE * 2;
                             } else {
-                                players[j].transfer -= POINT_BASE; 
+                                players[j].transfer -= POINT_BASE;
                                 players[winner_index].transfer += POINT_BASE;
                             }
                         }
-                           
-                    } 
+
+                    }
                 }
                
                 //  int transfer = result.scores[i].total_points + renchan * 300;

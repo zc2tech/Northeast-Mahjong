@@ -4,6 +4,59 @@ public class TileRules
 {
     private TileRules(){} // Static class
 
+    // Cache for hand_readings results
+    private static HashMap<string, ArrayList<HandReading>>? readings_cache = null;
+    private static int cache_hits = 0;
+    private static int cache_misses = 0;
+
+    // Generate cache key from hand and calls
+    private static string generate_cache_key(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls, bool tenpai_only, bool early_return)
+    {
+        StringBuilder key = new StringBuilder();
+
+        // Sort hand to ensure consistent keys
+        ArrayList<Tile> sorted_hand = Tile.sort_tiles_type(hand);
+        foreach (Tile t in sorted_hand) {
+            key.append(t.tile_type.to_string());
+            key.append(",");
+        }
+
+        key.append("|");
+
+        // Add calls
+        if (calls != null) {
+            foreach (RoundStateCall call in calls) {
+                key.append(call.call_type.to_string());
+                key.append(":");
+                ArrayList<Tile> sorted_call = Tile.sort_tiles_type(call.tiles);
+                foreach (Tile t in sorted_call) {
+                    key.append(t.tile_type.to_string());
+                    key.append(",");
+                }
+                key.append(";");
+            }
+        }
+
+        key.append("|");
+        key.append(tenpai_only ? "T" : "F");
+        key.append("|");
+        key.append(early_return ? "E" : "A");
+
+        return key.str;
+    }
+
+    // Clear the cache (should be called at the start of each new round)
+    public static void clear_hand_readings_cache()
+    {
+        if (readings_cache != null) {
+            int size = readings_cache.size;
+            readings_cache.clear();
+            Environment.log(LogType.DEBUG, "TileRules", @"hand_readings cache cleared ($(size) entries, $(cache_hits) hits, $(cache_misses) misses)");
+            cache_hits = 0;
+            cache_misses = 0;
+        }
+    }
+
     public static Scoring get_score(PlayerStateContext player, RoundStateContext round)
     {
         return calculate_yaku(player, round, false);
@@ -388,14 +441,40 @@ public class TileRules
     // 杠上开花 判断不了， 所以有Readings还是会返回的
     public static ArrayList<HandReading> hand_readings(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls, bool tenpai_only, bool early_return)
     {
+        int64 start_time = get_monotonic_time();
+
         // 东北麻将的话，已经没机会和了，不能剩 一张或者两张牌的
         if(hand.size <= 2) {
-           return new ArrayList<HandReading>(); 
+           return new ArrayList<HandReading>();
         }
-       
-        // quick pass
+
+        // Initialize cache if needed
+        if (readings_cache == null) {
+            readings_cache = new HashMap<string, ArrayList<HandReading>>();
+        }
+
+        // Generate cache key (including early_return flag)
+        string cache_key = generate_cache_key(hand, calls, tenpai_only, early_return);
+
+        // Check cache FIRST - if hit, skip all validation
+        if (readings_cache.has_key(cache_key)) {
+            ArrayList<HandReading> cached_result = readings_cache.get(cache_key);
+            cache_hits++;
+            int64 elapsed = get_monotonic_time() - start_time;
+            Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (CACHE HIT, $(cached_result.size) readings) [hits: $(cache_hits), misses: $(cache_misses)]");
+            return cached_result;
+        }
+
+        cache_misses++;
+
+        // Cache miss - do the quick validation check
         if(!win_necessary_condition(hand,calls,tenpai_only)) {
-             return new ArrayList<HandReading>(); 
+             // Cache empty result too!
+             ArrayList<HandReading> empty_result = new ArrayList<HandReading>();
+             readings_cache.set(cache_key, empty_result);
+             int64 elapsed = get_monotonic_time() - start_time;
+             Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (0 readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
+             return empty_result;
         }
 
         ArrayList<TileMeld> call_melds = new ArrayList<TileMeld>();
@@ -460,11 +539,20 @@ public class TileRules
             if(hasTriplet && hasTerminalHonor && !isHonitsu_Chnitsu && cntSeq > 0) {
                 northeastReadings.add(r);
                 if(early_return) {
+                    // Cache the result before returning
+                    readings_cache.set(cache_key, northeastReadings);
+                    int64 elapsed = get_monotonic_time() - start_time;
+                    Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (early_return, $(northeastReadings.size) readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
                     return northeastReadings;
                 }
             }
         }
 
+        // Always cache the result (even if empty)
+        readings_cache.set(cache_key, northeastReadings);
+
+        int64 elapsed = get_monotonic_time() - start_time;
+        Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds ($(northeastReadings.size) readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
         return northeastReadings;
     }
 

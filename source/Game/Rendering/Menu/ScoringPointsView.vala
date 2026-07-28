@@ -178,11 +178,15 @@ class ScoringPointsView : View2D
 
     private void animation_label_finish()
     {
+        Environment.log(LogType.DEBUG, "ScoringPointsView", @"animation_label_finish, scoring_control=$(scoring_control != null)");
         label_animation_finished();
         animation_items_fade_start();
 
         if (scoring_control != null)
+        {
+            Environment.log(LogType.DEBUG, "ScoringPointsView", "Calling scoring_control.animate()");
             scoring_control.animate();
+        }
     }
 
     private void animation_items_fade_start()
@@ -216,6 +220,7 @@ class ScoringPointsView : View2D
 
     private void scoring_control_animation_finished()
     {
+        Environment.log(LogType.DEBUG, "ScoringPointsView", "scoring_control_animation_finished, calling score_animation_finished signal");
         //  if (switches > 0)
         //  {
         //      score_index = (score_index + 1) % score.result.scores.length;
@@ -409,6 +414,8 @@ class ScoringPointsView : View2D
 
         private void animate_items_finished()
         {
+            Environment.log(LogType.DEBUG, "ScoringScoreControl", "animate_items_finished, starting score fade");
+            animation_score_fade_start();
         }
 
         private void animation_han_animate_start()

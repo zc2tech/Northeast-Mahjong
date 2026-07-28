@@ -99,6 +99,8 @@ class ScoringInnerView : View2D
         round_indicator.font_size = wind_indicator.font_size;
         round_indicator.alpha = animate ? 0 : 1;
 
+        Environment.log(LogType.DEBUG, "ScoringInnerView", @"score.round_is_finished=$(score.round_is_finished), animate=$(animate)");
+
         if (score.round_is_finished)
         {
             view = new ScoringPointsView(context, score, animate);
@@ -106,6 +108,12 @@ class ScoringInnerView : View2D
             view.label_animation_finished.connect(label_animation_finished);
             view.score_animation_finished.connect(score_animation_finished);
             add_child(view);
+        }
+        else if (animate)
+        {
+            // If round is not finished but we want animations, trigger them directly
+            Environment.log(LogType.DEBUG, "ScoringInnerView", "Round not finished but animate=true, triggering player animations directly");
+            score_animation_finished();
         }
     }
 

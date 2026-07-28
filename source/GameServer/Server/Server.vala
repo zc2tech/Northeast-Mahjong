@@ -142,6 +142,9 @@ namespace GameServer
 
             action_state = State.ACTIVE;
 
+            // Clear hand_readings cache at the start of each round
+            TileRules.clear_hand_readings_cache();
+
             var info = get_round_start_info();
             state.start_round(info);
             round = create_round(info);

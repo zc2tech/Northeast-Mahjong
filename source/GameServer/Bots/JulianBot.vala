@@ -722,16 +722,20 @@ class JulianBot : Bot
 
         // win_necessary_condition 就当听牌, 所以条件不是特别严格
         // 已经尽力了
-        if( TileRules.win_necessary_condition(sorted_hand, calls, true) 
+        if( TileRules.win_necessary_condition(sorted_hand, calls, true)
             && stats.triplet_count >= 1
         ){
             HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
             // 如果打掉某张可以听牌的话
             ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();
             ArrayList<Tile> tiles_allowed = round_state.self.get_discard_tiles();
+
+            Environment.log(LogType.DEBUG, "JulianBot", @"Checking tenpai for $(tiles_allowed.size) tiles");
+
             Tile discard_for_tenpai = null;
             foreach (Tile tile in tiles_allowed)
             {
+                Environment.log(LogType.DEBUG, "JulianBot", @"Checking if discarding $(tile.tile_type.to_string()) leads to tenpai...");
                 copy_for_tenpai.add_all(round_state.self.hand);
                 copy_for_tenpai.remove(tile);
                 // 能听牌当然就打你了
@@ -739,7 +743,8 @@ class JulianBot : Bot
                     discard_for_tenpai = tile;
                     copy_for_tenpai.clear();
                     // 到时候会算舍去这张牌能听多少 <类型,张数>
-                    hDiscardForTenpai.set(discard_for_tenpai, new HashMap<TileType, int>()); 
+                    Environment.log(LogType.DEBUG, "JulianBot", @"Found tenpai discard: $(tile.tile_type.to_string())");
+                    hDiscardForTenpai.set(discard_for_tenpai, new HashMap<TileType, int>());
                 }
                 copy_for_tenpai.clear();
             }
@@ -836,6 +841,7 @@ class JulianBot : Bot
         ArrayList<RoundStateCall> calls = round_state.self.calls;
         if(sortedhand.size <= 4) {
             // 手牌只剩两张的话,就没法胡了
+            call_nothing();  // CRITICAL: Must notify server we're done deciding
             int64 elapsed = get_monotonic_time() - start_time;
             Environment.log(LogType.DEBUG, "JulianBot",
                 @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - skip (hand too small)");
@@ -1059,9 +1065,13 @@ class JulianBot : Bot
                                                      ArrayList<Tile> sorted_hand,
                                                      ArrayList<RoundStateCall> calls)
     {
+        int64 start_time = get_monotonic_time();
+
         // Collect keys first to avoid concurrent modification during iteration
         ArrayList<Tile> keys = new ArrayList<Tile>();
         keys.add_all(discard_map.keys);
+
+        Environment.log(LogType.DEBUG, "JulianBot", @"populate_needed_tiles_for_discards: processing $(keys.size) discards");
 
         foreach (Tile tDiscard in keys) {
             HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
@@ -1073,6 +1083,9 @@ class JulianBot : Bot
             populate_needed_tiles(needed_tiles, hand_after_discard, calls);
             discard_map.set(tDiscard, needed_tiles);
         }
+
+        int64 elapsed = get_monotonic_time() - start_time;
+        Environment.log(LogType.DEBUG, "JulianBot", @"populate_needed_tiles_for_discards completed in $(elapsed) microseconds");
     }
 
     private void populate_needed_tiles(HashMap<TileType, int> needed_tiles,

@@ -76,6 +76,7 @@ public class RenderCalls : WorldObject
         public abstract float height { get; }
         public abstract float width { get; }
         public ArrayList<RenderTile> tiles { get; protected set; }
+        protected float tile_gap = 0.0f;  // Gap between tiles in this call
 
         protected void animate_tile(RenderTile tile, Vec3 pos, Quat rot, AnimationTime? time)
         {
@@ -83,6 +84,12 @@ public class RenderCalls : WorldObject
                 tile.animate_towards(pos, rot, time);
             else
                 tile.set_absolute_location(pos, rot);
+        }
+
+        public void set_tile_gap(float gap)
+        {
+            tile_gap = gap;
+            Environment.log(LogType.DEBUG, "RenderCall", @"tile_gap set to: $(tile_gap)");
         }
 
         public void animate_to(float height, AnimationTime time)
@@ -188,7 +195,7 @@ public class RenderCalls : WorldObject
         }
 
         public override float height { get { return float.max(tile_size.z, 2 * tile_size.x); } }
-        public override float width { get { return tile_size.x * 2 + tile_size.z; } }
+        public override float width { get { return tile_size.x * 2 + tile_size.z + tile_gap * 3; } }
     }
 
     public class RenderCallClosedKan : RenderCall
@@ -210,7 +217,7 @@ public class RenderCalls : WorldObject
             {
                 RenderTile tile = tiles[tiles.size - i - 1];
 
-                Vec3 pos = Vec3(-tile_size.x * (i + 0.5f), 0, -tile_size.z / 2);
+                Vec3 pos = Vec3(-tile_size.x * i - tile_gap * i - tile_size.x / 2, 0, -tile_size.z / 2);
                 Quat rot = Quat.from_euler(0, (i == 1 || i == 2) ? 1 : 0, 0);
 
                 animate_tile(tile, pos, rot, time);
@@ -218,7 +225,7 @@ public class RenderCalls : WorldObject
         }
 
         public override float height { get { return tile_size.z; } }
-        public override float width { get { return tile_size.x * 4; } }
+        public override float width { get { return tile_size.x * 4 + tile_gap * 3; } }
     }
 
     public class RenderCallOpenKan : RenderCall
@@ -286,14 +293,14 @@ public class RenderCalls : WorldObject
                     z += tile_size.x / 2;
 
                     rotation = 0.5f;
-                    width += tile_size.z;
+                    width += tile_size.z + tile_gap;
                 }
                 else
                 {
                     x += tile_size.x / 2;
                     z += tile_size.z / 2;
 
-                    width += tile_size.x;
+                    width += tile_size.x + tile_gap;
                 }
 
                 Vec3 pos = Vec3(-x, 0, -z);
@@ -304,7 +311,7 @@ public class RenderCalls : WorldObject
         }
 
         public override float height { get { return tile_size.z; } }
-        public override float width { get { return tile_size.x * 3 + tile_size.z; } }
+        public override float width { get { return tile_size.x * 3 + tile_size.z + tile_gap * 3; } }
     }
 
     public class RenderCallPon : RenderCall
@@ -371,14 +378,14 @@ public class RenderCalls : WorldObject
                     z += tile_size.x / 2;
 
                     rotation = 0.5f;
-                    width += tile_size.z;
+                    width += tile_size.z + tile_gap;
                 }
                 else
                 {
                     x += tile_size.x / 2;
                     z += tile_size.z / 2;
 
-                    width += tile_size.x;
+                    width += tile_size.x + tile_gap;
                 }
 
                 Vec3 pos = Vec3(-x, 0, -z);
@@ -389,7 +396,7 @@ public class RenderCalls : WorldObject
         }
 
         public override float height { get { return tile_size.z; } }
-        public override float width { get { return tile_size.x * 2 + tile_size.z; } }
+        public override float width { get { return tile_size.x * 2 + tile_size.z + tile_gap * 2; } }
         public Alignment alignment { get; private set; }
     }
 
@@ -432,14 +439,14 @@ public class RenderCalls : WorldObject
                     z += tile_size.x / 2;
 
                     rotation = 0.5f;
-                    width += tile_size.z;
+                    width += tile_size.z + tile_gap;
                 }
                 else
                 {
                     x += tile_size.x / 2;
                     z += tile_size.z / 2;
 
-                    width += tile_size.x;
+                    width += tile_size.x + tile_gap;
                 }
 
                 Vec3 pos = Vec3(-x, 0, -z);
@@ -450,7 +457,7 @@ public class RenderCalls : WorldObject
         }
 
         public override float height { get { return tile_size.z; } }
-        public override float width { get { return tile_size.x * 2 + tile_size.z; } }
+        public override float width { get { return tile_size.x * 2 + tile_size.z + tile_gap * 2; } }
     }
 
     public enum Alignment
