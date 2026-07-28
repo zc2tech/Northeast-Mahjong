@@ -13,6 +13,13 @@ struct HandStatistics
     public bool hasTerminalTriplet;
 }
 
+// Result of finding the best discard for tenpai
+struct BestDiscardResult
+{
+    public Tile? tile;
+    public int benefit;
+}
+
 class JulianBot : Bot
 {
     private Engine.RandomClass rnd = new Engine.RandomClass();
@@ -281,7 +288,7 @@ class JulianBot : Bot
     private bool should_call_pon(Tile tile,
                                   ArrayList<Tile> sortedhand,
                                   ArrayList<RoundStateCall> calls,
-                                  ArrayList<HandReading> beforeCallReading,
+                                  int beforeBenefit,
                                   HandStatistics stats,
                                   RoundStatePlayer discarding_player)
     {
@@ -318,7 +325,7 @@ class JulianBot : Bot
         // 没听牌，你又没幺九刻子时，赶紧碰
         if( stats.dragon_count < 3 && !stats.hasTerminalTriplet
              && (tile.is_dragon_tile() || tile.is_terminal_tile())
-            && beforeCallReading.size == 0) {
+            && beforeBenefit == 0) {
             // 必碰
             return true;
         }
@@ -363,27 +370,39 @@ class JulianBot : Bot
 
         // 找一下该打什么牌
         Tile bestDiscard = null;
-        int bestReadingCnt = beforeCallReading.size;
+        HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
         foreach (Tile t in newHand)
         {
             ArrayList<Tile> tmpHand = new ArrayList<Tile>();
             tmpHand.add_all(newHand);
             tmpHand.remove(t);
-            ArrayList<HandReading> tmpReading = TileRules.hand_readings(tmpHand, newCalls, true, false);
-            if (tmpReading.size > bestReadingCnt)
-            {
-                // 没考虑湖里啥情况,有可能看起来很多,真正机会并不大
-                // 真要算好的话, 还得跟tmpHand做个差值看听什么,再看看湖里剩几张
-                // 当前算法会不倾向 夹 或着 边牌 ?
-                bestDiscard = t;
-                bestReadingCnt = tmpReading.size;
-            }
-        }
 
-        if (bestReadingCnt > beforeCallReading.size)
-        {
-            // 既然值得碰,那就碰吧.
-            return true;
+            // 至少得能听牌吧
+            if( TileRules.in_tenpai(tmpHand,newCalls)) {
+                hDiscardForTenpai.set(t,new HashMap<TileType,int>());
+            }
+
+            //  ArrayList<HandReading> tmpReading = TileRules.hand_readings(tmpHand, newCalls, true, false);
+            //  if (tmpReading.size > bestReadingCnt)
+            //  {
+            //      // 没考虑湖里啥情况,有可能看起来很多,真正机会并不大
+            //      // 真要算好的话, 还得跟tmpHand做个差值看听什么,再看看湖里剩几张
+            //      // 当前算法会不倾向 夹 或着 边牌 ?
+            //      bestDiscard = t;
+            //      bestReadingCnt = tmpReading.size;
+            //  }
+        }
+        if(hDiscardForTenpai.keys.size > 0 ) {
+            populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
+            HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
+            BestDiscardResult result = find_best_discard(discard_benefit);
+
+            if (result.tile != null && result.benefit > beforeBenefit) {
+                 Environment.log(LogType.DEBUG, "JulianBot",
+                    @"should_call_pon ($(round_state.self.wind.to_string())) discard $(result.tile.to_string()) for $(result.benefit) win tiles");
+                // 既然值得碰,那就碰吧.
+                return true;
+            }
         }
 
         // 根本没机会和牌时,要不要碰? 继续看:
@@ -432,19 +451,19 @@ class JulianBot : Bot
             return false;
         }
 
-        int pairCnt = stats.pair_count;
-        int tripletCnt = stats.triplet_count;
-        int singleCnt = stats.singles.size;
-        int terminalCnt = stats.terminal_count;
+        //  int pairCnt = stats.pair_count;
+        //  int tripletCnt = stats.triplet_count;
+        //  int singleCnt = stats.singles.size;
+        //  int terminalCnt = stats.terminal_count;
 
-         // Get s (下家 - shimocha)
-        int shimocha_index = (round_state.self.index + 1) % 4;
+        //   // Get s (下家 - shimocha)
+        //  int shimocha_index = (round_state.self.index + 1) % 4;
 
-        // Get cross/opposite player (对面 - toimen)
-        int toimen_index = (round_state.self.index + 2) % 4;
+        //  // Get cross/opposite player (对面 - toimen)
+        //  int toimen_index = (round_state.self.index + 2) % 4;
 
-        // Get (上家 - kamicha)
-        int kamicha_index = (round_state.self.index + 3) % 4;
+        //  // Get (上家 - kamicha)
+        //  int kamicha_index = (round_state.self.index + 3) % 4;
 
         int discarder_index = discarding_player.index;
 
@@ -486,7 +505,7 @@ class JulianBot : Bot
     private bool should_call_chii(Tile tile,
                                    ArrayList<Tile> sortedhand,
                                    ArrayList<RoundStateCall> calls,
-                                   ArrayList<HandReading> beforeCallReading,
+                                   int beforeBenefit,
                                    HandStatistics stats,
                                    RoundStatePlayer discarding_player,
                                    out Tile tiles1,
@@ -539,6 +558,10 @@ class JulianBot : Bot
             return false;
         }
 
+        BestDiscardResult bestChiiResut = new BestDiscardResult();
+        bestChiiResut.benefit = beforeBenefit;
+        
+        ArrayList<Tile> bestGroup = null;
         foreach (ArrayList<Tile> g in groups)
         {
             // 吃掉试试
@@ -558,54 +581,69 @@ class JulianBot : Bot
             HandStatistics newStats = analyze_hand(null, newHand, newCalls);
 
             // 再分析 hand_readings 之前,先简单分析一下
+            bool shouldContNow = false;
             if(newStats.singles.size > stats.singles.size) {
                 // 单张竟然多了, 估计是吃啥吐啥类型的 继续分析
                 foreach(TileType iType in newStats.singles) {
                     if(iType == tile.tile_type) {
-                        // 多出来的正好是吃进去的
-                        return false;
+                        // 多出来的正好是吃进去的 试试下一个
+                        shouldContNow = true;
+                        break;
                     }
                 }
+                // 多出来的单张是另一头的， 比如说 789 吃 6    123 吃 4    
+                foreach(TileType iType in newStats.singles) {
+                    if( ((int)iType - (int)tile.tile_type).abs() == 3 ) {
+                        shouldContNow = true;
+                        break;
+                    }             
+                } 
                 
+            }
+            if(shouldContNow) {
+                continue;
             }
 
             // 不能保证两个 对子 是很危险的 原来如果本来没对子也就算了， 吃少了不行
             if(newStats.triplet_count < 1 && stats.pair_count >= 2 && newStats.pair_count < 2) {
-                return false;
+                continue;
             }
 
             if(stats.hasTerminalTriplet && !newStats.hasTerminalTriplet) {
                 // 把 “唯一的” 幺九刻给吃没了
-                return false;
+                continue;
             }
-            
+           
             // 找一下该打什么牌
-            Tile bestDiscard = null;
-            int bestReadingCnt = beforeCallReading.size;
+            HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
             foreach (Tile t in newHand)
             {
                 ArrayList<Tile> tmpHand = new ArrayList<Tile>();
                 tmpHand.add_all(newHand);
                 tmpHand.remove(t);
-                ArrayList<HandReading> tmpReading = TileRules.hand_readings(tmpHand, newCalls, true, false);
-                if (tmpReading.size > bestReadingCnt)
-                {
-                    // 没考虑湖里啥情况,有可能看起来很多,真正机会并不大
-                    // 真要算好的话, 还得跟tmpHand做个差值看听什么,再看看湖里剩几张
-                    // 当前算法会不倾向 夹 或着 边牌 ?
-                    bestDiscard = t;
-                    bestReadingCnt = tmpReading.size;
+
+                // 至少得能听牌吧
+                if( TileRules.in_tenpai(tmpHand,newCalls)) {
+                    hDiscardForTenpai.set(t,new HashMap<TileType,int>());
+                }
+            }
+            if( hDiscardForTenpai.keys.size > 0 ) {
+                populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
+                HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
+                BestDiscardResult result = find_best_discard(discard_benefit);
+
+                if (result.tile != null && result.benefit >  bestChiiResut.benefit) {
+                    bestChiiResut.benefit = result.benefit;
+                    bestChiiResut.tile = result.tile;
+                    bestGroup = g;
+                    // 有起色就立即　continue 看下一个 group 是不是更出色
+                    Environment.log(LogType.DEBUG, "JulianBot",
+                    @"should_call_chii ($(round_state.self.wind.to_string())) chii $(tile.to_string()) discard $(result.tile.to_string()) for $(result.benefit) win tiles");
+                    continue;
                 }
             }
 
-            if (bestReadingCnt > beforeCallReading.size)
-            {
-                // 既然值得吃,那就吃吧.
-                tiles1 = g[0];
-                tiles2 = g[1];
-                return true;
-            }
-     
+            // 注意你是在一个group 的 loop 里
             if (stats.terminal_count == 0 && stats.dragon_count < 2)
             {
                 // 我没幺九牌, 看吃完之后能不能好一点
@@ -617,8 +655,8 @@ class JulianBot : Bot
             }
 
             if(stats.triplet_count >=1 && newStats.triplet_count == 0) {
-                // 把刻子吃没了 这回不是看幺九刻了
-                return false;
+                // 把刻子吃没了 这回不是看幺九刻了 看看下一个group 是不是好点
+                continue;
             }
 
             // 上面的检查既然没要求吃,说明吃了也不能听牌,但如果孤张没变多的话,也还行啊
@@ -648,6 +686,11 @@ class JulianBot : Bot
             
         } // groups loop
 
+        if(bestGroup != null) {
+            tiles1 = bestGroup[0];
+            tiles2 = bestGroup[1];
+            return true;
+        }
         // 全试玩了 该吃 还是 过 ? 要吃记得设上 Tile1 Tile2
         return false;
     }
@@ -655,9 +698,14 @@ class JulianBot : Bot
     // 摸到牌之后，做个处理决定
     protected override void do_turn_decision()
     {
+        int64 start_time = get_monotonic_time();
+
         if (round_state.can_tsumo())
         {
             do_tsumo();
+            int64 elapsed = get_monotonic_time() - start_time;
+            Environment.log(LogType.DEBUG, "JulianBot",
+                @"do_turn_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - tsumo");
             return;
         }
 
@@ -677,7 +725,8 @@ class JulianBot : Bot
         if( TileRules.win_necessary_condition(sorted_hand, calls, true) 
             && stats.triplet_count >= 1
         ){
-            // 如果打掉某张可以听牌的话 太耗时了...
+            HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
+            // 如果打掉某张可以听牌的话
             ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();
             ArrayList<Tile> tiles_allowed = round_state.self.get_discard_tiles();
             Tile discard_for_tenpai = null;
@@ -689,13 +738,24 @@ class JulianBot : Bot
                 if (TileRules.in_tenpai(copy_for_tenpai, round_state.self.calls)) {
                     discard_for_tenpai = tile;
                     copy_for_tenpai.clear();
-                    break;
+                    // 到时候会算舍去这张牌能听多少 <类型,张数>
+                    hDiscardForTenpai.set(discard_for_tenpai, new HashMap<TileType, int>()); 
                 }
                 copy_for_tenpai.clear();
             }
-            if (discard_for_tenpai != null) {
-            do_discard(discard_for_tenpai); 
-            return;
+            if (hDiscardForTenpai.keys.size > 0) {
+                populate_needed_tiles_for_discards(hDiscardForTenpai, sorted_hand, calls);
+
+                HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
+
+                BestDiscardResult result = find_best_discard(discard_benefit);
+
+                if (result.tile != null) {
+                Environment.log(LogType.DEBUG, "JulianBot",
+                    @"do_turn_decision ($(round_state.self.wind.to_string())), discard $(result.tile) for $(result.benefit) win tiles"); 
+                    do_discard(result.tile);
+                    return;
+                }
             }
         }
     
@@ -761,16 +821,24 @@ class JulianBot : Bot
         // 没杠 没听 没胡
         Tile  tile = get_discard_tile();
         do_discard(tile);
-        
+
+        int64 elapsed = get_monotonic_time() - start_time;
+        Environment.log(LogType.DEBUG, "JulianBot",
+            @"do_turn_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - discard $(tile.tile_type.to_string())");
     }
 
     // 别人打牌之后，做个处理决定
     protected override void do_call_decision(RoundStatePlayer discarding_player, Tile tile)
     {
+        int64 start_time = get_monotonic_time();
+
         ArrayList<Tile> sortedhand = Tile.sort_tiles_type(round_state.self.hand);
         ArrayList<RoundStateCall> calls = round_state.self.calls;
         if(sortedhand.size <= 4) {
             // 手牌只剩两张的话,就没法胡了
+            int64 elapsed = get_monotonic_time() - start_time;
+            Environment.log(LogType.DEBUG, "JulianBot",
+                @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - skip (hand too small)");
             return;
         }
 
@@ -778,36 +846,59 @@ class JulianBot : Bot
         if (round_state.can_ron(round_state.self))
         {
             call_ron();
+            int64 elapsed = get_monotonic_time() - start_time;
+            Environment.log(LogType.DEBUG, "JulianBot",
+                @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - ron on $(tile.tile_type.to_string())");
             return;
         }
         // Analyze hand statistics
         HandStatistics stats = analyze_hand(tile, sortedhand, calls);
-        ArrayList<HandReading> beforeCallReading = TileRules.hand_readings(sortedhand,calls,true,false);
+        ArrayList<HandReading> beforeCallReading = TileRules.hand_readings(sortedhand, calls, true, false);
+
+        int beforeBenefit = 0;
+        HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
+        populate_needed_tiles(needed_tiles,sortedhand,calls);
+        foreach (TileType type_needed in needed_tiles.keys) {
+            int available_count = count_available_tiles(type_needed);
+            beforeBenefit += available_count;
+        }
 
         // Evaluate pon decision
-        if (should_call_pon(tile, sortedhand, calls, beforeCallReading, stats, discarding_player))
+        if (should_call_pon(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
         {
             call_pon();
+            int64 elapsed = get_monotonic_time() - start_time;
+            Environment.log(LogType.DEBUG, "JulianBot",
+                @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - pon $(tile.tile_type.to_string())");
             return;
         }
 
         // Evaluate chii decision
         Tile chii_tile1;
         Tile chii_tile2;
-        if (should_call_chii(tile, sortedhand, calls, beforeCallReading, stats, discarding_player, out chii_tile1, out chii_tile2))
+        if (should_call_chii(tile, sortedhand, calls, beforeBenefit, stats, discarding_player, out chii_tile1, out chii_tile2))
         {
             call_chii(chii_tile1, chii_tile2);
+            int64 elapsed = get_monotonic_time() - start_time;
+            Environment.log(LogType.DEBUG, "JulianBot",
+                @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - chii $(tile.tile_type.to_string())");
             return;
         }
 
-         // Evaluate pon decision
+         // Evaluate kan decision
         if (should_call_kan(tile, sortedhand, calls, beforeCallReading, stats, discarding_player))
         {
             call_open_kan();
+            int64 elapsed = get_monotonic_time() - start_time;
+            Environment.log(LogType.DEBUG, "JulianBot",
+                @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - kan $(tile.tile_type.to_string())");
             return;
         }
 
         call_nothing();
+        int64 elapsed = get_monotonic_time() - start_time;
+        Environment.log(LogType.DEBUG, "JulianBot",
+            @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - pass");
     }
 
     // Toimen (opposite) Kamicha(left)  Shimocha (right) 
@@ -962,6 +1053,144 @@ class JulianBot : Bot
             return RandomTile(tiles);
         }
     }
+
+    // Populate needed tiles for each potential discard that leads to tenpai
+    private void populate_needed_tiles_for_discards(HashMap<Tile, HashMap<TileType, int>> discard_map,
+                                                     ArrayList<Tile> sorted_hand,
+                                                     ArrayList<RoundStateCall> calls)
+    {
+        // Collect keys first to avoid concurrent modification during iteration
+        ArrayList<Tile> keys = new ArrayList<Tile>();
+        keys.add_all(discard_map.keys);
+
+        foreach (Tile tDiscard in keys) {
+            HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
+
+            // Create hand without this discard
+            ArrayList<Tile> hand_after_discard = new ArrayList<Tile>();
+            hand_after_discard.add_all(sorted_hand);
+            hand_after_discard.remove(tDiscard);
+            populate_needed_tiles(needed_tiles, hand_after_discard, calls);
+            discard_map.set(tDiscard, needed_tiles);
+        }
+    }
+
+    private void populate_needed_tiles(HashMap<TileType, int> needed_tiles,
+                                                     ArrayList<Tile> sorted_hand,
+                                                     ArrayList<RoundStateCall> calls)
+    {
+
+        // Find all tiles that would complete this hand (tenpai)
+        ArrayList<HandReading> readings = TileRules.hand_readings(sorted_hand, calls, true, false);
+        foreach (HandReading hr in readings) {
+            foreach (Tile tHR in hr.tiles) {
+                if (tHR.ID == -1) {  // ID == -1 means this is the needed tile
+                    needed_tiles.set(tHR.tile_type, 4);  // Start with max 4 tiles of this type
+                }
+            }
+        }
+
+        
+    }
+
+    // Calculate benefit (available tile count) for each potential discard
+    private HashMap<Tile, int> calculate_discard_benefits(HashMap<Tile, HashMap<TileType, int>> discard_map)
+    {
+        HashMap<Tile, int> discard_benefit = new HashMap<Tile, int>();
+
+        foreach (Tile tDiscard in discard_map.keys) {
+            HashMap<TileType, int> needed_tiles = discard_map.get(tDiscard);
+            int total_benefit = 0;
+
+            foreach (TileType type_needed in needed_tiles.keys) {
+                int available_count = count_available_tiles(type_needed);
+                total_benefit += available_count;
+            }
+
+            discard_benefit.set(tDiscard, total_benefit);
+        }
+
+        return discard_benefit;
+    }
+
+    // Count how many tiles of a given type are still available (not visible)
+    private int count_available_tiles(TileType tile_type)
+    {
+        int available = 4;  // Start with max count
+
+        // Subtract dead wall mark tile
+        Tile? mark = round_state.dead_wall_mark;
+        if (mark != null && mark.tile_type == tile_type) {
+            available--;
+        }
+
+        // Subtract tiles visible in all players' ponds and calls
+        for (int i = 0; i < 4; i++) {
+            RoundStatePlayer player = round_state.get_player(i);
+
+            // Check pond
+            foreach (Tile pond_tile in player.pond) {
+                if (pond_tile.tile_type == tile_type) {
+                    available--;
+                }
+            }
+
+            // Check calls (open melds)
+            foreach (RoundStateCall call in player.calls) {
+                foreach (Tile call_tile in call.tiles) {
+                    if (call_tile.tile_type == tile_type) {
+                        available--;
+                    }
+                }
+            }
+
+         
+        }
+
+        // hand tiles of myself
+        foreach(Tile my_hand_tile in round_state.self.hand) {
+            if(my_hand_tile.tile_type == tile_type) {
+                available--;
+            }
+        }
+        return available;
+    }
+
+    // Find the discard with the highest benefit
+    private BestDiscardResult find_best_discard(HashMap<Tile, int> discard_benefit)
+    {
+        BestDiscardResult result = BestDiscardResult();
+        result.tile = null;
+        result.benefit = 0;
+
+        foreach (Tile tDiscard in discard_benefit.keys) {
+            int benefit = discard_benefit.get(tDiscard);
+            if (benefit > result.benefit) {
+                result.benefit = benefit;
+                result.tile = tDiscard;
+            }
+        }
+
+        return result;
+    }
+
+    // 也就是听章数量
+    private int find_best_benefit(HashMap<Tile, int> discard_benefit)
+    {
+        Tile? best_discard = null;
+        int best_benefit = 0;
+
+        foreach (Tile tDiscard in discard_benefit.keys) {
+            int benefit = discard_benefit.get(tDiscard);
+            if (benefit > best_benefit) {
+                best_benefit = benefit;
+                best_discard = tDiscard;
+            }
+        }
+
+        return best_benefit;
+    }
+
     private Tile RandomNonTerminalHonor(ArrayList<Tile> tiles)
     {
         ArrayList<Tile> tmpTiles = new ArrayList<Tile>();

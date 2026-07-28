@@ -53,14 +53,14 @@ class ScoringView : View2D
         score_label.font_size = 40;
         score_label.text = "Scores";
 
-        ready_button = new MenuTextButton("MenuButtonSmall", "Ready");
+        ready_button = new MenuTextButton("MenuButtonSmall", "Ready (R)");
         add_child(ready_button);
         ready_button.clicked.connect(ready_clicked);
         ready_button.inner_anchor = Vec2(0, 0);
         ready_button.outer_anchor = Vec2(0, 0);
         ready_button.position = Vec2(padding, padding);
-        ready_button.visible = false;
-        ready_button.enabled = false;
+        ready_button.visible = true;
+        ready_button.enabled = true;
 
         next_score_button = new GameMenuButton("Next");
         add_child(next_score_button);
@@ -101,6 +101,22 @@ class ScoringView : View2D
 
         if (str != time_label.text)
             time_label.text = str;
+    }
+
+    protected override void key_press(KeyArgs key)
+    {
+        if (key.handled || !visible)
+            return;
+
+        if (key.down && key.modifiers == Modifier.NONE)
+        {
+            key.handled = true;
+
+            if (key.scancode == ScanCode.R && ready_button.enabled)
+                ready_clicked();
+            else
+                key.handled = false;
+        }
     }
 
     protected override void resized()

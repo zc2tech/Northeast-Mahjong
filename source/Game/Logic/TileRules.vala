@@ -415,7 +415,7 @@ public class TileRules
         }
 
 
-        ArrayList<HandReading> normalReadings = hand_reading_recursion(hand, call_melds, tenpai_only, early_return);
+        ArrayList<HandReading> normalReadings = hand_reading_recursion(hand, call_melds, tenpai_only);
         ArrayList<HandReading> northeastReadings = new ArrayList<HandReading>();
         foreach(HandReading r in normalReadings) {
             bool hasTerminalHonor = false;
@@ -459,6 +459,9 @@ public class TileRules
             // Cannot be Chinitsu or Honitsu , and should have at least one Sequence meld
             if(hasTriplet && hasTerminalHonor && !isHonitsu_Chnitsu && cntSeq > 0) {
                 northeastReadings.add(r);
+                if(early_return) {
+                    return northeastReadings;
+                }
             }
         }
 
@@ -467,7 +470,8 @@ public class TileRules
 
     // 第一次进这个函数时 remaining_tiles = hand
     // tenpai_only: 只看听牌，不看和牌
-    private static ArrayList<HandReading> hand_reading_recursion(ArrayList<Tile> remaining_tiles, ArrayList<TileMeld> melds, bool tenpai_only, bool early_return)
+    // 递归程序里实现early_return 有点麻烦啊，在子递归里得加很多判断收集信息，我把这个参数去掉了，想看的话自己翻git履历
+    private static ArrayList<HandReading> hand_reading_recursion(ArrayList<Tile> remaining_tiles, ArrayList<TileMeld> melds, bool tenpai_only)
     {
         ArrayList<HandReading> readings = new ArrayList<HandReading>();
 
@@ -500,24 +504,6 @@ public class TileRules
             }
 
             return readings;
-        }
-        // 仅从这一轮看有没有，我们看不到子递归里有没有这些东西
-        bool hasTriplet = false;
-        bool hasTerminalHonor = false;
-        foreach (TileMeld tm in melds) {
-            if(tm.is_triplet) {
-                hasTriplet = true;
-            }
-            if(
-                tm.hasTerminalHonor()
-             )
-             {
-               hasTerminalHonor = true; 
-             }
-             if(hasTriplet && hasTerminalHonor) {
-                // no need to continue check
-                break;
-             }
         }
 
         if (hand.size == 13 || hand.size == 14)
@@ -553,19 +539,14 @@ public class TileRules
             if (meld.size == 3)
             {
                 TileMeld m = new TileMeld(meld[0], meld[1], meld[2], true);
-                hasTriplet = true;
-                // since they are same type, we check only one
-                if(meld[0].is_honor_tile() || meld[0].is_terminal_tile()) {
-                    hasTerminalHonor = true;
-                }
 
                 ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
                 new_melds.add_all(melds);
                 new_melds.add(m);
 
-                append_readings(readings, hand_reading_recursion(copy, new_melds, tenpai_only, early_return));
+                append_readings(readings, hand_reading_recursion(copy, new_melds, tenpai_only));
 
-                if (early_return && readings.size > 0 && hasTriplet && hasTerminalHonor)
+                if (readings.size > 0)
                     return readings;
             }
 
@@ -592,19 +573,14 @@ public class TileRules
                 if (one_more != null && two_more != null)
                 {
                     TileMeld m = new TileMeld(tile, one_more, two_more, true);
-                    if(
-                       m.hasTerminalHonor()
-                    )
-                    {
-                        hasTerminalHonor = true; 
-                    }
+
                     ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
                     new_melds.add_all(melds);
                     new_melds.add(m);
 
-                    append_readings(readings, hand_reading_recursion(copy, new_melds, tenpai_only, early_return));
+                    append_readings(readings, hand_reading_recursion(copy, new_melds, tenpai_only));
 
-                    if (early_return && readings.size > 0 && hasTriplet && hasTerminalHonor)
+                    if (readings.size > 0)
                         return readings;
                 }
             }
@@ -1017,6 +993,7 @@ public class HandReading : Object
             tiles.add(meld.tile_4);
     }
 
+    // 因为算听牌有可能补上需要的牌去算， 导致听一个不可能存在的第五张牌（麻将里一个花色只有4张牌）
     private static bool check_keishiki(ArrayList<Tile> tiles)
     {
         // Double loop arguably faster than using mutations
