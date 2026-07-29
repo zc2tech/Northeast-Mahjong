@@ -131,6 +131,8 @@ class GameController : Object
 
             menu.observe_next_pressed.connect(renderer.observe_next);
             menu.observe_prev_pressed.connect(renderer.observe_prev);
+            menu.speed_up_pressed.connect(speed_up);
+            menu.speed_down_pressed.connect(speed_down);
         }
     }
 
@@ -191,6 +193,44 @@ class GameController : Object
                 round.disconnected();
             menu.game_over();
             menu.display_disconnected();
+        }
+    }
+
+    private float speed_multiplier = 1.0f;
+
+    private void speed_up()
+    {
+        // Increase speed by 0.25x increments, max 4x
+        if (speed_multiplier < 4.0f)
+        {
+            speed_multiplier += 0.25f;
+            apply_speed();
+            if (menu != null)
+                menu.show_speed_toast(speed_multiplier);
+            Environment.log(LogType.INFO, "GameController", @"Replay speed: $(speed_multiplier)x");
+        }
+    }
+
+    private void speed_down()
+    {
+        // Decrease speed by 0.25x increments, min 0.25x
+        if (speed_multiplier > 0.25f)
+        {
+            speed_multiplier -= 0.25f;
+            apply_speed();
+            if (menu != null)
+                menu.show_speed_toast(speed_multiplier);
+            Environment.log(LogType.INFO, "GameController", @"Replay speed: $(speed_multiplier)x");
+        }
+    }
+
+    private void apply_speed()
+    {
+        // Apply speed multiplier to decision time only (not animation speed)
+        if (renderer != null && renderer.context != null)
+        {
+            // Scale only the decision time, not the animations
+            renderer.context.set_decision_time_multiplier(speed_multiplier);
         }
     }
 }

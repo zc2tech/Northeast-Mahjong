@@ -329,6 +329,11 @@ class JulianBot : Bot
             // 必碰
             return true;
         }
+        
+        // 下家打的 没听牌的话 基本都碰, 将牌没了的话，不正好二人抬轿吗
+        if(beforeBenefit == 0 && shimocha_index == discarder_index && tripletCnt <= 2) {
+            return true;
+        }
 
         // 牌好吗 其实如果那一对子正好是 幺九 对的话,其实还行
         if ((pairCnt <= 1 && tripletCnt < 1) || singleCnt >= 3 || terminalCnt <= 1)
@@ -336,7 +341,11 @@ class JulianBot : Bot
             if(shimocha_index == discarder_index) {
                 return true;
             } else if(toimen_index == discarder_index) {
-                return Random.boolean();
+                if(tripletCnt < 1) {
+                    return true;
+                } else {
+                    return Random.boolean();
+                }
             } else {
                 // 上家打过来的
                 if(singleCnt <= 1 && tripletCnt < 1) {
@@ -730,12 +739,12 @@ class JulianBot : Bot
             ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();
             ArrayList<Tile> tiles_allowed = round_state.self.get_discard_tiles();
 
-            Environment.log(LogType.DEBUG, "JulianBot", @"Checking tenpai for $(tiles_allowed.size) tiles");
+            //  Environment.log(LogType.DEBUG, "JulianBot", @"Checking tenpai for $(tiles_allowed.size) tiles");
 
             Tile discard_for_tenpai = null;
             foreach (Tile tile in tiles_allowed)
             {
-                Environment.log(LogType.DEBUG, "JulianBot", @"Checking if discarding $(tile.tile_type.to_string()) leads to tenpai...");
+                //  Environment.log(LogType.DEBUG, "JulianBot", @"Checking if discarding $(tile.tile_type.to_string()) leads to tenpai...");
                 copy_for_tenpai.add_all(round_state.self.hand);
                 copy_for_tenpai.remove(tile);
                 // 能听牌当然就打你了
@@ -743,7 +752,7 @@ class JulianBot : Bot
                     discard_for_tenpai = tile;
                     copy_for_tenpai.clear();
                     // 到时候会算舍去这张牌能听多少 <类型,张数>
-                    Environment.log(LogType.DEBUG, "JulianBot", @"Found tenpai discard: $(tile.tile_type.to_string())");
+                     Environment.log(LogType.DEBUG, "JulianBot", @"Found tenpai discard ($(round_state.self.wind.to_string())): $(tile.tile_type.to_string())");
                     hDiscardForTenpai.set(discard_for_tenpai, new HashMap<TileType, int>());
                 }
                 copy_for_tenpai.clear();
@@ -873,9 +882,6 @@ class JulianBot : Bot
         if (should_call_pon(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
         {
             call_pon();
-            int64 elapsed = get_monotonic_time() - start_time;
-            Environment.log(LogType.DEBUG, "JulianBot",
-                @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - pon $(tile.tile_type.to_string())");
             return;
         }
 
@@ -885,9 +891,6 @@ class JulianBot : Bot
         if (should_call_chii(tile, sortedhand, calls, beforeBenefit, stats, discarding_player, out chii_tile1, out chii_tile2))
         {
             call_chii(chii_tile1, chii_tile2);
-            int64 elapsed = get_monotonic_time() - start_time;
-            Environment.log(LogType.DEBUG, "JulianBot",
-                @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - chii $(tile.tile_type.to_string())");
             return;
         }
 
@@ -895,9 +898,6 @@ class JulianBot : Bot
         if (should_call_kan(tile, sortedhand, calls, beforeCallReading, stats, discarding_player))
         {
             call_open_kan();
-            int64 elapsed = get_monotonic_time() - start_time;
-            Environment.log(LogType.DEBUG, "JulianBot",
-                @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - kan $(tile.tile_type.to_string())");
             return;
         }
 
@@ -997,8 +997,12 @@ class JulianBot : Bot
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (has_neighbours(tile))
-                tiles.remove_at(i--);
+            if (has_neighbours(tile)) {
+                // count if from self.hand, so don't worry the data consistency when removed one tile of pair
+                if(count(tile) == 2) {
+                    tiles.remove_at(i--); // 不但是对，还有邻居，当然得留一下了
+                }
+            }             
         }
 
         if (tiles.size == 0)
@@ -1011,9 +1015,22 @@ class JulianBot : Bot
         {
             Tile tile = tiles[i];
             if (count(tile) >= 2)
-                tiles.remove_at(i--);
+                tiles.remove_at(i--); // 对子和刻子还是很珍贵的，留。 其实对子多了也烦的，太难算了
         }
 
+        if (tiles.size == 0)
+            return RandomTileSmart(stats, backup);
+
+        backup.clear();
+        backup.add_all(tiles);
+
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if (has_neighbours(tile)) {
+                tiles.remove_at(i--); // 到这里了，就只是两面顺子了，也可以留一下了
+            }             
+        }
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 

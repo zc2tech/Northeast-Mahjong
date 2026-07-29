@@ -2,6 +2,8 @@ using Engine;
 
 public class GameRenderContext
 {
+    private float decision_time_multiplier = 1.0f;
+
     public GameRenderContext(AnimationTimings server_times, float tile_scale, Vec3 tile_size, int observer_index, int dealer, int wall_split)
     {
         this.server_times = server_times;
@@ -10,6 +12,17 @@ public class GameRenderContext
         this.observer_index = observer_index;
         this.dealer = dealer;
         this.wall_split = wall_split;
+    }
+
+    public void set_decision_time_multiplier(float multiplier)
+    {
+        this.decision_time_multiplier = multiplier;
+    }
+
+    public float get_decision_time()
+    {
+        // Return scaled decision time
+        return server_times.decision_time / decision_time_multiplier;
     }
 
     public float tile_scale { get; private set; }

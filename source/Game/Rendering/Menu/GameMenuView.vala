@@ -5,7 +5,7 @@ class GameMenuView : View2D
 {
     private ScoringView? score_view = null;
     private ArrayList<MenuButton> action_buttons = new ArrayList<MenuButton>();
-    private ArrayList<MenuTextButton> observer_buttons = new ArrayList<MenuTextButton>();
+    private ArrayList<MenuButton> observer_buttons = new ArrayList<MenuButton>();
 
     private GameRenderContext context;
     private ServerSettings settings;
@@ -14,6 +14,8 @@ class GameMenuView : View2D
     private Sound hint_sound;
     private float start_time;
     private LabelControl timer;
+    private LabelControl speed_toast;
+    private int speed_toast_frames = 0;
 
     private MenuButton chii;
     private MenuButton pon;
@@ -23,8 +25,10 @@ class GameMenuView : View2D
     private MenuButton conti; // "conti" is usually shorthand for continuance or dealer continuation
     private MenuButton void_hand;
 
-    private MenuTextButton next;
-    private MenuTextButton prev;
+    private MenuButton next;
+    private MenuButton prev;
+    private MenuButton speed_up;
+    private MenuButton speed_down;
 
     public signal void chii_pressed();
     public signal void pon_pressed();
@@ -38,6 +42,8 @@ class GameMenuView : View2D
 
     public signal void observe_next_pressed();
     public signal void observe_prev_pressed();
+    public signal void speed_up_pressed();
+    public signal void speed_down_pressed();
 
     private void press_chii() { chii_pressed(); }
     private void press_pon() { pon_pressed(); }
@@ -50,6 +56,8 @@ class GameMenuView : View2D
 
     private void press_next() { observe_next_pressed(); score_view.next(); }
     private void press_prev() { observe_prev_pressed(); score_view.prev(); }
+    private void press_speed_up() { speed_up_pressed(); }
+    private void press_speed_down() { speed_down_pressed(); }
 
     public GameMenuView(GameRenderContext context, ServerSettings settings, int player_index, bool observing)
     {
@@ -75,6 +83,16 @@ class GameMenuView : View2D
         timer.font_size = 60;
         timer.visible = false;
 
+        // Speed toast notification
+        speed_toast = new LabelControl();
+        add_child(speed_toast);
+        speed_toast.inner_anchor = Vec2(0.5f, 0.5f);
+        speed_toast.outer_anchor = Vec2(0.5f, 0.5f);
+        speed_toast.position = Vec2(0, -100);
+        speed_toast.font_size = 40;
+        speed_toast.visible = false;
+        speed_toast.color = Color(1, 1, 0.5f, 1);  // Light yellow
+
         chii = new MenuButton("Chii");
         pon = new MenuButton("Pon");
         kan = new MenuButton("Kan");
@@ -83,8 +101,10 @@ class GameMenuView : View2D
         conti = new MenuButton("Continue");
         void_hand = new MenuButton("VoidHand");
 
-        next = new MenuTextButton("MenuButtonSmall", "Next");
-        prev = new MenuTextButton("MenuButtonSmall", "Previous");
+        next = new MenuButton("Next");
+        prev = new MenuButton("Prev");
+        speed_up = new MenuButton("UpButton");
+        speed_down = new MenuButton("DownButton");
 
         chii.clicked.connect(press_chii);
         pon.clicked.connect(press_pon);
@@ -96,6 +116,8 @@ class GameMenuView : View2D
 
         next.clicked.connect(press_next);
         prev.clicked.connect(press_prev);
+        speed_up.clicked.connect(press_speed_up);
+        speed_down.clicked.connect(press_speed_down);
 
         action_buttons.add(chii);
         action_buttons.add(pon);
@@ -107,6 +129,8 @@ class GameMenuView : View2D
 
         observer_buttons.add(prev);
         observer_buttons.add(next);
+        observer_buttons.add(speed_down);
+        observer_buttons.add(speed_up);
 
         foreach (var button in action_buttons)
         {
@@ -122,9 +146,10 @@ class GameMenuView : View2D
             add_child(button);
             button.inner_anchor = Vec2(0.5f, 0);
             button.outer_anchor = Vec2(0.5f, 0);
-            button.font_size = 14;
             button.visible = observing;
         }
+
+        Environment.log(LogType.INFO, "GameMenuView", @"Observer buttons: observing=$(observing), count=$(observer_buttons.size)");
 
         void_hand.visible = false;
         position_action_buttons();
@@ -165,12 +190,18 @@ class GameMenuView : View2D
                 width += button.size.width / 2;
         }
 
+        Environment.log(LogType.INFO, "GameMenuView", @"Positioning observer buttons: total_width=$(width)");
+
         foreach (var button in observer_buttons)
         {
             if (!button.visible || button.size.width == 0)
+            {
+                Environment.log(LogType.INFO, "GameMenuView", @"Skipping button: visible=$(button.visible), size=$(button.size.width)");
                 continue;
+            }
 
             button.position = Vec2(button.size.width / 2 - width + p, 120);
+            Environment.log(LogType.INFO, "GameMenuView", @"Button positioned at: $(button.position.x), $(button.position.y), size=$(button.size.width)");
             p += button.size.width;
         }
     }
@@ -206,6 +237,16 @@ class GameMenuView : View2D
                 press_continue();
             else if (key.scancode == ScanCode.V && void_hand.enabled && void_hand.visible)
                 press_void_hand();
+            // Keyboard shortcuts for observer buttons (replay mode)
+            else if ((key.scancode == ScanCode.COMMA || key.scancode == ScanCode.LEFT) && prev.visible)
+                press_prev();
+            else if ((key.scancode == ScanCode.PERIOD || key.scancode == ScanCode.RIGHT) && next.visible)
+                press_next();
+            // Keyboard shortcuts for replay speed control
+            else if (key.scancode == ScanCode.PAGEUP && speed_up.visible)
+                press_speed_up();
+            else if (key.scancode == ScanCode.PAGEDOWN && speed_down.visible)
+                press_speed_down();
             else
                 key.handled = false;
         }
@@ -318,11 +359,20 @@ class GameMenuView : View2D
         if (start_time == 0)
             start_time = delta.time;
 
+        // Update speed toast visibility (hide after ~90 frames = ~1.5 seconds)
+        if (speed_toast_frames > 0)
+        {
+            speed_toast_frames--;
+            if (speed_toast_frames == 0)
+                speed_toast.visible = false;
+        }
+
         if (!timer.visible)
             return;
 
-        int t = int.max((int)(start_time + context.server_times.decision_time - delta.time), 0);
-        if (t == context.server_times.decision_time)
+        float decision_time = context.get_decision_time();
+        int t = int.max((int)(start_time + decision_time - delta.time), 0);
+        if (t == decision_time)
             t--;
 
         if (t < 0)
@@ -337,6 +387,20 @@ class GameMenuView : View2D
 
         if (str != timer.text)
             timer.text = str;
+    }
+
+    public void show_speed_toast(float speed_multiplier)
+    {
+        speed_toast.text = @"Speed: $(speed_multiplier)x";
+        speed_toast.visible = true;
+        speed_toast_frames = 90;  // Show for ~1.5 seconds (90 frames at 60fps)
+    }
+
+    public void show_speed_toast_text(string text)
+    {
+        speed_toast.text = text;
+        speed_toast.visible = true;
+        speed_toast_frames = 90;  // Show for ~1.5 seconds
     }
 
     public int player_index { get; set; }

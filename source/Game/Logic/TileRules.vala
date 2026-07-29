@@ -460,8 +460,8 @@ public class TileRules
         if (readings_cache.has_key(cache_key)) {
             ArrayList<HandReading> cached_result = readings_cache.get(cache_key);
             cache_hits++;
-            int64 elapsed = get_monotonic_time() - start_time;
-            Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (CACHE HIT, $(cached_result.size) readings) [hits: $(cache_hits), misses: $(cache_misses)]");
+            //  int64 elapsed = get_monotonic_time() - start_time;
+            //  Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (CACHE HIT, $(cached_result.size) readings) [hits: $(cache_hits), misses: $(cache_misses)]");
             return cached_result;
         }
 
@@ -472,8 +472,8 @@ public class TileRules
              // Cache empty result too!
              ArrayList<HandReading> empty_result = new ArrayList<HandReading>();
              readings_cache.set(cache_key, empty_result);
-             int64 elapsed = get_monotonic_time() - start_time;
-             Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (0 readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
+            //   int64 elapsed = get_monotonic_time() - start_time;
+            //   Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (0 readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
              return empty_result;
         }
 
@@ -541,8 +541,8 @@ public class TileRules
                 if(early_return) {
                     // Cache the result before returning
                     readings_cache.set(cache_key, northeastReadings);
-                    int64 elapsed = get_monotonic_time() - start_time;
-                    Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (early_return, $(northeastReadings.size) readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
+                    //  int64 elapsed = get_monotonic_time() - start_time;
+                    //  Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (early_return, $(northeastReadings.size) readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
                     return northeastReadings;
                 }
             }
@@ -634,8 +634,8 @@ public class TileRules
 
                 append_readings(readings, hand_reading_recursion(copy, new_melds, tenpai_only));
 
-                if (readings.size > 0)
-                    return readings;
+                //  if (readings.size > 0)
+                //      return readings;
             }
 
             // 顺子
@@ -668,8 +668,8 @@ public class TileRules
 
                     append_readings(readings, hand_reading_recursion(copy, new_melds, tenpai_only));
 
-                    if (readings.size > 0)
-                        return readings;
+                    //  if (readings.size > 0)
+                    //      return readings;
                 }
             }
 

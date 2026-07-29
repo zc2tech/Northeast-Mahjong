@@ -11,11 +11,11 @@ class SelectGameLogMenuView : MenuSubView
     {
         ArrayList<MenuTextButton> buttons = new ArrayList<MenuTextButton>();
 
-        load_button = new MenuTextButton("MenuButton", "Load");
+        load_button = new MenuTextButton("MenuButton", "Load (L)");
         load_button.clicked.connect(load_clicked);
         buttons.add(load_button);
 
-        MenuTextButton back_button = new MenuTextButton("MenuButton", "Back");
+        MenuTextButton back_button = new MenuTextButton("MenuButton", "Back (B)");
         back_button.clicked.connect(do_back);
         buttons.add(back_button);
 
@@ -50,6 +50,38 @@ class SelectGameLogMenuView : MenuSubView
     private void button_enable_check()
     {
         load_button.enabled = log_list.selected_index != -1;
+    }
+
+    protected override void key_press(KeyArgs key)
+    {
+        if (key.handled)
+            return;
+
+        if (key.down && !key.repeat)
+        {
+            // Arrow key navigation for log list
+            if (key.scancode == ScanCode.UP)
+            {
+                log_list.select_previous();
+                key.handled = true;
+            }
+            else if (key.scancode == ScanCode.DOWN)
+            {
+                log_list.select_next();
+                key.handled = true;
+            }
+            // Keyboard shortcuts for Load Log menu buttons
+            else if ((key.scancode == ScanCode.RETURN || key.scancode == ScanCode.L) && load_button.enabled)
+            {
+                load_clicked();
+                key.handled = true;
+            }
+            else if (key.scancode == ScanCode.ESCAPE || key.scancode == ScanCode.B)
+            {
+                do_back();
+                key.handled = true;
+            }
+        }
     }
 
     private void load_clicked()
@@ -89,6 +121,20 @@ public class GameLogsListControl : ListControl
     {
         this.logs = logs;
         refresh_data();
+    }
+
+    public void select_previous()
+    {
+        if (selected_index > 0)
+            select_by_index(selected_index - 1);
+    }
+
+    public void select_next()
+    {
+        if (selected_index < logs.length - 1)
+            select_by_index(selected_index + 1);
+        else if (selected_index == -1 && logs.length > 0)
+            select_by_index(0);
     }
 
     protected override void added()

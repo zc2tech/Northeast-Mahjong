@@ -28,6 +28,17 @@ class ScoringView : View2D
         relative_size = Size2(0.9f, 0.9f);
     }
 
+    public override void removed()
+    {
+        // Ensure scoring_view is properly removed and its sounds stopped
+        if (scoring_view != null)
+        {
+            remove_child(scoring_view);
+            scoring_view = null;
+        }
+        base.removed();
+    }
+
     public override void added()
     {
         rectangle = new RectangleControl();

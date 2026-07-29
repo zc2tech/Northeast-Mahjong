@@ -100,6 +100,11 @@ namespace Engine
             return pre + time + post;
         }
 
+        public AnimationTime scale(float multiplier)
+        {
+            return new AnimationTime(pre * multiplier, time * multiplier, post * multiplier);
+        }
+
         public float pre { get; protected set; }
         public float time { get; protected set; }
         public float post { get; protected set; }

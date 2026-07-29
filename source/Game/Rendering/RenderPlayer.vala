@@ -4,7 +4,7 @@ using Gee;
 public class RenderPlayer : WorldObject
 {
     private const float VIEW_ANGLE = 0.46f;
-    private const float CROSS_PLAYER_VIEW_ANGLE = 0.54f;
+    private const float CROSS_PLAYER_VIEW_ANGLE = 0.58f;
     private const float RIGHT_PLAYER_VIEW_ANGLE = 0.5f;
     private const float LEFT_PLAYER_VIEW_ANGLE = 0.5f;
 

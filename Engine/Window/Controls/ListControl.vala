@@ -176,6 +176,14 @@ namespace Engine
             selected_index_changed(this);
         }
 
+        public void select_by_index(int index)
+        {
+            if (items == null || index < 0 || index >= items.length)
+                return;
+
+            item_selected(items[index]);
+        }
+
         protected abstract string get_cell_data(int row, int column);
         protected abstract ListColumnInfo get_column_info(int column);
 

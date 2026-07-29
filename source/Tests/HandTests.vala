@@ -2,29 +2,29 @@ using Gee;
 
 public void hands1()
 {
-    PlayerStateContext player = new PlayerStateContext(
-        3,
-        new ArrayList<Tile>(), // Without the winning tile
-        new ArrayList<Tile>(),
-        new ArrayList<RoundStateCall>(), // calls
-        Wind.NORTH,
-        false,
-        true,
-        false,
-        false,
-        false,
-        -1
-    );
+    //  PlayerStateContext player = new PlayerStateContext(
+    //      3,
+    //      new ArrayList<Tile>(), // Without the winning tile
+    //      new ArrayList<Tile>(),
+    //      new ArrayList<RoundStateCall>(), // calls
+    //      Wind.NORTH,
+    //      false,
+    //      true,
+    //      false,
+    //      false,
+    //      false,
+    //      -1
+    //  );
 
-    RoundStateContext round = new RoundStateContext(
-        Wind.EAST,
-        true,
-        new Tile(-1, TileType.PEI),
-        false,
-        false,
-        false,
-        true
-    );
+    //  RoundStateContext round = new RoundStateContext(
+    //      Wind.EAST,
+    //      true,
+    //      new Tile(-1, TileType.PEI),
+    //      false,
+    //      false,
+    //      false,
+    //      true
+    //  );
 
     ArrayList<Tile> tiles = new ArrayList<Tile>();
     tiles.add(new Tile(0, TileType.MAN9));
@@ -70,30 +70,6 @@ public void hands1()
 // 断幺九，应该胡不了
 public void hands2()
 {
-    PlayerStateContext player = new PlayerStateContext(
-        3,
-        new ArrayList<Tile>(), // Without the winning tile
-        new ArrayList<Tile>(),
-        new ArrayList<RoundStateCall>(), // calls
-        Wind.NORTH,
-        false,
-        true,
-        false,
-        false,
-        false,
-        -1
-    );
-
-    RoundStateContext round = new RoundStateContext(
-        Wind.EAST,
-        true,
-        new Tile(-1, TileType.PEI),
-        false,
-        false,
-        false,
-        true
-    );
-
     ArrayList<Tile> tiles = new ArrayList<Tile>();
     tiles.add(new Tile(1, TileType.MAN6));
     tiles.add(new Tile(0, TileType.MAN5));
@@ -138,30 +114,6 @@ public void hands2()
 // 清一色，应该胡不了
 public void hands3()
 {
-    PlayerStateContext player = new PlayerStateContext(
-        3,
-        new ArrayList<Tile>(), // Without the winning tile
-        new ArrayList<Tile>(),
-        new ArrayList<RoundStateCall>(), // calls
-        Wind.NORTH,
-        false,
-        true,
-        false,
-        false,
-        false,
-        -1
-    );
-
-    RoundStateContext round = new RoundStateContext(
-        Wind.EAST,
-        true,
-        new Tile(-1, TileType.PEI),
-        false,
-        false,
-        false,
-        true
-    );
-
     ArrayList<Tile> tiles = new ArrayList<Tile>();
     tiles.add(new Tile(1, TileType.MAN1));
     tiles.add(new Tile(0, TileType.MAN2));
@@ -205,30 +157,6 @@ public void hands3()
 // 混一色，应该胡不了
 public void hands4()
 {
-    PlayerStateContext player = new PlayerStateContext(
-        3,
-        new ArrayList<Tile>(), // Without the winning tile
-        new ArrayList<Tile>(),
-        new ArrayList<RoundStateCall>(), // calls
-        Wind.NORTH,
-        false,
-        true,
-        false,
-        false,
-        false,
-        -1
-    );
-
-    RoundStateContext round = new RoundStateContext(
-        Wind.EAST,
-        true,
-        new Tile(-1, TileType.PEI),
-        false,
-        false,
-        false,
-        true
-    );
-
     ArrayList<Tile> tiles = new ArrayList<Tile>();
     tiles.add(new Tile(1, TileType.MAN1));
     tiles.add(new Tile(0, TileType.MAN2));
@@ -273,30 +201,6 @@ public void hands4()
 // 手中只剩两张牌，废掉了
 public void hands5()
 {
-    PlayerStateContext player = new PlayerStateContext(
-        3,
-        new ArrayList<Tile>(), // Without the winning tile
-        new ArrayList<Tile>(),
-        new ArrayList<RoundStateCall>(), // calls
-        Wind.NORTH,
-        false,
-        true,
-        false,
-        false,
-        false,
-        -1
-    );
-
-    RoundStateContext round = new RoundStateContext(
-        Wind.EAST,
-        true,
-        new Tile(-1, TileType.PEI),
-        false,
-        false,
-        false,
-        true
-    );
-
     ArrayList<Tile> tiles = new ArrayList<Tile>();
   
     tiles.add(new Tile(6, TileType.SOU1));
@@ -348,30 +252,6 @@ public void hands5()
 // 杠出来一张好牌，注意这种情况 readings 是有的， 我们必须在别的地方补充判断，而不是修改 hand_readings
 public void hands6()
 {
-    PlayerStateContext player = new PlayerStateContext(
-        3,
-        new ArrayList<Tile>(), // Without the winning tile
-        new ArrayList<Tile>(),
-        new ArrayList<RoundStateCall>(), // calls
-        Wind.NORTH,
-        false,
-        true,
-        false,
-        false,
-        false,
-        -1
-    );
-
-    RoundStateContext round = new RoundStateContext(
-        Wind.EAST,
-        true,
-        new Tile(-1, TileType.PEI),
-        false,
-        true, // 刚杠完
-        false,
-        true
-    );
-
     ArrayList<Tile> tiles = new ArrayList<Tile>();
   
     tiles.add(new Tile(6, TileType.SOU1));

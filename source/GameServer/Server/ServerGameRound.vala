@@ -395,8 +395,19 @@ namespace GameServer
 
         protected override void round_starting()
         {
-            foreach (Tile tile in log_round.tiles.to_array())
+            Tile[] tiles_array = log_round.tiles.to_array();
+            Environment.log(LogType.DEBUG, "LogServerGameRound", @"round_starting: revealing $(tiles_array.length) tiles from log");
+
+            foreach (Tile tile in tiles_array)
+            {
+                Environment.log(LogType.DEBUG, "LogServerGameRound", @"Revealing tile: $(tile.tile_type.to_string()) ID=$(tile.ID)");
                 game_reveal_tile(tile);
+            }
+
+            if (tiles_array.length == 0)
+            {
+                Environment.log(LogType.ERROR, "LogServerGameRound", "WARNING: No tiles in log_round.tiles - players will see face-down tiles!");
+            }
         }
     }
 }

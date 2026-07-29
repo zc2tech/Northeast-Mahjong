@@ -36,6 +36,16 @@ class ScoringPlayerElement : Control
         _animate = animate;
     }
 
+    protected override void removed()
+    {
+        // Stop any playing sounds when view is removed
+        if (score_sound != null)
+            score_sound.stop();
+        if (fade_sound != null)
+            fade_sound.stop();
+        base.removed();
+    }
+
     public override void added()
     {
         resize_style = ResizeStyle.ABSOLUTE;

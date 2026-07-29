@@ -13,7 +13,7 @@ public class Environment
 
     public const uint16 GAME_PORT     = 1337;
     public const uint16 LOBBY_PORT    = 1337;
-    public const string LOBBY_ADDRESS = "riichi.fluffy.is";
+    public const string LOBBY_ADDRESS = "localhost";
 
     private static bool initialized = false;
 

@@ -7,8 +7,8 @@ class ScoringPointsView : View2D
     private RoundScoreState score;
     private LabelControl score_label;
     private LabelControl? draw_label;
-    private GameMenuButton? next_button;
-    private GameMenuButton? prev_button;
+    private Engine.MenuButton? next_button;
+    private Engine.MenuButton? prev_button;
     private ScoringScoreControl? scoring_control;
     //  private ScoringDoraView? dora;
     //  private ScoringDoraView? ura;
@@ -32,6 +32,14 @@ class ScoringPointsView : View2D
 
         if (animate)
             total_time = context.server_times.get_animation_round_end_delay(score);
+    }
+
+    protected override void removed()
+    {
+        // Stop any playing sounds when view is removed
+        if (fade_sound != null)
+            fade_sound.stop();
+        base.removed();
     }
 
     public override void added()
@@ -133,8 +141,8 @@ class ScoringPointsView : View2D
         {
             switches = score.result.scores.length - 1;
 
-            prev_button = new GameMenuButton("Prev");
-            next_button = new GameMenuButton("Next");
+            prev_button = new Engine.MenuButton("Prev");
+            next_button = new Engine.MenuButton("Next");
             add_child(prev_button);
             add_child(next_button);
 
@@ -243,6 +251,28 @@ class ScoringPointsView : View2D
         animate = false;
     }
 
+    protected override void key_press(KeyArgs key)
+    {
+        if (key.handled)
+            return;
+
+        if (key.down && !key.repeat)
+        {
+            // Keyboard shortcuts for prev/next buttons
+            // Use < and > keys (comma and period), or arrow keys
+            if ((key.scancode == ScanCode.COMMA || key.scancode == ScanCode.LEFT) && prev_button != null && prev_button.visible)
+            {
+                prev_score();
+                key.handled = true;
+            }
+            else if ((key.scancode == ScanCode.PERIOD || key.scancode == ScanCode.RIGHT) && next_button != null && next_button.visible)
+            {
+                next_score();
+                key.handled = true;
+            }
+        }
+    }
+
     private void show_score_control()
     {
         if (scoring_control != null)
@@ -319,6 +349,16 @@ class ScoringPointsView : View2D
             this.sekinin = sekinin;
             this.dual_payer = dual_payer;
             _animate = animate;
+        }
+
+        protected override void removed()
+        {
+            // Stop any playing sounds when view is removed
+            if (score_sound != null)
+                score_sound.stop();
+            if (fade_sound != null)
+                fade_sound.stop();
+            base.removed();
         }
 
         public override void added()
