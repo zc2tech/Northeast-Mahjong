@@ -336,7 +336,8 @@ class JulianBot : Bot
         }
 
         // 牌好吗 其实如果那一对子正好是 幺九 对的话,其实还行
-        if ((pairCnt <= 1 && tripletCnt < 1) || singleCnt >= 3 || terminalCnt <= 1)
+        if (beforeBenefit == 0 && 
+            ((pairCnt <= 1 && tripletCnt < 1) || singleCnt >= 3 || terminalCnt <= 1))
         {
             if(shimocha_index == discarder_index) {
                 return true;
@@ -390,16 +391,6 @@ class JulianBot : Bot
             if( TileRules.in_tenpai(tmpHand,newCalls)) {
                 hDiscardForTenpai.set(t,new HashMap<TileType,int>());
             }
-
-            //  ArrayList<HandReading> tmpReading = TileRules.hand_readings(tmpHand, newCalls, true, false);
-            //  if (tmpReading.size > bestReadingCnt)
-            //  {
-            //      // 没考虑湖里啥情况,有可能看起来很多,真正机会并不大
-            //      // 真要算好的话, 还得跟tmpHand做个差值看听什么,再看看湖里剩几张
-            //      // 当前算法会不倾向 夹 或着 边牌 ?
-            //      bestDiscard = t;
-            //      bestReadingCnt = tmpReading.size;
-            //  }
         }
         if(hDiscardForTenpai.keys.size > 0 ) {
             populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
@@ -412,6 +403,11 @@ class JulianBot : Bot
                 // 既然值得碰,那就碰吧.
                 return true;
             }
+        }
+
+        // 以前是有听的话，就不碰了
+        if(beforeBenefit > 0) {
+            return false;
         }
 
         // 根本没机会和牌时,要不要碰? 继续看:
@@ -712,9 +708,9 @@ class JulianBot : Bot
         if (round_state.can_tsumo())
         {
             do_tsumo();
-            int64 elapsed = get_monotonic_time() - start_time;
-            Environment.log(LogType.DEBUG, "JulianBot",
-                @"do_turn_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - tsumo");
+            //  int64 elapsed = get_monotonic_time() - start_time;
+            //  Environment.log(LogType.DEBUG, "JulianBot",
+            //      @"do_turn_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - tsumo");
             return;
         }
 
@@ -759,16 +755,14 @@ class JulianBot : Bot
             }
             if (hDiscardForTenpai.keys.size > 0) {
                 populate_needed_tiles_for_discards(hDiscardForTenpai, sorted_hand, calls);
-
                 HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-
                 BestDiscardResult result = find_best_discard(discard_benefit);
 
                 if (result.tile != null) {
-                Environment.log(LogType.DEBUG, "JulianBot",
-                    @"do_turn_decision ($(round_state.self.wind.to_string())), discard $(result.tile) for $(result.benefit) win tiles"); 
-                    do_discard(result.tile);
-                    return;
+                    Environment.log(LogType.DEBUG, "JulianBot",
+                        @"do_turn_decision ($(round_state.self.wind.to_string())), discard $(result.tile) for $(result.benefit) win tiles"); 
+                        do_discard(result.tile);
+                        return;
                 }
             }
         }
@@ -836,9 +830,9 @@ class JulianBot : Bot
         Tile  tile = get_discard_tile();
         do_discard(tile);
 
-        int64 elapsed = get_monotonic_time() - start_time;
-        Environment.log(LogType.DEBUG, "JulianBot",
-            @"do_turn_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - discard $(tile.tile_type.to_string())");
+        //  int64 elapsed = get_monotonic_time() - start_time;
+        //  Environment.log(LogType.DEBUG, "JulianBot",
+        //      @"do_turn_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - discard $(tile.tile_type.to_string())");
     }
 
     // 别人打牌之后，做个处理决定
@@ -851,9 +845,9 @@ class JulianBot : Bot
         if(sortedhand.size <= 4) {
             // 手牌只剩两张的话,就没法胡了
             call_nothing();  // CRITICAL: Must notify server we're done deciding
-            int64 elapsed = get_monotonic_time() - start_time;
-            Environment.log(LogType.DEBUG, "JulianBot",
-                @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - skip (hand too small)");
+            //  int64 elapsed = get_monotonic_time() - start_time;
+            //  Environment.log(LogType.DEBUG, "JulianBot",
+            //      @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - skip (hand too small)");
             return;
         }
 
@@ -902,9 +896,9 @@ class JulianBot : Bot
         }
 
         call_nothing();
-        int64 elapsed = get_monotonic_time() - start_time;
-        Environment.log(LogType.DEBUG, "JulianBot",
-            @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - pass");
+        //  int64 elapsed = get_monotonic_time() - start_time;
+        //  Environment.log(LogType.DEBUG, "JulianBot",
+        //      @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - pass");
     }
 
     // Toimen (opposite) Kamicha(left)  Shimocha (right) 
@@ -1011,11 +1005,17 @@ class JulianBot : Bot
         backup.clear();
         backup.add_all(tiles);
 
+        // 到了这里不可能算刻子了，只看对子
+        int pair_cnt = 0;
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (count(tile) >= 2)
-                tiles.remove_at(i--); // 对子和刻子还是很珍贵的，留。 其实对子多了也烦的，太难算了
+            if (count(tile) >= 2 && pair_cnt <= 1 ) // pair_cnt 是经过上一轮之后算出的，你需要加上当前的看看
+            {
+                pair_cnt++;
+                tiles.remove_at(i--); // 对子还是很珍贵的，留。 
+            }
+                
         }
 
         if (tiles.size == 0)
@@ -1082,13 +1082,13 @@ class JulianBot : Bot
                                                      ArrayList<Tile> sorted_hand,
                                                      ArrayList<RoundStateCall> calls)
     {
-        int64 start_time = get_monotonic_time();
+        //  int64 start_time = get_monotonic_time();
 
         // Collect keys first to avoid concurrent modification during iteration
         ArrayList<Tile> keys = new ArrayList<Tile>();
         keys.add_all(discard_map.keys);
 
-        Environment.log(LogType.DEBUG, "JulianBot", @"populate_needed_tiles_for_discards: processing $(keys.size) discards");
+        //  Environment.log(LogType.DEBUG, "JulianBot", @"populate_needed_tiles_for_discards: processing $(keys.size) discards");
 
         foreach (Tile tDiscard in keys) {
             HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
@@ -1099,10 +1099,15 @@ class JulianBot : Bot
             hand_after_discard.remove(tDiscard);
             populate_needed_tiles(needed_tiles, hand_after_discard, calls);
             discard_map.set(tDiscard, needed_tiles);
+            StringBuilder sb_for_log = new StringBuilder();
+            foreach(TileType t in needed_tiles.keys) {
+                sb_for_log.append(new Tile(-1,t).to_string() + " ");
+            }
+            Environment.log(LogType.DEBUG, "JulianBot", @"discard: $(tDiscard.to_string()), tenpai: $(sb_for_log.str)");
         }
 
-        int64 elapsed = get_monotonic_time() - start_time;
-        Environment.log(LogType.DEBUG, "JulianBot", @"populate_needed_tiles_for_discards completed in $(elapsed) microseconds");
+        //  int64 elapsed = get_monotonic_time() - start_time;
+        //  Environment.log(LogType.DEBUG, "JulianBot", @"populate_needed_tiles_for_discards completed in $(elapsed) microseconds");
     }
 
     private void populate_needed_tiles(HashMap<TileType, int> needed_tiles,

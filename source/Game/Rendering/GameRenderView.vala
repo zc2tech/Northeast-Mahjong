@@ -176,43 +176,49 @@ public class GameRenderView : View3D, IGameRenderer
         }
         else if (key.keycode == KeyCode.NUM_7)
         {
-            // Increase cross-player (seat 2) hand angle
-            players[2].adjust_hand_angle(0.02f);
+            // Increase cross-player (opposite, toimen) hand angle
+            int cross_player_index = (observer_index + 2) % 4;
+            players[cross_player_index].adjust_hand_angle(0.02f);
         }
         else if (key.keycode == KeyCode.NUM_8)
         {
-            // Decrease cross-player (seat 2) hand angle
-            players[2].adjust_hand_angle(-0.02f);
+            // Decrease cross-player (opposite, toimen) hand angle
+            int cross_player_index = (observer_index + 2) % 4;
+            players[cross_player_index].adjust_hand_angle(-0.02f);
         }
         else if (key.keycode == KeyCode.NUM_9)
         {
-            // Increase right-player (seat 1, shimocha) hand angle
-            players[1].adjust_hand_angle(0.02f);
+            // Increase right-player (shimocha) hand angle
+            int right_player_index = (observer_index + 1) % 4;
+            players[right_player_index].adjust_hand_angle(0.02f);
         }
         else if (key.keycode == KeyCode.NUM_0)
         {
-            // Decrease right-player (seat 1, shimocha) hand angle
-            players[1].adjust_hand_angle(-0.02f);
+            // Decrease right-player (shimocha) hand angle
+            int right_player_index = (observer_index + 1) % 4;
+            players[right_player_index].adjust_hand_angle(-0.02f);
         }
         else if (key.keycode == KeyCode.MINUS)
         {
-            // Increase left-player (seat 3, kamicha) hand angle
-            players[3].adjust_hand_angle(0.02f);
+            // Increase left-player (kamicha) hand angle
+            int left_player_index = (observer_index + 3) % 4;
+            players[left_player_index].adjust_hand_angle(0.02f);
         }
         else if (key.keycode == KeyCode.EQUALS)
         {
-            // Decrease left-player (seat 3, kamicha) hand angle
-            players[3].adjust_hand_angle(-0.02f);
+            // Decrease left-player (kamicha) hand angle
+            int left_player_index = (observer_index + 3) % 4;
+            players[left_player_index].adjust_hand_angle(-0.02f);
         }
         else if (key.keycode == KeyCode.LEFTBRACKET)
         {
-            // Increase your own (seat 0) hand angle
-            players[0].adjust_hand_angle(0.02f);
+            // Increase your own hand angle
+            players[observer_index].adjust_hand_angle(0.02f);
         }
         else if (key.keycode == KeyCode.RIGHTBRACKET)
         {
-            // Decrease your own (seat 0) hand angle
-            players[0].adjust_hand_angle(-0.02f);
+            // Decrease your own hand angle
+            players[observer_index].adjust_hand_angle(-0.02f);
         }
     }
 

@@ -196,7 +196,7 @@ class GameMenuView : View2D
         {
             if (!button.visible || button.size.width == 0)
             {
-                Environment.log(LogType.INFO, "GameMenuView", @"Skipping button: visible=$(button.visible), size=$(button.size.width)");
+                //  Environment.log(LogType.INFO, "GameMenuView", @"Skipping button: visible=$(button.visible), size=$(button.size.width)");
                 continue;
             }
 

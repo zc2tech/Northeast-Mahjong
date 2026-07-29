@@ -551,8 +551,8 @@ public class TileRules
         // Always cache the result (even if empty)
         readings_cache.set(cache_key, northeastReadings);
 
-        int64 elapsed = get_monotonic_time() - start_time;
-        Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds ($(northeastReadings.size) readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
+        //  int64 elapsed = get_monotonic_time() - start_time;
+        //  Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds ($(northeastReadings.size) readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
         return northeastReadings;
     }
 
