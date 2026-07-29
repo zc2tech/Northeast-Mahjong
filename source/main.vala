@@ -193,16 +193,82 @@ private static void show_help_message()
 
 private static void run_bot_simulation(int num_hands)
 {
-    stdout.printf("Bot simulation feature is not yet fully implemented.\n");
-    stdout.printf("This requires exposing more APIs from RoundState for automated play.\n");
-    stdout.printf("\n");
-    stdout.printf("Configured bots:\n");
+    stdout.printf("Bot simulation mode: %d hands with 4 bots\n", num_hands);
+
+    // Create bots based on configuration
+    ArrayList<GameServer.ServerPlayer> players_list = new ArrayList<GameServer.ServerPlayer>();
+
     for (int i = 0; i < 4; i++)
     {
-        stdout.printf("  Player %d: %s (%s)\n", i + 1, bot_configs[i].bot_name, bot_configs[i].bot_type);
+        Bot bot;
+        string bot_type = bot_configs[i].bot_type;
+
+        if (bot_type == "JulianBot")
+            bot = new JulianBot();
+        else if (bot_type == "SimpleBot")
+            bot = new SimpleBot();
+        else
+        {
+            stdout.printf("Unknown bot type: %s, using SimpleBot\n", bot_type);
+            bot = new SimpleBot();
+        }
+
+        GameServer.ServerPlayer player = new GameServer.ServerComputerPlayer(bot);
+        players_list.add(player);
+        stdout.printf("  Player %d: %s (%s)\n", i + 1, bot_configs[i].bot_name, bot_type);
     }
-    stdout.printf("\n");
-    stdout.printf("For now, you can start a local server and add 4 bots manually.\n");
+
+    // Create game settings
+    ServerSettings settings = new ServerSettings.default();
+
+    // Create game players array
+    GamePlayer[] game_players = new GamePlayer[4];
+    for (int i = 0; i < 4; i++)
+    {
+        game_players[i] = new GamePlayer(i, bot_configs[i].bot_name);
+    }
+
+    // Create animation timings (all zero for fast simulation)
+    AnimationTimings timings = new AnimationTimings(
+        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,  // 7 float parameters
+        new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
+        new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
+        new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
+        new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
+        new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
+        new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
+        new AnimationTime.zero()  // 19 AnimationTime parameters
+    );
+
+    // Create game start info
+    GameStartInfo info = new GameStartInfo(
+        game_players,
+        timings,
+        0,      // starting_dealer
+        25000,  // starting_score
+        num_hands,  // round_count
+        1       // hanchan_count
+    );
+
+    // Create empty spectators list
+    ArrayList<GameServer.ServerPlayer> spectators = new ArrayList<GameServer.ServerPlayer>();
+
+    // Create random number generator
+    Engine.RandomClass rnd = new Engine.RandomClass();
+
+    // Create and start server
+    GameServer.RegularServer server = new GameServer.RegularServer(players_list, spectators, rnd, info, settings);
+
+    // Run the server until all rounds are finished
+    Timer timer = new Timer();
+    while (!server.finished)
+    {
+        float time = (float)timer.elapsed();
+        server.process(time);
+        Thread.usleep(10000); // 10ms sleep to avoid burning CPU
+    }
+
+    stdout.printf("\nBot simulation completed!\n");
 }
 
 public static int main(string[] args)

@@ -41,7 +41,7 @@ class JulianBot : Bot
                                      int start_tile,
                                      int end_tile,
                                      ref ArrayList<TileType> singles_ish,
-                                     HashMap<TileType,int> hOP)
+                                     HashMap<TileType,int>? hOP)
     {
         if(hOP == null) {
             return;
