@@ -6,7 +6,9 @@ struct HandStatistics
     public int terminal_count;
     public int dragon_count;
     public ArrayList<TileType> singles;
+    public ArrayList<TileType> singles_ish; // 不是对子刻子， 而且 12 但是 3 被碰  89 7 被碰， 不考虑其他太复杂的情况
     public int pair_count;
+
     public int triplet_count;
     public int half_sequence_count_by_tile; // Tile相关半顺子数量
     public bool hasTerminalSeq;
@@ -35,6 +37,47 @@ class JulianBot : Bot
         return map;
     }
 
+     private void count_singles_ish(HashMap<TileType, int> suit_map,
+                                     int start_tile,
+                                     int end_tile,
+                                     ref ArrayList<TileType> singles_ish,
+                                     HashMap<TileType,int> hOP)
+    {
+        if(hOP == null) {
+            return;
+        }
+        for (int i = start_tile; i <= end_tile; i++) {
+            int i_count = suit_map.get((TileType)i);
+            int m1 = i - 1 >= start_tile ? suit_map.get((TileType)(i - 1)) : 0;
+            int mo1 = i - 1 >= start_tile ? hOP.get((TileType)(i - 1)) : 0;
+            int m2 = i - 2 >= start_tile ? suit_map.get((TileType)(i - 2)) : 0;
+            int mo2 = i - 2 >= start_tile ? hOP.get((TileType)(i - 2)) : 0; // in other player
+            int p1 = i + 1 <= end_tile ? suit_map.get((TileType)(i + 1)) : 0;
+            int po1 = i + 1 <= end_tile ? hOP.get((TileType)(i + 1)) : 0;
+            int p2 = i + 2 <= end_tile ? suit_map.get((TileType)(i + 2)) : 0;
+            int po2 = i + 2 <= end_tile ? hOP.get((TileType)(i + 2)) : 0;
+            if( i_count == 1) { 
+                // 98 no 7 
+                if(i== end_tile && m1 == 1 && m2 == 0 && mo2 >= 3) {
+                    singles_ish.add(i);
+                }
+                // 97 no 8
+                if(i== end_tile && m2 == 1 && m1 == 0 && mo1 >= 3) {
+                    singles_ish.add(i);
+                }
+                // 12 no 3
+                if(i== start_tile && p1 == 1 && p2 == 0 && po2 >= 3) {
+                    singles_ish.add(i);
+                }
+                // 13 no 2
+                if(i== start_tile && p2 == 1 && p1 == 0 && po1 >= 3) {
+                    singles_ish.add(i);
+                } 
+
+            }
+           
+        }
+    }
     // Helper: Count patterns (singles, pairs, triplets) in a suit
     private void count_suit_patterns(HashMap<TileType, int> suit_map,
                                      int start_tile,
@@ -104,7 +147,8 @@ class JulianBot : Bot
 
     // Analyze hand and return statistics
     // param tile, 吃碰杠 对象, 可以为 null 表示这是 turn decision
-    private HandStatistics analyze_hand(Tile? tile, ArrayList<Tile> sorted_hand, ArrayList<RoundStateCall> calls)
+    // param hOP (Other Player all tiles) 有可能 null, 那时候 singles_ish 之类的可能就不准了 
+    private HandStatistics analyze_hand(Tile? tile, ArrayList<Tile> sorted_hand, ArrayList<RoundStateCall> calls, HashMap<TileType, int>? hOP)
     {
         HandStatistics stats = HandStatistics();
 
@@ -116,6 +160,7 @@ class JulianBot : Bot
         stats.terminal_count = 0;
         stats.dragon_count = 0;
         stats.singles = new ArrayList<TileType>();
+        stats.singles_ish = new ArrayList<TileType>();
         stats.pair_count = 0;
         stats.triplet_count = 0;
         stats.hasTerminalSeq = false; // 这个指标实在太关键了
@@ -183,7 +228,9 @@ class JulianBot : Bot
         count_suit_patterns(map_sou, TileType.SOU1, TileType.SOU9,
                            ref stats.singles, ref stats.pair_count, ref stats.triplet_count);
 
-
+        count_singles_ish(map_man, TileType.MAN1, TileType.MAN9, ref stats.singles_ish, hOP);  
+        count_singles_ish(map_man, TileType.PIN1, TileType.PIN9, ref stats.singles_ish, hOP);  
+        count_singles_ish(map_man, TileType.SOU1, TileType.SOU9, ref stats.singles_ish, hOP);  
         // Count half-sequences involving the given tile (for pon/kan decisions)
         // A half-sequence is two tiles that can form a sequence with one more tile
         if (tile != null)
@@ -423,7 +470,8 @@ class JulianBot : Bot
         }
 
         // 碰了之后什么状态? 刻子肯定是多了的
-        HandStatistics newStats = analyze_hand(null, newHand, newCalls);
+        HashMap<TileType, int> hOP = other_player_tiles();
+        HandStatistics newStats = analyze_hand(null, newHand, newCalls, hOP);
         if (newStats.singles.size - stats.singles.size >= 2)
         {
             // 散牌增多两张以上啊,不值得
@@ -491,9 +539,9 @@ class JulianBot : Bot
             }
         }
 
-        newCalls.add(new RoundStateCall(RoundStateCall.CallType.OPEN_KAN, kan, tile, discarder_index));
-
-        HandStatistics newStats = analyze_hand(tile, newHand, newCalls);
+        //  newCalls.add(new RoundStateCall(RoundStateCall.CallType.OPEN_KAN, kan, tile, discarder_index));
+        //  HashMap<TileType, int> hOP = other_player_tiles();
+        HandStatistics newStats = analyze_hand(tile, newHand, newCalls,null);
         if (newStats.half_sequence_count_by_tile <  stats.half_sequence_count_by_tile)
         {
             // 牌变差了
@@ -583,7 +631,7 @@ class JulianBot : Bot
 
             newCalls.add(new RoundStateCall(RoundStateCall.CallType.CHII, chii, tile, discarding_player.index));
 
-            HandStatistics newStats = analyze_hand(null, newHand, newCalls);
+            HandStatistics newStats = analyze_hand(null, newHand, newCalls,null);
 
             // 再分析 hand_readings 之前,先简单分析一下
             bool shouldContNow = false;
@@ -723,7 +771,8 @@ class JulianBot : Bot
         ArrayList<Tile> sorted_hand = Tile.sort_tiles_type(round_state.self.hand); 
         ArrayList<RoundStateCall> calls = round_state.self.calls;   
 
-        HandStatistics stats = analyze_hand(null, sorted_hand, calls);
+        HashMap<TileType, int> hOP = other_player_tiles();
+        HandStatistics stats = analyze_hand(null, sorted_hand, calls,hOP);
 
         // win_necessary_condition 就当听牌, 所以条件不是特别严格
         // 已经尽力了
@@ -768,6 +817,8 @@ class JulianBot : Bot
         }
     
         // 既然到了这里,说明你没有办法和牌或者听牌 
+
+        
         if (round_state.can_late_kan()) // 后杠
         {
 
@@ -827,7 +878,7 @@ class JulianBot : Bot
         }
         
         // 没杠 没听 没胡
-        Tile  tile = get_discard_tile();
+        Tile  tile = get_discard_tile(stats);
         do_discard(tile);
 
         //  int64 elapsed = get_monotonic_time() - start_time;
@@ -835,6 +886,34 @@ class JulianBot : Bot
         //      @"do_turn_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - discard $(tile.tile_type.to_string())");
     }
 
+    // 其他人已经吃碰或者打出的所有 还有墙上翻开的
+    private  HashMap<TileType, int> other_player_tiles() {
+        HashMap<TileType,int> hOP = new HashMap<TileType,int>(); // Other Player: OP
+        for(int i= TileType.MAN1 ;  i < TileType.CHUN; i++ ) {
+           hOP.set((TileType)i,0); 
+        }
+        for(int i = 0 ; i < 4 ; i++ ) {
+            if(i == round_state.self.index) {
+                continue;
+            }
+            RoundStatePlayer p =  round_state.get_player(i);
+            foreach(Tile t in p.pond) {
+                    hOP.set(t.tile_type, hOP.get(t.tile_type) + 1 );
+            }
+            foreach( RoundStateCall c in  p.calls ) {
+                    foreach(Tile t in c.tiles) {
+                    hOP.set(t.tile_type, hOP.get(t.tile_type) + 1 ); 
+                    }
+            }
+            Tile? mark = round_state.dead_wall_mark;
+            if(mark != null) {
+                Tile t = mark;
+                hOP.set(t.tile_type, hOP.get(t.tile_type) + 1 ); 
+            }
+        }
+        return hOP;
+
+    } 
     // 别人打牌之后，做个处理决定
     protected override void do_call_decision(RoundStatePlayer discarding_player, Tile tile)
     {
@@ -842,7 +921,7 @@ class JulianBot : Bot
 
         ArrayList<Tile> sortedhand = Tile.sort_tiles_type(round_state.self.hand);
         ArrayList<RoundStateCall> calls = round_state.self.calls;
-        if(sortedhand.size <= 4) {
+        if(sortedhand.size < 4) {
             // 手牌只剩两张的话,就没法胡了
             call_nothing();  // CRITICAL: Must notify server we're done deciding
             //  int64 elapsed = get_monotonic_time() - start_time;
@@ -852,6 +931,7 @@ class JulianBot : Bot
         }
 
         // 如果听牌数特别多,未必就要立即去胡的,说不定想自摸呢
+       
         if (round_state.can_ron(round_state.self))
         {
             call_ron();
@@ -861,7 +941,8 @@ class JulianBot : Bot
             return;
         }
         // Analyze hand statistics
-        HandStatistics stats = analyze_hand(tile, sortedhand, calls);
+        HashMap<TileType, int> hOP = other_player_tiles();
+        HandStatistics stats = analyze_hand(tile, sortedhand, calls, hOP);
         ArrayList<HandReading> beforeCallReading = TileRules.hand_readings(sortedhand, calls, true, false);
 
         int beforeBenefit = 0;
@@ -931,15 +1012,11 @@ class JulianBot : Bot
     }
 
     // 找出需要舍弃的牌 能听牌的我都不进这里
-    private Tile get_discard_tile()
+    private Tile get_discard_tile( HandStatistics stats )
     {
         ArrayList<Tile> tiles = round_state.self.get_discard_tiles();
         assert(tiles.size > 0);
 
-        ArrayList<Tile> sortedhand = Tile.sort_tiles_type(round_state.self.hand);
-        ArrayList<RoundStateCall> calls = round_state.self.calls;
-
-        HandStatistics stats =  analyze_only_terminal_honor(sortedhand, calls);
         ArrayList<Tile> backup = new ArrayList<Tile>();
         backup.add_all(tiles);
 
@@ -994,7 +1071,7 @@ class JulianBot : Bot
             if (has_neighbours(tile)) {
                 // count if from self.hand, so don't worry the data consistency when removed one tile of pair
                 if(count(tile) == 2) {
-                    tiles.remove_at(i--); // 不但是对，还有邻居，当然得留一下了
+                    tiles.remove_at(i--); // 不但是对子，还有邻居，当然得留一下了
                 }
             }             
         }
@@ -1027,7 +1104,7 @@ class JulianBot : Bot
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (has_neighbours(tile)) {
+            if (has_neighbours(tile) && !stats.singles_ish.contains(tile.tile_type) ) {
                 tiles.remove_at(i--); // 到这里了，就只是两面顺子了，也可以留一下了
             }             
         }
@@ -1040,7 +1117,7 @@ class JulianBot : Bot
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (has_second_neighbours(tile))
+            if (has_second_neighbours(tile) && !stats.singles_ish.contains(tile.tile_type))
                 tiles.remove_at(i--);
         }
 
@@ -1053,7 +1130,20 @@ class JulianBot : Bot
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (!tile.is_terminal_tile())
+            if (!stats.singles_ish.contains(tile.tile_type)) // 不是垃圾牌，保护一下
+                tiles.remove_at(i--);
+        }
+
+        if (tiles.size == 0)
+            return RandomTileSmart(stats,backup);
+
+        backup.clear();
+        backup.add_all(tiles);
+
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if (!tile.is_terminal_tile() && stats.terminal_count >= 2) // 幺九牌如果太多也没用， 所以不需要保护 非幺九牌
                 tiles.remove_at(i--);
         }
 
