@@ -88,24 +88,34 @@ Your `launch.json` should look like the following:
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug OpenRiichi",
+            "name": "Debug Northeast-Mahjong",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/OpenRiichi",
+            "program": "${workspaceFolder}/build/Northeast-Mahjong",
             "args": [
-                "--debug"
+                "--debug",
+                "--search-directory",
+                "${workspaceFolder}/bin"
             ],
             "cwd": "${workspaceFolder}/bin",
             "stopOnEntry": false,
-            "preLaunchTask": "build"
+            "preLaunchTask": "build",
+            "environment": [
+                {
+                    "name": "G_DEBUG",
+                    "value": "fatal-criticals"
+                }
+            ]
         },
         {
-            "name": "Debug OpenRiichi (no rebuild)",
+            "name": "Debug Northeast-Mahjong (no rebuild)",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/OpenRiichi",
+            "program": "${workspaceFolder}/build/Northeast-Mahjong",
             "args": [
-                "--debug"
+                "--debug",
+                "--search-directory",
+                "${workspaceFolder}/bin"
             ],
             "cwd": "${workspaceFolder}/bin",
             "stopOnEntry": false,
@@ -113,21 +123,39 @@ Your `launch.json` should look like the following:
             "externalConsole": false
         },
         {
-            "name": "Debug OpenRiichi (clean build)",
+            "name": "Debug Northeast-Mahjong (clean build)",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/OpenRiichi",
+            "program": "${workspaceFolder}/build/Northeast-Mahjong",
             "args": [
-                "--debug"
+                "--debug",
+                "--search-directory",
+                "${workspaceFolder}/bin"
             ],
             "cwd": "${workspaceFolder}/bin",
             "stopOnEntry": false,
             "environment": [],
             "externalConsole": false,
             "preLaunchTask": "build-debug"
+        },
+        {
+            "name": "Debug Hand Tests",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Northeast-Mahjong",
+            "args": [
+                "--test",
+                "--debug",
+                "--search-directory",
+                "${workspaceFolder}/bin"
+            ],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "preLaunchTask": "build"
         }
     ]
 }
+
 ```
 
 
