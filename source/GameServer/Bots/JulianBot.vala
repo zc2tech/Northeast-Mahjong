@@ -428,8 +428,14 @@ class JulianBot : Bot
         // 找一下该打什么牌
         Tile bestDiscard = null;
         HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
+        HashSet<TileType> checked = new HashSet<TileType>();
         foreach (Tile t in newHand)
         {
+            if(checked.contains(t.tile_type)) {
+                continue;
+            } else {
+                checked.add(t.tile_type);
+            }
             ArrayList<Tile> tmpHand = new ArrayList<Tile>();
             tmpHand.add_all(newHand);
             tmpHand.remove(t);
@@ -615,6 +621,7 @@ class JulianBot : Bot
         bestChiiResut.benefit = beforeBenefit;
         
         ArrayList<Tile> bestGroup = null;
+        ArrayList<Tile> plan_b = null;
         foreach (ArrayList<Tile> g in groups)
         {
             // 吃掉试试
@@ -669,8 +676,14 @@ class JulianBot : Bot
            
             // 找一下该打什么牌
             HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
+            HashSet<TileType> checked = new HashSet<TileType>();
             foreach (Tile t in newHand)
             {
+                if(checked.contains(t.tile_type)) {
+                    continue;
+                } else {
+                    checked.add(t.tile_type);
+                }
                 ArrayList<Tile> tmpHand = new ArrayList<Tile>();
                 tmpHand.add_all(newHand);
                 tmpHand.remove(t);
@@ -680,6 +693,7 @@ class JulianBot : Bot
                     hDiscardForTenpai.set(t,new HashMap<TileType,int>());
                 }
             }
+
             if( hDiscardForTenpai.keys.size > 0 ) {
                 populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
                 HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
@@ -689,7 +703,7 @@ class JulianBot : Bot
                     bestChiiResut.benefit = result.benefit;
                     bestChiiResut.tile = result.tile;
                     bestGroup = g;
-                    // 有起色就立即　continue 看下一个 group 是不是更出色
+                    // 有起色就立即　continue 看下一个 group 是不是更出色, 不需要plan_b 了
                     Environment.log(LogType.DEBUG, "JulianBot",
                     @"should_call_chii ($(round_state.self.wind.to_string())) chii $(tile.to_string()) discard $(result.tile.to_string()) for $(result.benefit) win tiles");
                     continue;
@@ -701,9 +715,8 @@ class JulianBot : Bot
             {
                 // 我没幺九牌, 看吃完之后能不能好一点
                 if(newStats.terminal_count > 0 ) {
-                    tiles1 = g[0];
-                    tiles2 = g[1];
-                    return true;
+                    plan_b = g;
+                    break;
                 }
             }
 
@@ -712,20 +725,23 @@ class JulianBot : Bot
                 continue;
             }
 
+            if (g[0].is_terminal_tile() || g[1].is_terminal_tile()) {
+                // 到这里了 肯定都是没法听牌的，不过自己幺九牌用出去了总是好事
+                plan_b = g;
+                break;
+            }
             // 上面的检查既然没要求吃,说明吃了也不能听牌,但如果孤张没变多的话,也还行啊
             // 吃的时候,多了一张孤张也很正常, 吃啥吐啥已经在上面判断过了
             if (!alreadyHave && (stats.triplet_count >= 1 || stats.pair_count >= 2)) {
                 if (newStats.singles.size <= stats.singles.size + 1) {
-                    tiles1 = g[0];
-                    tiles2 = g[1];
-                    return true; 
+                    plan_b = g;
+                    break;
                 } else if(newStats.singles.size == stats.singles.size + 2) {
                     // 多出来两张孤张啊， 实在不知道该不该吃
                     bool random_bool = Random.boolean();
                     if(random_bool) {
-                        tiles1 = g[0];
-                        tiles2 = g[1];
-                        return true;
+                        plan_b = g;
+                        continue; // 再试试？
                     }
                 }
             } else {
@@ -736,15 +752,30 @@ class JulianBot : Bot
                 //      return true;
                 //  }              
             }
+
             
         } // groups loop
 
         if(bestGroup != null) {
+            // 比没吃前听的好
             tiles1 = bestGroup[0];
             tiles2 = bestGroup[1];
             return true;
         }
-        // 全试玩了 该吃 还是 过 ? 要吃记得设上 Tile1 Tile2
+
+        if( beforeBenefit > 0) {
+            // 都已经听牌的，不吃了
+            return false;
+        }
+
+        // 有 plan B 就用上吧，也不知道啥情况
+        if(plan_b != null) {
+            tiles1 = plan_b[0];
+            tiles2 = plan_b[1];
+            return true;
+        }        
+        
+        // 最后肯定觉得吃的不好，要吃上面早吃了
         return false;
     }
 
@@ -787,8 +818,14 @@ class JulianBot : Bot
             //  Environment.log(LogType.DEBUG, "JulianBot", @"Checking tenpai for $(tiles_allowed.size) tiles");
 
             Tile discard_for_tenpai = null;
+            HashSet<TileType> checked = new HashSet<TileType>();
             foreach (Tile tile in tiles_allowed)
             {
+                if(checked.contains(tile.tile_type)) {
+                    continue;
+                } else {
+                    checked.add(tile.tile_type);
+                }
                 //  Environment.log(LogType.DEBUG, "JulianBot", @"Checking if discarding $(tile.tile_type.to_string()) leads to tenpai...");
                 copy_for_tenpai.add_all(round_state.self.hand);
                 copy_for_tenpai.remove(tile);
@@ -1179,8 +1216,13 @@ class JulianBot : Bot
         keys.add_all(discard_map.keys);
 
         //  Environment.log(LogType.DEBUG, "JulianBot", @"populate_needed_tiles_for_discards: processing $(keys.size) discards");
-
+        HashSet<TileType> checked = new HashSet<TileType>();
         foreach (Tile tDiscard in keys) {
+            if(checked.contains(tDiscard.tile_type)) {
+                continue;
+            } else {
+                checked.add(tDiscard.tile_type);
+            }
             HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
 
             // Create hand without this discard
