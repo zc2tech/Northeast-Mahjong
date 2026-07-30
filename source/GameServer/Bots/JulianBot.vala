@@ -664,8 +664,8 @@ class JulianBot : Bot
                 continue;
             }
 
-            // 不能保证两个 对子 是很危险的 原来如果本来没对子也就算了， 吃少了不行
-            if(newStats.triplet_count < 1 && stats.pair_count >= 2 && newStats.pair_count < 2) {
+            // 不能保证两个 对子 是很危险的
+            if(newStats.triplet_count < 1 && newStats.pair_count < 2) {
                 continue;
             }
 
