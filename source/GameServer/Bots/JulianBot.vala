@@ -1257,13 +1257,14 @@ class JulianBot : Bot
         backup.clear();
         backup.add_all(tiles);
 
-        // 到了这里不可能算刻子了，这些对子对子肯定是没近邻的
+        // 到了这里不可能算刻子了，这些对子肯定是没近邻的
         int pair_cnt = 0;
         HashSet<TileType> pair_tile_type = new HashSet<TileType>();
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (count(tile) >= 2) // pair_cnt 是经过上一轮之后算出的，你需要加上当前的看看
+            // pair_cnt 是经过上一轮之后算出的，你需要加上当前的看看 记得别为一对算两遍 pair_cnt
+            if (!pair_tile_type.contains(tile.tile_type) &&  count(tile) >= 2) 
             {
                 pair_cnt++;
                 pair_tile_type.add(tile.tile_type);
