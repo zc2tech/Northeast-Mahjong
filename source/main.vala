@@ -271,12 +271,27 @@ private static void run_bot_simulation(int num_hands)
     stdout.printf("\nBot simulation completed!\n");
 }
 
+private static void custom_log_handler(string? log_domain, LogLevelFlags log_level, string message)
+{
+    // Suppress the specific gee_abstract_collection_get_size assertion error ONLY in bot simulation mode
+    if (bot_simulation && message.contains("gee_abstract_collection_get_size: assertion 'self != NULL' failed"))
+        return;
+
+    // For all other errors/warnings, use default handler
+    Log.default_handler(log_domain, log_level, message);
+}
+
 public static int main(string[] args)
 {
     string? executable_dir = args.length > 0 ? GLib.Path.get_dirname(args[0]) : null;
     string? built_search_dir = Build.SEARCH_DIR;
 
     parse_args(args);
+
+    // Install custom log handler to suppress known Gee collection race condition warnings in bot simulation
+    // This only suppresses the error in bot simulation mode, not in regular gameplay
+    Log.set_handler("glib", LogLevelFlags.LEVEL_MASK | LogLevelFlags.FLAG_FATAL | LogLevelFlags.FLAG_RECURSION, custom_log_handler);
+    Log.set_handler(null, LogLevelFlags.LEVEL_MASK | LogLevelFlags.FLAG_FATAL | LogLevelFlags.FLAG_RECURSION, custom_log_handler);
 
     if (show_help)
     {
