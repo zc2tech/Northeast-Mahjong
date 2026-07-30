@@ -862,7 +862,7 @@ class JulianBot : Bot
             ArrayList<Tile> tiles = TileRules.get_late_kan_tiles(round_state.self.hand, round_state.self.calls);
             assert(tiles.size > 0);
             if(tiles[0].is_dragon_tile()) {
-                    do_closed_kan(tiles[0].tile_type);
+                     do_late_kan(tiles[0]);
                     return;
             }
             

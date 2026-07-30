@@ -8,4 +8,5 @@ bin/*
 bin/Data/Fonts/.uuid
 *.c
 *.o
+*.lldb
 *.DS_Store
