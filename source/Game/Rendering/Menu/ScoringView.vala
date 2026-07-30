@@ -238,8 +238,8 @@ class ScoringView : View2D
     private void ready_clicked()
     {
         // Stop scoring sound effects when ready is clicked
-        if (scoring_view != null)
-            scoring_view.stop_sounds();
+        //  if (scoring_view != null)
+        //      scoring_view.stop_sounds(); 
 
         score_finished();
         ready_button.enabled = false;

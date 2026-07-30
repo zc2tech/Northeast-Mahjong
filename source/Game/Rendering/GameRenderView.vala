@@ -52,6 +52,8 @@ public class GameRenderView : View3D, IGameRenderer
         context = new GameRenderContext(game_start.timings, tile_scale, tile_size, observer_index, dealer_index, info.wall_index); // wall_index is wall_split
         observer_index = observer_index != -1 ? observer_index : 0;
 
+        Environment.log(LogType.INFO, "GameRenderView", @"Human player observer_index = $(observer_index)");
+
         scene = new GameScene(context, observer_index, options, store.audio_player, score);
 
         world.add_object(scene);
@@ -176,20 +178,24 @@ public class GameRenderView : View3D, IGameRenderer
         }
         else if (key.keycode == KeyCode.NUM_7)
         {
-            // Increase cross-player (opposite, toimen) hand angle
-            int cross_player_index = (observer_index + 2) % 4;
-            players[cross_player_index].adjust_hand_angle(0.02f);
+            // Increase your own hand angle
+            players[observer_index].adjust_hand_angle(0.02f);
+
+           
         }
         else if (key.keycode == KeyCode.NUM_8)
         {
-            // Decrease cross-player (opposite, toimen) hand angle
-            int cross_player_index = (observer_index + 2) % 4;
-            players[cross_player_index].adjust_hand_angle(-0.02f);
+            Environment.log(LogType.DEBUG, @"GameRenderView", @"Observer Index $(observer_index) ");
+            // Decrease your own hand angle
+            players[observer_index].adjust_hand_angle(-0.02f);
+
+           
         }
         else if (key.keycode == KeyCode.NUM_9)
         {
             // Increase right-player (shimocha) hand angle
             int right_player_index = (observer_index + 1) % 4;
+            Environment.log(LogType.DEBUG, @"GameRenderView", @"Right Player Index $(right_player_index) ");
             players[right_player_index].adjust_hand_angle(0.02f);
         }
         else if (key.keycode == KeyCode.NUM_0)
@@ -200,25 +206,32 @@ public class GameRenderView : View3D, IGameRenderer
         }
         else if (key.keycode == KeyCode.MINUS)
         {
-            // Increase left-player (kamicha) hand angle
-            int left_player_index = (observer_index + 3) % 4;
-            players[left_player_index].adjust_hand_angle(0.02f);
+             // Increase cross-player (opposite, toimen) hand angle
+            int cross_player_index = (observer_index + 2) % 4;
+            Environment.log(LogType.DEBUG, @"GameRenderView", @"Cross Player Index $(cross_player_index): ");
+            players[cross_player_index].adjust_hand_angle(0.02f);
         }
         else if (key.keycode == KeyCode.EQUALS)
         {
-            // Decrease left-player (kamicha) hand angle
-            int left_player_index = (observer_index + 3) % 4;
-            players[left_player_index].adjust_hand_angle(-0.02f);
+             // Decrease cross-player (opposite, toimen) hand angle
+            int cross_player_index = (observer_index + 2) % 4;
+             Environment.log(LogType.DEBUG, @"GameRenderView", @"Cross Player Index $(cross_player_index): ");
+            players[cross_player_index].adjust_hand_angle(-0.02f);    
         }
         else if (key.keycode == KeyCode.LEFTBRACKET)
-        {
-            // Increase your own hand angle
-            players[observer_index].adjust_hand_angle(0.02f);
+        { 
+            // Increase left-player (kamicha) hand angle
+            int left_player_index = (observer_index + 3) % 4;
+            Environment.log(LogType.DEBUG, @"GameRenderView", @"Left Player Index $(left_player_index): ");
+            players[left_player_index].adjust_hand_angle(0.02f);
         }
         else if (key.keycode == KeyCode.RIGHTBRACKET)
         {
-            // Decrease your own hand angle
-            players[observer_index].adjust_hand_angle(-0.02f);
+             // Decrease left-player (kamicha) hand angle
+            int left_player_index = (observer_index + 3) % 4;
+            Environment.log(LogType.DEBUG, @"GameRenderView", @"Left Player Index $(left_player_index): ");
+            players[left_player_index].adjust_hand_angle(-0.02f);
+          
         }
     }
 

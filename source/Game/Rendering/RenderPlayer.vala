@@ -61,19 +61,19 @@ public class RenderPlayer : WorldObject
         add_object(calls);
         calls.position = Vec3(hand_offset, tile_size.y / 2, hand_offset);
 
-        render_riichi = new RenderStick(RenderStick.StickType.STICK_1000);
-        add_object(render_riichi);
-        float scale = tile_size.x / render_riichi.obb.x * 4;
-        render_riichi.scale = Vec3(scale, scale, scale);
-        render_riichi.visible = false;
-        render_riichi.position = Vec3(0, 0, hand_offset);
-
-        if (dealer)
-        {
-            var indicator = new RenderWindIndicator(wind);
-            add_object(indicator);
-            indicator.position = Vec3(hand_offset - indicator.obb.x / 2 - tile_size.x * 3 - tile_size.z, indicator.obb.y / 2, hand_offset);
-        }
+        //  render_riichi = new RenderStick(RenderStick.StickType.STICK_1000);
+        //  add_object(render_riichi);
+        //  float scale = tile_size.x / render_riichi.obb.x * 4;
+        //  render_riichi.scale = Vec3(scale, scale, scale);
+        //  render_riichi.visible = false;
+        //  render_riichi.position = Vec3(0, 0, hand_offset);
+        // 东 这个字， 很难算出放哪儿啊 ，注释掉吧
+        //  if (dealer)
+        //  {
+        //      var indicator = new RenderWindIndicator(wind);
+        //      add_object(indicator);
+        //      indicator.position = Vec3(hand_offset - indicator.obb.x / 2 - tile_size.x * 3 - tile_size.z, indicator.obb.y / 2, hand_offset);
+        //  }
     }
 
     public void draw_tile(RenderTile tile)
