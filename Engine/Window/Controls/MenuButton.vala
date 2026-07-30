@@ -43,7 +43,7 @@ namespace Engine
                         button.diffuse_color = Color(0.5f, 0.5f, 0.3f, 1);
                 }
                 else
-                    button.diffuse_color = Color.with_alpha(1);
+                    button.diffuse_color = Color.with_alpha(0.85f);  // Enabled buttons are more visible (85% opacity)
             }
         }
 

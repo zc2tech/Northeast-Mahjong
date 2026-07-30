@@ -16,7 +16,7 @@ namespace GameServer
         public virtual void send_message(ServerMessage message) {}
         public abstract void close();
 
-        public State state { get; protected set; }
+        public State state { get; set; }
         public virtual bool ready { get; set; }
         public string name { get; private set; }
         public bool bot { get; private set; }

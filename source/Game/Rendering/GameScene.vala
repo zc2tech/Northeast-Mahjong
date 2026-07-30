@@ -27,6 +27,7 @@ class GameScene : WorldObject
     private ArrayList<RenderAction> actions = new ArrayList<RenderAction>();
     private RenderAction? current_action = null;
     private float action_start_time;
+    private bool is_paused = false;
 
     public GameScene(GameRenderContext context, int observer_index, Options options, AudioPlayer audio, RoundScoreState score)
     {
@@ -81,6 +82,10 @@ class GameScene : WorldObject
 
     public override void process(DeltaArgs delta)
     {
+        // Don't process animations when paused
+        if (is_paused)
+            return;
+
         if (current_action != null &&
             delta.time - action_start_time > current_action.time.total())
             current_action = null;
@@ -159,7 +164,8 @@ class GameScene : WorldObject
     private void action_draw(RenderActionDraw action)
     {
         draw_sound.play();
-        action.player.draw_tile(wall.draw_wall());
+
+        action.player.draw_tile(action.tile);
 
         if (action.player.seat == context.observer_index)
             active = true;
@@ -319,4 +325,10 @@ class GameScene : WorldObject
     public RenderWall wall { get { return table.wall; } }
     public RenderPlayer observer { get; private set; }
     public bool active { get; set; }
+
+    public void set_paused(bool paused)
+    {
+        is_paused = paused;
+        Environment.log(LogType.DEBUG, "GameScene", @"Animation paused: $(is_paused)");
+    }
 }

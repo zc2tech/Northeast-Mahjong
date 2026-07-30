@@ -23,6 +23,7 @@ namespace GameServer
             this.settings = settings;
 
             state = new GameState(start_info, settings);
+            state.mark_as_server_state();  // Mark as authoritative server state
 
             for (int i = 0; i < players.size; i++)
             {
@@ -104,6 +105,16 @@ namespace GameServer
                 round.message_received(player, message);
             else if (message is ClientMessageMenuReady)
                 player.ready = true;
+        }
+
+        public virtual void handle_replay_pause(bool paused, float time)
+        {
+            // Base implementation does nothing - only LogServer handles this
+        }
+
+        public virtual void handle_replay_speed(float multiplier, float time)
+        {
+            // Base implementation does nothing - only LogServer handles this
         }
 
         public void player_disconnected(ServerPlayer player)
@@ -215,6 +226,7 @@ namespace GameServer
         private GameLogRound[] rounds;
         private GameLogRound round;
         private int round_index = 0;
+        private LogServerGameRound? current_round = null;
 
         public LogServer(ArrayList<ServerPlayer> spectators, RandomClass rnd, ServerSettings settings, GameLog log)
         {
@@ -222,7 +234,49 @@ namespace GameServer
             for (int i = 0; i < 4; i++)
                 players.add(new ServerLogPlayer()); // Dummies
 
-            base(players, spectators, rnd, log.start_info, settings);
+            // Replace log timings with normal replay timings
+            // Bot simulation uses zero timings which makes replay extremely fast
+            Environment.log(LogType.DEBUG, "LogServer", "Replacing log timings with normal replay timings");
+
+            AnimationTimings replay_timings = new AnimationTimings(
+                0.5f,  // winning_draw_animation_time
+                0.5f,  // hand_reveal_animation_time
+                1.0f,  // round_over_delay
+                11.0f, // round_end_delay
+                31.0f, // hanchan_end_delay
+                61.0f, // game_end_delay
+                11.0f, // decision_time
+                new AnimationTime(1, 0.5f, 0),    // finish_label_fade
+                new AnimationTime(1, 0.5f, 1),    // menu_items_fade
+                new AnimationTime(0.5f, 0.5f, 0), // han_fade
+                new AnimationTime(1, 0.5f, 0),    // score_counting_fade
+                new AnimationTime(1, 3, 2),       // score_counting
+                new AnimationTime(0, 3, 2),       // players_points_counting
+                new AnimationTime(0, 0.5f, 0),    // players_score_fade
+                new AnimationTime(1, 3, 2),       // players_score_counting
+                new AnimationTime(0, 0.15f, 0),   // initial_draw
+                new AnimationTime(0, 0.15f, 0.2f), // tile_draw
+                new AnimationTime(0, 0.15f, 0.3f), // tile_discard
+                new AnimationTime(0, 0.5f, 0),    // call
+                new AnimationTime(0, 0.5f, 0),    // win
+                new AnimationTime(0, 0.5f, 0),    // hand_reveal
+                new AnimationTime(0, 0.5f, 0),    // riichi
+                new AnimationTime(0, 0.3f, 0),    // riichi_stick
+                new AnimationTime(0, 0.5f, 0),    // flip_dora
+                new AnimationTime(0, 0.5f, 0),    // return_riichi_stick
+                new AnimationTime(0, 0.5f, 0)     // split_wall
+            );
+
+            GameStartInfo replay_start_info = new GameStartInfo(
+                log.start_info.get_players(),
+                replay_timings,
+                log.start_info.starting_dealer,
+                log.start_info.starting_score,
+                log.start_info.round_count,
+                log.start_info.hanchan_count
+            );
+
+            base(players, spectators, rnd, replay_start_info, settings);
             rounds = log.rounds.to_array();
 
             start();
@@ -243,7 +297,30 @@ namespace GameServer
 
         protected override ServerGameRound create_round(RoundStartInfo info)
         {
-            return new LogServerGameRound(settings, players, spectators, state.round_wind, state.dealer_index, rnd,start_info.timings, round);
+            current_round = new LogServerGameRound(settings, players, spectators, state.round_wind, state.dealer_index, rnd,start_info.timings, round);
+            return current_round;
+        }
+
+        public void set_paused(bool paused, float time)
+        {
+            if (current_round != null)
+                current_round.set_paused(paused, time);
+        }
+
+        public void set_speed(float multiplier)
+        {
+            if (current_round != null)
+                current_round.set_speed(multiplier);
+        }
+
+        public override void handle_replay_pause(bool paused, float time)
+        {
+            set_paused(paused, time);
+        }
+
+        public override void handle_replay_speed(float multiplier, float time)
+        {
+            set_speed(multiplier);
         }
 
         public class ServerLogPlayer : ServerPlayer

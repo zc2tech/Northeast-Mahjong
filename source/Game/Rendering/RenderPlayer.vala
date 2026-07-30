@@ -3,8 +3,8 @@ using Gee;
 
 public class RenderPlayer : WorldObject
 {
-    private const float VIEW_ANGLE = 0.46f;
-    private const float CROSS_PLAYER_VIEW_ANGLE = 0.54f;
+    private const float VIEW_ANGLE = 0.5f;
+    private const float CROSS_PLAYER_VIEW_ANGLE = 0.58f;
     private const float RIGHT_PLAYER_VIEW_ANGLE = 0.5f;
     private const float LEFT_PLAYER_VIEW_ANGLE = 0.5f;
 
@@ -39,13 +39,16 @@ public class RenderPlayer : WorldObject
         float angle = 0;
         if (observed)
         {
-            if (seat == 2)  // Cross-player (toimen, opposite)
+            // Calculate relative position from observer's perspective
+            int relative_seat = (seat - context.observer_index + 4) % 4;
+
+            if (relative_seat == 2)  // Cross-player (toimen, opposite)
                 angle = CROSS_PLAYER_VIEW_ANGLE;
-            else if (seat == 1)  // Right player (shimocha)
+            else if (relative_seat == 1)  // Right player (shimocha)
                 angle = RIGHT_PLAYER_VIEW_ANGLE;
-            else if (seat == 3)  // Left player (kamicha)
+            else if (relative_seat == 3)  // Left player (kamicha)
                 angle = LEFT_PLAYER_VIEW_ANGLE;
-            else  // Seat 0 (you)
+            else  // relative_seat == 0 (observer themselves)
                 angle = VIEW_ANGLE;
         }
         hand = new RenderHand(context, angle);

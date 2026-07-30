@@ -102,7 +102,15 @@ public class ServerMessageTileAssignment : ServerMessage
     public Tile tile { get; protected set; }
 }
 
-public class ServerMessageTileDraw : ServerMessage {}
+public class ServerMessageTileDraw : ServerMessage
+{
+    public ServerMessageTileDraw(int tile_ID)
+    {
+        this.tile_ID = tile_ID;
+    }
+
+    public int tile_ID { get; protected set; }
+}
 
 public class ServerMessageTileDiscard : ServerMessage
 {

@@ -91,7 +91,7 @@ namespace GameServer
         {
             GameRoundServerPlayer player = get_server_player(players, player_index);
             ServerMessageTileAssignment assignment = new ServerMessageTileAssignment(tile);
-            ServerMessageTileDraw draw = new ServerMessageTileDraw();
+            ServerMessageTileDraw draw = new ServerMessageTileDraw(tile.ID);
 
             foreach (GameRoundServerPlayer p in players)
             {
@@ -133,14 +133,16 @@ namespace GameServer
 
         private void game_get_turn_decision(int player_index)
         {
+            var player = get_server_player(players, player_index);
             ServerMessageTurnDecision message = new ServerMessageTurnDecision();
-            get_server_player(players, player_index).server_player.send_message(message);
+            player.server_player.send_message(message);
         }
 
         private void game_get_call_decision(int player_index)
         {
+            var player = get_server_player(players, player_index);
             ServerMessageCallDecision message = new ServerMessageCallDecision();
-            get_server_player(players, player_index).server_player.send_message(message);
+            player.server_player.send_message(message);
         }
 
         private void game_ron(int[] player_indices, ArrayList<Tile>[] hands, int discard_player_index, Tile discard_tile, Scoring[] scores)
@@ -159,6 +161,7 @@ namespace GameServer
         }
 
         private void game_tsumo(int player_index, ArrayList<Tile> hand, Scoring score)
+        
         {
             foreach (Tile t in hand)
                 game_reveal_tile(t);
@@ -391,6 +394,16 @@ namespace GameServer
             init();
 
             assign_spectators(spectators);
+        }
+
+        public void set_paused(bool paused, float time)
+        {
+            ((LogServerRoundState)round).set_paused(paused, time);
+        }
+
+        public void set_speed(float multiplier)
+        {
+            ((LogServerRoundState)round).set_speed(multiplier);
         }
 
         protected override void round_starting()

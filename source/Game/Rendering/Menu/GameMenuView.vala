@@ -10,6 +10,7 @@ class GameMenuView : View2D
     private GameRenderContext context;
     private ServerSettings settings;
     private bool observing;
+    private bool is_replay;
 
     private Sound hint_sound;
     private float start_time;
@@ -29,6 +30,7 @@ class GameMenuView : View2D
     private MenuButton prev;
     private MenuButton speed_up;
     private MenuButton speed_down;
+    private MenuButton pause_continue;
 
     public signal void chii_pressed();
     public signal void pon_pressed();
@@ -44,6 +46,7 @@ class GameMenuView : View2D
     public signal void observe_prev_pressed();
     public signal void speed_up_pressed();
     public signal void speed_down_pressed();
+    public signal void pause_continue_pressed();
 
     private void press_chii() { chii_pressed(); }
     private void press_pon() { pon_pressed(); }
@@ -58,13 +61,20 @@ class GameMenuView : View2D
     private void press_prev() { observe_prev_pressed(); score_view.prev(); }
     private void press_speed_up() { speed_up_pressed(); }
     private void press_speed_down() { speed_down_pressed(); }
+    private void press_pause_continue() {
+        Environment.log(LogType.DEBUG, "GameMenuView", "press_pause_continue called");
+        pause_continue_pressed();
+    }
 
-    public GameMenuView(GameRenderContext context, ServerSettings settings, int player_index, bool observing)
+    public GameMenuView(GameRenderContext context, ServerSettings settings, int player_index, bool observing, bool is_replay)
     {
         this.context = context;
         this.settings = settings;
         this.player_index = player_index;
         this.observing = observing;
+        this.is_replay = is_replay;
+
+        Environment.log(LogType.DEBUG, "GameMenuView", @"Created with: observing=$observing, is_replay=$is_replay, settings.is_replay_mode=$(settings.is_replay_mode)");
 
         score_view = new ScoringView(context, player_index, observing);
         score_view.score_finished.connect(do_score_finished);
@@ -93,6 +103,7 @@ class GameMenuView : View2D
         speed_toast.visible = false;
         speed_toast.color = Color(1, 1, 0.5f, 1);  // Light yellow
 
+        // Action buttons - always created
         chii = new MenuButton("Chii");
         pon = new MenuButton("Pon");
         kan = new MenuButton("Kan");
@@ -100,11 +111,6 @@ class GameMenuView : View2D
         ron = new MenuButton("Ron");
         conti = new MenuButton("Continue");
         void_hand = new MenuButton("VoidHand");
-
-        next = new MenuButton("Next");
-        prev = new MenuButton("Prev");
-        speed_up = new MenuButton("UpButton");
-        speed_down = new MenuButton("DownButton");
 
         chii.clicked.connect(press_chii);
         pon.clicked.connect(press_pon);
@@ -114,23 +120,35 @@ class GameMenuView : View2D
         conti.clicked.connect(press_continue);
         void_hand.clicked.connect(press_void_hand);
 
-        next.clicked.connect(press_next);
-        prev.clicked.connect(press_prev);
-        speed_up.clicked.connect(press_speed_up);
-        speed_down.clicked.connect(press_speed_down);
-
         action_buttons.add(chii);
         action_buttons.add(pon);
         action_buttons.add(kan);
         action_buttons.add(tsumo);
         action_buttons.add(ron);
-        action_buttons.add(conti); // "conti" is usually shorthand for continuance or dealer continuation
+        action_buttons.add(conti);
         action_buttons.add(void_hand);
 
-        observer_buttons.add(prev);
-        observer_buttons.add(next);
-        observer_buttons.add(speed_down);
-        observer_buttons.add(speed_up);
+        // Only create observer buttons in replay mode
+        if (is_replay)
+        {
+            next = new MenuButton("replay_next");
+            prev = new MenuButton("replay_prev");
+            speed_up = new MenuButton("replay_speedup");
+            speed_down = new MenuButton("replay_speeddown");
+            pause_continue = new MenuButton("replay_pause");
+
+            next.clicked.connect(press_next);
+            prev.clicked.connect(press_prev);
+            speed_up.clicked.connect(press_speed_up);
+            speed_down.clicked.connect(press_speed_down);
+            pause_continue.clicked.connect(press_pause_continue);
+
+            observer_buttons.add(prev);
+            observer_buttons.add(next);
+            observer_buttons.add(speed_down);
+            observer_buttons.add(speed_up);
+            observer_buttons.add(pause_continue);
+        }
 
         foreach (var button in action_buttons)
         {
@@ -144,12 +162,13 @@ class GameMenuView : View2D
         foreach (var button in observer_buttons)
         {
             add_child(button);
+            button.enabled = true;  // Enable observer buttons for proper rendering and hover effects
             button.inner_anchor = Vec2(0.5f, 0);
             button.outer_anchor = Vec2(0.5f, 0);
             button.visible = observing;
         }
 
-        Environment.log(LogType.INFO, "GameMenuView", @"Observer buttons: observing=$(observing), count=$(observer_buttons.size)");
+        Environment.log(LogType.INFO, "GameMenuView", @"Observer buttons: observing=$(observing), is_replay=$(is_replay), count=$(observer_buttons.size)");
 
         void_hand.visible = false;
         position_action_buttons();
@@ -237,16 +256,21 @@ class GameMenuView : View2D
                 press_continue();
             else if (key.scancode == ScanCode.V && void_hand.enabled && void_hand.visible)
                 press_void_hand();
-            // Keyboard shortcuts for observer buttons (replay mode)
-            else if ((key.scancode == ScanCode.COMMA || key.scancode == ScanCode.LEFT) && prev.visible)
+            // Keyboard shortcuts for observer buttons (replay mode only)
+            else if ((key.scancode == ScanCode.COMMA || key.scancode == ScanCode.LEFT) && prev != null && prev.visible)
                 press_prev();
-            else if ((key.scancode == ScanCode.PERIOD || key.scancode == ScanCode.RIGHT) && next.visible)
+            else if ((key.scancode == ScanCode.PERIOD || key.scancode == ScanCode.RIGHT) && next != null && next.visible)
                 press_next();
             // Keyboard shortcuts for replay speed control
-            else if (key.scancode == ScanCode.PAGEUP && speed_up.visible)
+            else if (key.scancode == ScanCode.PAGEUP && speed_up != null && speed_up.visible)
                 press_speed_up();
-            else if (key.scancode == ScanCode.PAGEDOWN && speed_down.visible)
+            else if (key.scancode == ScanCode.PAGEDOWN && speed_down != null && speed_down.visible)
                 press_speed_down();
+            else if (key.scancode == ScanCode.SPACE && pause_continue != null && pause_continue.visible)
+            {
+                Environment.log(LogType.DEBUG, "GameMenuView", "Spacebar pressed, calling pause_continue");
+                press_pause_continue();
+            }
             else
                 key.handled = false;
         }
@@ -401,6 +425,49 @@ class GameMenuView : View2D
         speed_toast.text = text;
         speed_toast.visible = true;
         speed_toast_frames = 90;  // Show for ~1.5 seconds
+    }
+
+    public void set_pause_button_icon(bool is_paused)
+    {
+        // When paused, show Play icon (▶)
+        // When playing, show Pause icon (||)
+        // We need to reload the button's texture by recreating the ImageControl
+
+        if (pause_continue == null)
+            return;
+
+        // Find the ImageControl child and update its texture
+        string icon_name = is_paused ? "replay_play" : "replay_pause";
+
+        // Unfortunately MenuButton doesn't expose a way to change the image
+        // We need to track the button index, remove it, create new one at same position
+        int button_index = observer_buttons.index_of(pause_continue);
+        if (button_index < 0)
+            return;
+
+        // Store button state
+        bool was_visible = pause_continue.visible;
+        bool was_enabled = pause_continue.enabled;
+        Vec2 button_pos = pause_continue.position;
+        Vec2 inner_anchor = pause_continue.inner_anchor;
+        Vec2 outer_anchor = pause_continue.outer_anchor;
+
+        // Remove old button
+        remove_child(pause_continue);
+        observer_buttons.remove_at(button_index);
+
+        // Create new button with correct icon
+        pause_continue = new MenuButton(icon_name);
+        pause_continue.clicked.connect(press_pause_continue);
+        pause_continue.enabled = was_enabled;
+        pause_continue.inner_anchor = inner_anchor;
+        pause_continue.outer_anchor = outer_anchor;
+        pause_continue.visible = was_visible;
+        pause_continue.position = button_pos;
+
+        // Insert at same index
+        observer_buttons.insert(button_index, pause_continue);
+        add_child(pause_continue);
     }
 
     public int player_index { get; set; }

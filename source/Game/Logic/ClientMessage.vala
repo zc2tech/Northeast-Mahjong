@@ -155,6 +155,30 @@ public class ClientMessageMenuSettings : ClientMessage
 
 public class ClientMessageMenuReady : ClientMessage {}
 
+public class ClientMessageReplayPause : ClientMessage
+{
+    private bool _paused;
+
+    public ClientMessageReplayPause(bool paused)
+    {
+        this._paused = paused;
+    }
+
+    public bool paused { get { return _paused; } }
+}
+
+public class ClientMessageReplaySpeed : ClientMessage
+{
+    private float _multiplier;
+
+    public ClientMessageReplaySpeed(float multiplier)
+    {
+        this._multiplier = multiplier;
+    }
+
+    public float multiplier { get { return _multiplier; } }
+}
+
 public class ClientMessageGameAction : ClientMessage
 {
     public ClientMessageGameAction(ClientAction action)

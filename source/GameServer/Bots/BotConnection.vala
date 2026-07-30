@@ -116,11 +116,13 @@ class BotConnection : Object
 
     private void turn_decision(ServerMessage message)
     {
+        //  Environment.log(LogType.DEBUG, "BotConnection", "Received turn_decision message, calling bot.turn_decision()");
         bot.turn_decision();
     }
 
     private void call_decision(ServerMessage message)
     {
+        Environment.log(LogType.DEBUG, "BotConnection", "Received call_decision message, calling bot.call_decision()");
         bot.call_decision();
     }
 

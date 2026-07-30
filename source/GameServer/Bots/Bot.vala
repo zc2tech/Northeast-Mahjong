@@ -113,7 +113,9 @@ public abstract class Bot : Object
 
     public void turn_decision()
     {
+        //  Environment.log(LogType.DEBUG, "Bot", "turn_decision() called, invoking do_turn_decision()");
         do_turn_decision();
+        //  Environment.log(LogType.DEBUG, "Bot", "do_turn_decision() completed");
     }
 
     public void call_decision()

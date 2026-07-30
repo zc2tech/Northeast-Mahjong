@@ -106,7 +106,9 @@ namespace GameServer
                 players = new ArrayList<ServerPlayer>();
 
                 log = menu.log;
-                settings = log.settings;
+                // Clone the settings from log to avoid modifying the original
+                settings = new ServerSettings.from_settings(log.settings);
+                settings.is_replay_mode = true;  // Mark as replay mode
                 this.info = log.start_info;
                 server = new LogServer(observers, rnd, settings, log);
             }
@@ -115,6 +117,7 @@ namespace GameServer
                 players = menu.players;
                 observers = menu.observers;
                 settings = menu.settings;
+                settings.is_replay_mode = false;  // Ensure normal game mode
                 this.info = info;
 
                 foreach (ServerPlayer player in players)
@@ -147,7 +150,7 @@ namespace GameServer
             {
                 mutex.lock();
                 float time = (float)timer.elapsed();
-                process_messages();
+                process_messages(time);
                 server.process(time);
                 mutex.unlock();
                 sleep();
@@ -163,11 +166,25 @@ namespace GameServer
             Thread.usleep(10000); // Server is not cpu intensive at all (can save cycles)
         }
 
-        private void process_messages()
+        private void process_messages(float time)
         {
             ClientMessageParser.ClientMessageTuple? message;
             while ((message = parser.dequeue()) != null)
-                server.message_received(message.player, message.message);
+            {
+                if (message.message is ClientMessageReplayPause)
+                {
+                    ClientMessageReplayPause pause_msg = message.message as ClientMessageReplayPause;
+                    server.handle_replay_pause(pause_msg.paused, time);
+                }
+                else if (message.message is ClientMessageReplaySpeed)
+                {
+                    
+                    ClientMessageReplaySpeed speed_msg = message.message as ClientMessageReplaySpeed;
+                    server.handle_replay_speed(speed_msg.multiplier, time);
+                }
+                else
+                    server.message_received(message.player, message.message);
+            }
         }
 
         private void message_received(ServerPlayer player, ClientMessage message)

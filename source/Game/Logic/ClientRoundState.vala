@@ -30,7 +30,7 @@ public class ClientRoundState : Object
 
     public signal void game_finished(RoundFinishResult result);
     public signal void game_tile_assignment(Tile tile);
-    public signal void game_tile_draw(int player_index);
+    public signal void game_tile_draw(int player_index, int tile_ID);
     public signal void game_dead_tile_draw(int player_index, int tile_ID);
     public signal void game_tile_discard(int player_index, int tile_ID);
     public signal void game_late_kan(int player_index, int tile_ID);
@@ -389,8 +389,13 @@ public class ClientRoundState : Object
     {
         decision_finished();
 
-        state.tile_draw();
-        game_tile_draw(state.current_player.index);
+        ServerMessageTileDraw draw_msg = (ServerMessageTileDraw)message;
+        Tile tile = state.tile_draw();
+
+        //  Environment.log(LogType.DEBUG, "ClientRoundState",
+        //      @"server_tile_draw: player=$(state.current_player.index), msg.tile_ID=$(draw_msg.tile_ID), state.tile.ID=$(tile.ID), state.tile.type=$(tile.tile_type.to_string())");
+
+        game_tile_draw(state.current_player.index, draw_msg.tile_ID);
     }
 
     private void server_tile_discard(ServerMessage message)
@@ -399,6 +404,10 @@ public class ClientRoundState : Object
 
         ServerMessageTileDiscard discard = (ServerMessageTileDiscard)message;
         state.tile_discard(discard.tile_ID);
+
+        //  Environment.log(LogType.DEBUG, "ClientRoundState",
+        //      @"server_tile_discard: player=$(state.current_player.index), tile_ID=$(discard.tile_ID)");
+
         game_tile_discard(state.current_player.index, discard.tile_ID);
     }
 

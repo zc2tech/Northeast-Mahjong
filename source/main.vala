@@ -218,8 +218,9 @@ private static void run_bot_simulation(int num_hands)
         stdout.printf("  Player %d: %s (%s)\n", i + 1, bot_configs[i].bot_name, bot_type);
     }
 
-    // Create game settings
+    // Create game settings with bot simulation flag enabled
     ServerSettings settings = new ServerSettings.default();
+    settings.bot_simulation = true;  // Enable bot simulation mode
 
     // Create game players array
     GamePlayer[] game_players = new GamePlayer[4];
@@ -241,13 +242,16 @@ private static void run_bot_simulation(int num_hands)
     );
 
     // Create game start info
+    // For bot simulation: set round_count = num_hands, hanchan_count = 1
+    // The game will play exactly num_hands rounds and then stop
+    // Note: If someone goes bankrupt (points < 0), the hanchan ends early
     GameStartInfo info = new GameStartInfo(
         game_players,
         timings,
         0,      // starting_dealer
         25000,  // starting_score
-        num_hands,  // round_count
-        1       // hanchan_count
+        num_hands,  // round_count - number of rounds per hanchan
+        1       // hanchan_count - number of hanchans in the game
     );
 
     // Create empty spectators list

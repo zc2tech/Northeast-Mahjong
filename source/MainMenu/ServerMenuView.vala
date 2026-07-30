@@ -57,6 +57,11 @@ class ServerMenuView : MenuSubView
         connection = game_connection;
 
         ServerHumanPlayer player = new ServerHumanPlayer(server_connection, player_name);
+
+        // For replay mode, set player as spectator so they receive all tile assignments
+        if (log != null)
+            player.state = ServerPlayer.State.SPECTATOR;
+
         server.add_player(player);
 
         if (listen)

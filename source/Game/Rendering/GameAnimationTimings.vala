@@ -22,6 +22,9 @@ public class GameRenderContext
     public float get_decision_time()
     {
         // Return scaled decision time
+        // If multiplier is 0 (paused), return a very large value to effectively pause
+        if (decision_time_multiplier <= 0.0f)
+            return 999999.0f;
         return server_times.decision_time / decision_time_multiplier;
     }
 

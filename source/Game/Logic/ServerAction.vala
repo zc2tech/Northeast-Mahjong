@@ -2,6 +2,18 @@ using Engine;
 
 public abstract class ServerAction : Serializable {}
 
+public class TileDrawServerAction : ServerAction
+{
+	public TileDrawServerAction(int player, int tile_ID)
+	{
+		this.player = player;
+		this.tile_ID = tile_ID;
+	}
+
+	public int player { get; protected set; }
+	public int tile_ID { get; protected set; }
+}
+
 public class ClientServerAction : ServerAction
 {
 	public ClientServerAction(int client, ClientAction action)

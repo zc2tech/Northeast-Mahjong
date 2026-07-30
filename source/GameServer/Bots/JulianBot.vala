@@ -690,7 +690,7 @@ class JulianBot : Bot
             return false;
         }
 
-        BestDiscardResult bestChiiResut = new BestDiscardResult();
+        BestDiscardResult bestChiiResut = BestDiscardResult();
         bestChiiResut.benefit = beforeBenefit;
         
         ArrayList<Tile> bestGroup = null;
@@ -855,14 +855,9 @@ class JulianBot : Bot
     // 摸到牌之后，做个处理决定
     protected override void do_turn_decision()
     {
-        int64 start_time = get_monotonic_time();
-
         if (round_state.can_tsumo())
         {
             do_tsumo();
-            //  int64 elapsed = get_monotonic_time() - start_time;
-            //  Environment.log(LogType.DEBUG, "JulianBot",
-            //      @"do_turn_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - tsumo");
             return;
         }
 
@@ -918,8 +913,6 @@ class JulianBot : Bot
                 BestDiscardResult result = find_best_discard(discard_benefit);
 
                 if (result.tile != null) {
-                    Environment.log(LogType.DEBUG, "JulianBot",
-                        @"do_turn_decision ($(round_state.self.wind.to_string())), discard $(result.tile) for $(result.benefit) win tiles"); 
                         do_discard(result.tile);
                         return;
                 }
@@ -990,10 +983,6 @@ class JulianBot : Bot
         // 没杠 没听 没胡
         Tile  tile = get_discard_tile(stats);
         do_discard(tile);
-
-        //  int64 elapsed = get_monotonic_time() - start_time;
-        //  Environment.log(LogType.DEBUG, "JulianBot",
-        //      @"do_turn_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - discard $(tile.tile_type.to_string())");
     }
 
     // 其他人已经吃碰或者打出的所有 还有墙上翻开的
@@ -1045,9 +1034,6 @@ class JulianBot : Bot
         if (round_state.can_ron(round_state.self))
         {
             call_ron();
-            int64 elapsed = get_monotonic_time() - start_time;
-            Environment.log(LogType.DEBUG, "JulianBot",
-                @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - ron on $(tile.tile_type.to_string())");
             return;
         }
         // Analyze hand statistics
@@ -1075,6 +1061,8 @@ class JulianBot : Bot
         if (should_call_pon(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
         {
             call_pon();
+              Environment.log(LogType.DEBUG, "JulianBot",
+                @"do_call_decision ($(round_state.self.wind.to_string())) call_pon");
             return;
         }
 
@@ -1084,6 +1072,8 @@ class JulianBot : Bot
         if (should_call_chii(tile, sortedhand, calls, beforeBenefit, stats, discarding_player, out chii_tile1, out chii_tile2))
         {
             call_chii(chii_tile1, chii_tile2);
+              Environment.log(LogType.DEBUG, "JulianBot",
+                @"do_call_decision ($(round_state.self.wind.to_string())) call_chii");
             return;
         }
 
@@ -1095,9 +1085,6 @@ class JulianBot : Bot
         }
 
         call_nothing();
-        //  int64 elapsed = get_monotonic_time() - start_time;
-        //  Environment.log(LogType.DEBUG, "JulianBot",
-        //      @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - pass");
     }
 
     // Toimen (opposite) Kamicha(left)  Shimocha (right) 
@@ -1480,6 +1467,8 @@ class JulianBot : Bot
 
         foreach (Tile tDiscard in discard_benefit.keys) {
             int benefit = discard_benefit.get(tDiscard);
+            Environment.log(LogType.DEBUG, "JulianBot",
+                        @"find_best_discard $(tDiscard) for $(benefit)"); 
             if (benefit > result.benefit) {
                 result.benefit = benefit;
                 result.tile = tDiscard;

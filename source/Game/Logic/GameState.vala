@@ -5,21 +5,32 @@ public class GameState : Object
     private GameScorePlayer[] players;
     private int starting_score;
     private int POINT_BASE = 5; // 5块钱 一手
+    private ServerSettings settings;
+    private int hand_count_played = 0;  // Track actual hands played (for bot simulation)
+    private bool is_server_state = false;  // Mark if this is the authoritative server GameState
 
-    public GameState(GameStartInfo info, ServerSettings settings) // TODO: Remove settings if we don't need them
+    public GameState(GameStartInfo info, ServerSettings settings)
     {
+        this.settings = settings;
         starting_score = info.starting_score;
         dealer_index = starting_dealer_index = info.starting_dealer;
-        round_count = info.round_count;
+        round_count = info.round_count;  // This is actually hand_count target for bot simulation
         hanchan_count = info.hanchan_count;
         scores = new ArrayList<RoundScoreState>();
         round_is_finished = true;
+        hand_count_played = 0;
 
         GamePlayer[] p = info.get_players();
         players = new GameScorePlayer[p.length];
 
         for (int i = 0; i < players.length; i++)
             players[i] = new GameScorePlayer(p[i].name, i, (Wind)((i + 4 - starting_dealer_index) % 4), info.starting_score, 0, 0);
+    }
+
+    // Mark this as the server's authoritative GameState
+    public void mark_as_server_state()
+    {
+        is_server_state = true;
     }
 
     public void start_round(RoundStartInfo info)
@@ -47,21 +58,15 @@ public class GameState : Object
             }
             else
             {
-                if (do_renchan)
-                    renchan++;
-                else
-                {
-                    renchan = 0;
+                // Dealer position already updated in round_finished()
+                // Just update round wind if needed
+                renchan = 0;
 
-                    current_round++;
-                    dealer_index = (dealer_index + 1) % players.length;
+                if (current_round % players.length == 0)
+                    round_wind = NEXT_WIND(round_wind);
 
-                    if (current_round % players.length == 0)
-                        round_wind = NEXT_WIND(round_wind);
-
-                    for (int i = 0; i < players.length; i++)
-                        players[i].wind = PREVIOUS_WIND(players[i].wind);
-                }
+                for (int i = 0; i < players.length; i++)
+                    players[i].wind = (Wind)((i + 4 - dealer_index) % 4);
             }
         }
         else
@@ -79,7 +84,6 @@ public class GameState : Object
             return null;
 
         round_is_finished = true;
-        do_renchan = false;
 
         bool ron = result.result == RoundFinishResult.RoundResultEnum.RON;
         bool tsumo = result.result == RoundFinishResult.RoundResultEnum.TSUMO;
@@ -87,6 +91,45 @@ public class GameState : Object
         if (result.scores.length > 0)
             sekinin_index = result.scores[0].player.sekinin_index;
         bool sekinin = sekinin_index != -1;
+
+        // Track if dealer won (to keep dealer position)
+        bool dealer_won = false;
+
+        // Debug log for round finish - only log from server's authoritative GameState
+        if (is_server_state)
+        {
+            if (ron || tsumo)
+            {
+                for (int i = 0; i < result.winner_indices.length; i++)
+                {
+                    int winner_index = result.winner_indices[i];
+                    string winner_name = players[winner_index].name;
+                    Wind winner_wind = players[winner_index].wind;
+                    string result_type = ron ? "Ron" : "Tsumo";
+                    Environment.log(LogType.DEBUG, "GameState.SERVER", @"Round finished: $(result_type) by $(winner_name) ($(winner_wind.to_string()))");
+
+                    // Check if dealer won
+                    if (winner_index == dealer_index)
+                        dealer_won = true;
+                }
+            }
+            else
+            {
+                Environment.log(LogType.DEBUG, "GameState.SERVER", "Round finished: Draw");
+            }
+        }
+        else
+        {
+            // Bot's GameState - just track dealer win, don't log
+            if (ron || tsumo)
+            {
+                for (int i = 0; i < result.winner_indices.length; i++)
+                {
+                    if (result.winner_indices[i] == dealer_index)
+                        dealer_won = true;
+                }
+            }
+        }
 
         if (ron)
         {
@@ -156,8 +199,6 @@ public class GameState : Object
                         players[i].transfer -= POINT_BASE * 4;
                         players[winner_index].transfer += POINT_BASE * 4;
                     }
-
-                do_renchan = true;
             }
             else
             {
@@ -179,11 +220,10 @@ public class GameState : Object
 
             //  players[winner_index].transfer += score.total_points + renchan * 300;
         }
-        // 流局
+        // 流局 - no special handling needed, just continue to next round
         else if (result.result == RoundFinishResult.RoundResultEnum.DRAW)
         {
-            // 流局应该算连庄吧
-            do_renchan = true; // Abortive draw is always renchan
+            // Draw - no point transfers
         }
         else
             return null; // Shouldn't happen
@@ -192,27 +232,64 @@ public class GameState : Object
         for (int i = 0; i < players.length; i++)
             players[i].points += players[i].transfer;
 
-        // decide hanchan finished, either someone lost all points , or reached the round_count limit
-        if (!do_renchan)
-            hanchan_is_finished = (current_round + 1) >= round_count; 
+        // Only server GameState needs to count hands and check for game end
+        if (is_server_state)
+        {
+            // Count each hand played (for both bot simulation and normal play)
+            hand_count_played++;
 
-        for (int i = 0; i < players.length; i++) {
-            
-            if (players[i].points < 0)
+            // Always advance to next round after each hand finishes
+            current_round++;
+
+            Environment.log(LogType.DEBUG, "GameState.SERVER", @"Hand finished: hand_count_played=$(hand_count_played), current_round=$(current_round), round_count=$(round_count), dealer_won=$(dealer_won)");
+
+            // Store dealer_won for start_round to use
+            // If dealer won, they keep dealer position in next round
+            // Otherwise, dealer rotates to next player
+            if (!dealer_won)
+                dealer_index = (dealer_index + 1) % players.length;
+
+            if (settings.bot_simulation)
             {
-                // someone lost all points
-                hanchan_is_finished = true;
-                break;
+                // Bot simulation mode: play exactly round_count hands
+                // Note: round_count is actually hand count target for bot simulation
+                if (hand_count_played >= round_count)
+                {
+                    // Reached the configured hand count, end the game
+                    Environment.log(LogType.DEBUG, "GameState.SERVER", @"Bot simulation finished: played $(hand_count_played) hands");
+                    // Don't set hanchan_is_finished - it triggers a reset of current_round in start_round()
+                    game_is_finished = true;
+                }
+            }
+            else
+            {
+                // Normal gameplay mode: check bankruptcy after each round
+                // Game ends when someone has negative points (no money)
+                bool someone_bankrupt = false;
+                for (int i = 0; i < players.length; i++)
+                {
+                    if (players[i].points < 0)
+                    {
+                        someone_bankrupt = true;
+                        break;
+                    }
+                }
+
+                if (someone_bankrupt)
+                {
+                    // Someone went bankrupt, end the game
+                    hanchan_is_finished = true;
+                    calculate_score();
+                    game_is_finished = true;
+                }
             }
         }
-        // hanchan finished judge end
-
-        if (hanchan_is_finished)
+        else
         {
-            calculate_score();
-
-            if ((current_hanchan + 1) == hanchan_count)
-                game_is_finished = true;
+            // Bot's GameState - just update dealer position
+            current_round++;
+            if (!dealer_won)
+                dealer_index = (dealer_index + 1) % players.length;
         }
 
         return replace_round_score_state(result);
@@ -284,8 +361,7 @@ public class GameState : Object
             round_is_finished,
             hanchan_is_finished,
             game_is_started,
-            game_is_finished,
-            do_renchan
+            game_is_finished
         );
         scores.add(score);
         return score;
@@ -309,8 +385,7 @@ public class GameState : Object
             round_is_finished,
             hanchan_is_finished,
             game_is_started,
-            game_is_finished,
-            do_renchan
+            game_is_finished
         );
 
         scores.remove_at(scores.size - 1);
@@ -333,8 +408,7 @@ public class GameState : Object
         "round_is_finished: " + round_is_finished.to_string() + "\n" +
         "hanchan_is_finished: " + hanchan_is_finished.to_string() + "\n" +
         "game_is_started: " + game_is_started.to_string() + "\n" +
-        "game_is_finished: " + game_is_finished.to_string() + "\n" +
-        "do_renchan: " + do_renchan.to_string() ;
+        "game_is_finished: " + game_is_finished.to_string();
         return str;
     }
 
@@ -352,7 +426,6 @@ public class GameState : Object
     public bool hanchan_is_finished { get; private set; }
     public bool game_is_started { get; private set; }
     public bool game_is_finished { get; private set; }
-    public bool do_renchan { get; private set; }
 }
 
 public class RoundScoreState
@@ -371,8 +444,7 @@ public class RoundScoreState
         bool round_is_finished,
         bool hanchan_is_finished,
         bool game_is_started,
-        bool game_is_finished,
-        bool do_renchan
+        bool game_is_finished
     )
     {
         this.result = result;
@@ -389,7 +461,6 @@ public class RoundScoreState
         this.hanchan_is_finished = hanchan_is_finished;
         this.game_is_started = game_is_started;
         this.game_is_finished = game_is_finished;
-        this.do_renchan = do_renchan;
 
         this.players = new GameScorePlayer[players.length];
         for (int i = 0; i < players.length; i++)
@@ -411,7 +482,6 @@ public class RoundScoreState
     public bool hanchan_is_finished { get; private set; }
     public bool game_is_started { get; private set; }
     public bool game_is_finished { get; private set; }
-    public bool do_renchan { get; private set; }
 }
 
 public class GameScorePlayer

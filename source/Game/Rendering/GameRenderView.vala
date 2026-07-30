@@ -30,6 +30,8 @@ public class GameRenderView : View3D, IGameRenderer
     private float camera_save_timer = 0;
     private bool camera_settings_dirty = false;
 
+    private bool is_paused = false;
+
     public GameRenderView(int observer_index, int dealer_index, GameStartInfo game_start, RoundStartInfo info, Options options, RoundScoreState score)
     {
         this.observer_index = observer_index;
@@ -344,10 +346,15 @@ public class GameRenderView : View3D, IGameRenderer
         t.reload();
     }
 
-    private void tile_draw(int player_index)
+    private void tile_draw(int player_index, int tile_ID)
     {
         RenderPlayer player = players[player_index];
-        buffer_action(new RenderActionDraw(context.server_times.tile_draw, player));
+        RenderTile tile = tiles[tile_ID];
+
+        //  Environment.log(LogType.DEBUG, "GameRenderView",
+        //      @"tile_draw: player=$player_index, tile_ID=$tile_ID, tile_type=$(tile.tile_type.tile_type.to_string())");
+
+        buffer_action(new RenderActionDraw(context.server_times.tile_draw, player, tile));
     }
 
     public void dead_tile_draw(int player_index, int tile_ID)
@@ -540,5 +547,11 @@ public class GameRenderView : View3D, IGameRenderer
                 if (group.group_type != TileSelectionGroup.GroupType.DISCARD)
                     foreach (Tile tile in group.highlight_tiles)
                         tiles[tile.ID].indicated = true;*/
+    }
+
+    public void set_paused(bool paused)
+    {
+        is_paused = paused;
+        scene.set_paused(paused);
     }
 }

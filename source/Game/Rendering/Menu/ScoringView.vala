@@ -223,7 +223,11 @@ class ScoringView : View2D
     public void hide()
     {
         if (!busy)
+        {
             visible = false;
+            prev_score_button.visible = false;
+            next_score_button.visible = false;
+        }
     }
 
     private void animation_finished()

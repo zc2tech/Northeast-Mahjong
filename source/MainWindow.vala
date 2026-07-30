@@ -89,9 +89,9 @@ public class MainWindow : RenderWindow
         game_controller = new GameController(game_view, info, settings, connection, player_index, new Options.from_disk());
         game_controller.game_loaded.connect(game_loaded);
         game_controller.finished.connect(game_finished);
-        
+
         game_running = true;
-    
+
         fade_rect = new RectangleControl();
         main_view.add_child(fade_rect);
         fade_rect.color = Color.black();

@@ -12,6 +12,8 @@ public class ServerSettings : Serializable
         decision_time = 10;
         reveal_all_tiles = OnOffEnum.OFF;
         shuffle_tiles = OnOffEnum.ON;  // Default: shuffle tiles
+        bot_simulation = false;  // Default: not bot simulation
+        is_replay_mode = false;  // Default: not replay mode
     }
 
     public ServerSettings.from_disk()
@@ -109,4 +111,6 @@ public class ServerSettings : Serializable
     public int decision_time { get; set; }
     public OnOffEnum reveal_all_tiles { get; set; }
     public OnOffEnum shuffle_tiles { get; set; }
+    public bool bot_simulation { get; set; }
+    public bool is_replay_mode { get; set; }
 }

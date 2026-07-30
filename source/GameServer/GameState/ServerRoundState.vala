@@ -31,7 +31,7 @@ namespace GameServer
             Environment.log(LogType.DEBUG, "ServerRoundState", log);
         }
 
-        private ServerRoundStateValidator validator;
+        protected ServerRoundStateValidator validator;
         private int dealer;
         private int wall_index;
         private float current_time;
@@ -515,6 +515,7 @@ namespace GameServer
             {
                 // 从墙里抽一张牌
                 Tile tile = validator.draw_wall();
+                log_action(new TileDrawServerAction(player.index, tile.ID));
                 game_draw_tile(player.index, tile, player.open);
             }
 
@@ -583,7 +584,7 @@ namespace GameServer
         public Tile? dead_wall_mark { owned get { return validator.dead_wall_mark; } }
         public ArrayList<Tile> dead_wall_tiles { get { return validator.dead_wall_tiles; } }
 
-        protected float move_start_time { get; private set; }
+        protected float move_start_time { get; protected set; }
         protected AnimationTimings timings { get; private set; }
     }
 
@@ -627,6 +628,9 @@ namespace GameServer
     class LogServerRoundState : ServerRoundState
     {
         private ArrayList<GameLogLine> lines;
+        private bool is_paused = false;
+        private float pause_start_time = 0;
+        private float speed_multiplier = 1.0f;
 
         public LogServerRoundState(ServerSettings settings, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings, GameLogRound round)
         {
@@ -634,17 +638,49 @@ namespace GameServer
             lines = new ArrayList<GameLogLine>.wrap(round.lines.to_array());
         }
 
+        public void set_paused(bool paused, float time)
+        {
+            if (paused && !is_paused)
+            {
+                // Entering pause
+                pause_start_time = time;
+                is_paused = true;
+                Environment.log(LogType.DEBUG, "LogServerRoundState", @"Paused at time $(time)");
+            }
+            else if (!paused && is_paused)
+            {
+                // Exiting pause - shift move_start_time forward by the pause duration
+                float pause_duration = time - pause_start_time;
+                move_start_time += pause_duration;
+                is_paused = false;
+                Environment.log(LogType.DEBUG, "LogServerRoundState", @"Resumed at time $(time), shifted move_start_time by $(pause_duration)");
+            }
+        }
+
+        public void set_speed(float multiplier)
+        {
+            speed_multiplier = multiplier;
+            Environment.log(LogType.DEBUG, "LogServerRoundState", @"Speed set to $(speed_multiplier)x");
+        }
+
         protected override void next_player_action(float time)
         {
+            // Don't process actions when paused
+            if (is_paused)
+                return;
+
             if (lines.size == 0)
             {
                 default_action();
                 return;
             }
-            
+
             GameLogLine line = lines[0];
 
-            if (time - move_start_time > line.delta)
+            // Divide delta by speed_multiplier to make actions happen faster
+            float adjusted_delta = line.delta / speed_multiplier;
+
+            if (time - move_start_time > adjusted_delta)
             {
                 action(line.action);
                 lines.remove_at(0);
@@ -653,7 +689,13 @@ namespace GameServer
 
         private void action(ServerAction action)
         {
-            if (action is ClientServerAction)
+            if (action is TileDrawServerAction)
+            {
+                TileDrawServerAction draw_action = action as TileDrawServerAction;
+                Tile tile = validator.get_tile(draw_action.tile_ID);
+                game_draw_tile(draw_action.player, tile, validator.get_player(draw_action.player).open);
+            }
+            else if (action is ClientServerAction)
                 process_action(action as ClientServerAction);
             else if (action is DefaultDiscardServerAction || action is DefaultNoCallServerAction)
                 default_action();

@@ -49,9 +49,9 @@ public class TileRules
     public static void clear_hand_readings_cache()
     {
         if (readings_cache != null) {
-            int size = readings_cache.size;
+            //  int size = readings_cache.size;
             readings_cache.clear();
-            Environment.log(LogType.DEBUG, "TileRules", @"hand_readings cache cleared ($(size) entries, $(cache_hits) hits, $(cache_misses) misses)");
+            //  Environment.log(LogType.DEBUG, "TileRules", @"hand_readings cache cleared ($(size) entries, $(cache_hits) hits, $(cache_misses) misses)");
             cache_hits = 0;
             cache_misses = 0;
         }

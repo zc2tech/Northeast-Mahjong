@@ -17,6 +17,10 @@ class GameController : Object
     private Options options;
     private bool game_finished = false;
     private bool is_disconnected = false;
+    private bool is_paused = false;
+    private float saved_speed_multiplier = 1.0f;
+    private float speed_multiplier = 1.0f;
+    private bool is_replay_mode = false;
     public signal void game_loaded();
     public signal void finished();
 
@@ -28,6 +32,9 @@ class GameController : Object
         this.connection = connection;
         this.player_index = player_index;
         this.options = options;
+        this.is_replay_mode = settings.is_replay_mode;
+
+        Environment.log(LogType.DEBUG, "GameController", @"Created: player_index=$player_index, settings.is_replay_mode=$(settings.is_replay_mode), is_replay_mode=$(is_replay_mode)");
 
         this.connection.disconnected.connect(disconnected);
 
@@ -51,36 +58,41 @@ class GameController : Object
             return;
         }
 
-        if (round_over_timer != null)
-            round_over_timer.process(delta);
-
-        ServerMessage? message = null;
-        while ((message = connection.dequeue_message()) != null)
+        // Don't process timers or messages when paused
+        if (!is_paused)
         {
+            if (round_over_timer != null)
+                round_over_timer.process(delta);
+
+            ServerMessage? message = null;
+            while ((message = connection.dequeue_message()) != null)
+            {
+                if (!game.round_is_finished)
+                    round.receive_message(message);
+
+                if (message is ServerMessageRoundStart)
+                {
+                    ServerMessageRoundStart start = message as ServerMessageRoundStart;
+                    create_round(start.info);
+                    if (menu != null)
+                        menu.update_scores(game.scores.to_array());
+                }
+                else if (message is ServerMessagePlayerLeft && !game.game_is_finished)
+                {
+                    ServerMessagePlayerLeft msg = message as ServerMessagePlayerLeft;
+                    menu.display_player_left(game.get_player(msg.player_index).name);
+                }
+            }
+
+            // Check for round finish only when not paused
             if (!game.round_is_finished)
-                round.receive_message(message);
-
-            if (message is ServerMessageRoundStart)
             {
-                ServerMessageRoundStart start = message as ServerMessageRoundStart;
-                create_round(start.info);
-                if (menu != null)
-                    menu.update_scores(game.scores.to_array());
-            }
-            else if (message is ServerMessagePlayerLeft && !game.game_is_finished)
-            {
-                ServerMessagePlayerLeft msg = message as ServerMessagePlayerLeft;
-                menu.display_player_left(game.get_player(msg.player_index).name);
-            }
-        }
-
-        if (!game.round_is_finished)
-        {
-            if (round.finished)
-            {
-                game.round_finished(round.result);
-                round_over_timer = new EventTimer(start_info.timings.round_over_delay, true);
-                round_over_timer.elapsed.connect(round_over_timer_elapsed);
+                if (round.finished)
+                {
+                    game.round_finished(round.result);
+                    round_over_timer = new EventTimer(start_info.timings.round_over_delay, true);
+                    round_over_timer.elapsed.connect(round_over_timer_elapsed);
+                }
             }
         }
     }
@@ -133,6 +145,7 @@ class GameController : Object
             menu.observe_prev_pressed.connect(renderer.observe_prev);
             menu.speed_up_pressed.connect(speed_up);
             menu.speed_down_pressed.connect(speed_down);
+            menu.pause_continue_pressed.connect(pause_continue);
         }
     }
 
@@ -156,7 +169,7 @@ class GameController : Object
         renderer.game_loaded.connect(on_game_loaded);
         parent_view.add_child(renderer);
 
-        menu = new GameMenuView(renderer.context, settings, index, player_index == -1);
+        menu = new GameMenuView(renderer.context, settings, index, player_index == -1, is_replay_mode);
         menu.score_finished.connect(menu_score_finished);
 
         parent_view.add_child(menu);
@@ -196,8 +209,6 @@ class GameController : Object
         }
     }
 
-    private float speed_multiplier = 1.0f;
-
     private void speed_up()
     {
         // Increase speed by 0.25x increments, max 4x
@@ -205,6 +216,7 @@ class GameController : Object
         {
             speed_multiplier += 0.25f;
             apply_speed();
+            connection.send_message(new ClientMessageReplaySpeed(speed_multiplier));
             if (menu != null)
                 menu.show_speed_toast(speed_multiplier);
             Environment.log(LogType.INFO, "GameController", @"Replay speed: $(speed_multiplier)x");
@@ -218,6 +230,7 @@ class GameController : Object
         {
             speed_multiplier -= 0.25f;
             apply_speed();
+            connection.send_message(new ClientMessageReplaySpeed(speed_multiplier));
             if (menu != null)
                 menu.show_speed_toast(speed_multiplier);
             Environment.log(LogType.INFO, "GameController", @"Replay speed: $(speed_multiplier)x");
@@ -232,5 +245,50 @@ class GameController : Object
             // Scale only the decision time, not the animations
             renderer.context.set_decision_time_multiplier(speed_multiplier);
         }
+    }
+
+    private void pause_continue()
+    {
+        if (!is_replay_mode)
+            return;
+
+        Environment.log(LogType.DEBUG, "GameController", @"pause_continue called: is_paused=$(is_paused)");
+
+        if (is_paused)
+        {
+            // Resume 
+            is_paused = false;
+            connection.send_message(new ClientMessageReplayPause(false));
+            if (renderer != null)
+            {
+                // Reapply the speed multiplier after resuming
+                apply_speed();
+            }
+            if (menu != null)
+            {
+                menu.show_speed_toast(speed_multiplier);
+                menu.set_pause_button_icon(false);  // Show pause icon (||)
+            }
+            Environment.log(LogType.INFO, "GameController", @"Replay resumed at $(speed_multiplier)x");
+        }
+        else
+        {
+            // Pause - just set flag, don't change speed
+            is_paused = true;
+            connection.send_message(new ClientMessageReplayPause(true));
+            if (renderer != null)
+                renderer.set_paused(true);
+            if (menu != null)
+            {
+                menu.show_speed_toast_text("Paused");
+                menu.set_pause_button_icon(true);  // Show play icon (▶)
+            }
+            Environment.log(LogType.INFO, "GameController", "Replay paused");
+        }
+    }
+
+    public bool is_replay_paused()
+    {
+        return is_paused;
     }
 }
