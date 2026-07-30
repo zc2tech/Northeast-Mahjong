@@ -171,5 +171,17 @@ class ScoringInnerView : View2D
         left.highlighted = player_index == left.player_index;
     }
 
+    public void stop_sounds()
+    {
+        // Stop all scoring sound effects
+        if (view != null)
+            view.stop_sounds();
+
+        bottom.stop_sounds();
+        right.stop_sounds();
+        top.stop_sounds();
+        left.stop_sounds();
+    }
+
     public RoundScoreState score { get; private set; }
 }

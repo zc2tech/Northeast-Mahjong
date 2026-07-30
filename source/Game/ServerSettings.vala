@@ -93,7 +93,7 @@ public class ServerSettings : Serializable
             triple_ron_draw = parse_on_off_enum(value);
             break;
         case "decision_time":
-            decision_time = int.parse(value).clamp(2, 120);
+            decision_time = int.parse(value).clamp(2, 360);
             break;
         case "reveal_all_tiles":
             reveal_all_tiles = parse_on_off_enum(value);

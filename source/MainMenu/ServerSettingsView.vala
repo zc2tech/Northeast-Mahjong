@@ -12,7 +12,7 @@ class ServerSettingsView : MenuSubView
     private MenuTextButton? log_button;
 
     const string[] enabled_disabled_choices = { "Disabled", "Enabled" };
-    const string[] decision_time_choices = { "2", "5", "10", "20", "30", "60", "120" };
+    const string[] decision_time_choices = { "2", "5", "10", "20", "30", "60", "120", "360" };
 
     public ServerSettingsView(bool can_control, bool log_control, ServerSettings settings)
     {

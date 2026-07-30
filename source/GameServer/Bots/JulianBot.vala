@@ -1061,6 +1061,14 @@ class JulianBot : Bot
         foreach (TileType type_needed in needed_tiles.keys) {
             int available_count = count_available_tiles(type_needed);
             beforeBenefit += available_count;
+
+            Tile for_log = new Tile(-1,type_needed);
+            Environment.log(LogType.DEBUG, "JulianBot",
+                @"do_call_decision Beofre_Need_Tile: $(for_log.to_string()) : $(available_count) ");
+        }
+        if (beforeBenefit > 0) {
+            Environment.log(LogType.DEBUG, "JulianBot",
+                @"do_call_decision BeforeBenefit: $(beforeBenefit) ");
         }
 
         // Evaluate pon decision
@@ -1232,20 +1240,6 @@ class JulianBot : Bot
 
         backup.clear();
         backup.add_all(tiles);
-        for (int i = 0; i < tiles.size; i++)
-        {
-            Tile tile = tiles[i];
-            //  if (tile.is_dragon_tile() || tile.is_wind(round_state.self.wind) || tile.is_wind(round_state.round_wind))
-            //      tiles.remove_at(i--);
-            // 到这里肯定不是单数了 就留着
-            if (tile.is_dragon_tile())
-                tiles.remove_at(i--);
-        }
-        if (tiles.size == 0)
-            return RandomTileSmart(stats,backup);
-
-        backup.clear();
-        backup.add_all(tiles);
 
         for (int i = 0; i < tiles.size; i++)
         {
@@ -1257,26 +1251,34 @@ class JulianBot : Bot
                 }
             }             
         }
-
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
         backup.clear();
         backup.add_all(tiles);
 
-        // 到了这里不可能算刻子了，只看对子
+        // 到了这里不可能算刻子了，这些对子对子肯定是没近邻的
         int pair_cnt = 0;
+        HashSet<TileType> pair_tile_type = new HashSet<TileType>();
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (count(tile) >= 2 && pair_cnt <= 1 ) // pair_cnt 是经过上一轮之后算出的，你需要加上当前的看看
+            if (count(tile) >= 2) // pair_cnt 是经过上一轮之后算出的，你需要加上当前的看看
             {
                 pair_cnt++;
-                tiles.remove_at(i--); // 对子还是很珍贵的，留。 
-            }
-                
+                pair_tile_type.add(tile.tile_type);
+            }               
+        }
+        // 留一下
+        if(pair_cnt <= 2) {
+             for (int i = 0; i < tiles.size; i++) {
+                if(pair_tile_type.contains(tiles[i].tile_type)) {
+                    tiles.remove_at(i--); // 对子还是很珍贵的，
+                }
+             }
         }
 
+        // 留完竟然空了，那就从有紧邻的里选吧 都是好牌啊，不知道可不可能
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
@@ -1380,7 +1382,7 @@ class JulianBot : Bot
             foreach(TileType t in needed_tiles.keys) {
                 sb_for_log.append(new Tile(-1,t).to_string() + " ");
             }
-            Environment.log(LogType.DEBUG, "JulianBot", @"discard: $(tDiscard.to_string()), tenpai: $(sb_for_log.str)");
+            Environment.log(LogType.DEBUG, "JulianBot", @"assume discard: $(tDiscard.to_string()), tenpai: $(sb_for_log.str)");
         }
 
         //  int64 elapsed = get_monotonic_time() - start_time;

@@ -325,6 +325,17 @@ class ScoringPointsView : View2D
             scoring_control.size = Size2(size.width, size.height - score_label.size.height - 2);
     }
 
+    public void stop_sounds()
+    {
+        // Stop fade sound in main view
+        if (fade_sound != null)
+            fade_sound.stop();
+
+        // Stop sounds in scoring control
+        if (scoring_control != null)
+            scoring_control.stop_sounds();
+    }
+
     private class ScoringScoreControl : Control
     {
         private ScoringHandView? hand;
@@ -528,6 +539,16 @@ class ScoringPointsView : View2D
         {
             animate_items_start();
         }
+
+        public void stop_sounds()
+        {
+            // Stop score counting and fade sounds
+            if (score_sound != null)
+                score_sound.stop();
+            if (fade_sound != null)
+                fade_sound.stop();
+        }
+
         // TODO: need to adjust for Northeast
         private void set_points_text(float amount)
         {

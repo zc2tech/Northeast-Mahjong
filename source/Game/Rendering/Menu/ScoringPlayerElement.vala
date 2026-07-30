@@ -256,5 +256,14 @@ class ScoringPlayerElement : Control
         }
     }
 
+    public void stop_sounds()
+    {
+        // Stop all scoring sound effects
+        if (score_sound != null)
+            score_sound.stop();
+        if (fade_sound != null)
+            fade_sound.stop();
+    }
+
     public int player_index { get; private set; }
 }
