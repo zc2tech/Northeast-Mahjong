@@ -5,6 +5,7 @@ struct HandStatistics
 {
     public int terminal_count;
     public int dragon_count;
+    public ArrayList<Tile> two_player_carry;
     public ArrayList<TileType> singles;
     public ArrayList<TileType> singles_ish; // 不是对子刻子， 而且 12 但是 3 被碰  89 7 被碰， 不考虑其他太复杂的情况
     public int pair_count;
@@ -37,7 +38,62 @@ class JulianBot : Bot
         return map;
     }
 
-     private void count_singles_ish(HashMap<TileType, int> suit_map,
+    // 先去掉 顺子 再 刻子吧， 总感觉安全点
+    private void remove_melds(int start_tile, int end_tile, HashMap<TileType, int> map_sort, ref ArrayList<Tile> two_player_carry)
+    {
+        HashMap<TileType, int> copy_map = new HashMap<TileType, int>();
+        copy_map.set_all( map_sort);
+        // 拿掉所有顺子
+        for (int i = start_tile; i <= end_tile - 2 ; i++)
+        {
+            while (copy_map[i] >=1 && copy_map[i+1] >=1 && copy_map[i+1] >=1 ) {
+               bool done_i = false;
+               bool done_p1 = false;
+               bool done_p2 = false;
+               // Iterate backwards to safely remove during iteration
+               for (int idx = two_player_carry.size - 1; idx >= 0; idx--) {
+                    Tile t = two_player_carry[idx];
+                    if(!done_i && t.tile_type == copy_map[i]) {
+                        two_player_carry.remove_at(idx);
+                        done_i = true;
+                        copy_map[i] = copy_map[i] -1;
+                        continue;
+                    }
+                    if(!done_p1 && t.tile_type == copy_map[i+1]) {
+                        two_player_carry.remove_at(idx);
+                        done_p1 = true;
+                        copy_map[i+1] = copy_map[i+1] -1;
+                        continue;
+                    }
+                    if(!done_p2 && t.tile_type == copy_map[i+2]) {
+                        two_player_carry.remove_at(idx);
+                        done_p2 = true;
+                        copy_map[i+2] = copy_map[i+2] -1;
+                        continue;
+                    }
+               }
+            }
+        }
+
+        // 拿掉所有刻子（不包括 dragon)
+        for (int i = start_tile; i <= end_tile ; i++)
+        {
+            if (copy_map[i] >= 3 ) {
+                int counter = 0;
+                // Iterate backwards to safely remove during iteration
+                for (int idx = two_player_carry.size - 1; idx >= 0 && counter < 3; idx--) {
+                    Tile t = two_player_carry[idx];
+                    // 只去掉3个，不许多去
+                    if(t.tile_type == i) {
+                        two_player_carry.remove_at(idx);
+                        counter++;
+                    }
+                }
+            } 
+        }
+    }
+
+    private void count_singles_ish(HashMap<TileType, int> suit_map,
                                      int start_tile,
                                      int end_tile,
                                      ref ArrayList<TileType> singles_ish,
@@ -151,11 +207,17 @@ class JulianBot : Bot
     private HandStatistics analyze_hand(Tile? tile, ArrayList<Tile> sorted_hand, ArrayList<RoundStateCall> calls, HashMap<TileType, int>? hOP)
     {
         HandStatistics stats = HandStatistics();
-
+        stats.two_player_carry = new ArrayList<Tile>();
+        stats.two_player_carry.add_all(sorted_hand); // 二人抬轿 只是把刻子，对子移除。后续还要设牌时判断
         // Create suit maps
         HashMap<TileType, int> map_man = create_suit_map(TileType.MAN1, TileType.MAN9);
         HashMap<TileType, int> map_pin = create_suit_map(TileType.PIN1, TileType.PIN9);
         HashMap<TileType, int> map_sou = create_suit_map(TileType.SOU1, TileType.SOU9);
+
+        remove_melds(TileType.MAN1, TileType.MAN9,map_man, ref stats.two_player_carry);
+        remove_melds(TileType.PIN1, TileType.PIN9,map_pin, ref stats.two_player_carry);
+        remove_melds(TileType.SOU1, TileType.SOU9,map_sou, ref stats.two_player_carry);
+
 
         stats.terminal_count = 0;
         stats.dragon_count = 0;
@@ -190,6 +252,17 @@ class JulianBot : Bot
             if (t.is_dragon_tile())
             {
                 stats.dragon_count++;
+            }
+        }
+
+        // 这时候还只是算手牌的中发白，二人抬轿预备队里 所以有刻子把它去了
+        if(stats.dragon_count >=3 ) {
+            int counter = 0;
+            for (int i = stats.two_player_carry.size - 1; i >= 0 && counter < 3; i--) {
+                if (stats.two_player_carry[i].is_dragon_tile()) {
+                    stats.two_player_carry.remove_at(i);
+                    counter++;
+                }
             }
         }
 
@@ -1051,7 +1124,7 @@ class JulianBot : Bot
     // 找出需要舍弃的牌 能听牌的我都不进这里
     private Tile get_discard_tile( HandStatistics stats )
     {
-        ArrayList<Tile> tiles = round_state.self.get_discard_tiles();
+        ArrayList<Tile> tiles = round_state.self.get_discard_tiles(); // basically hand tiles
         assert(tiles.size > 0);
 
         ArrayList<Tile> backup = new ArrayList<Tile>();
@@ -1083,9 +1156,68 @@ class JulianBot : Bot
             }
         }
 
+        // 二人抬轿检测 检测时别看手牌了
+        ArrayList<Tile> tpc = stats.two_player_carry; // 应该是排完序的
+        TileType discard_for_two_players_carry  = TileType.BLANK;
+        if(tpc.size == 5) {
+            // 找出来打哪张能形成二人抬轿
+
+            // 先确保没对子
+            bool hasPair = false;
+            for(int i=0; i <= 3; i++) {
+                if(tpc[i].tile_type == tpc[i+1].tile_type) {
+                    hasPair = true;
+                    break;
+                }              
+            } 
+            
+            if(!hasPair) {
+                for(int iRemove = 0 ; iRemove < tpc.size; iRemove++) {
+                    int index0 = 0 , index1 = 1, index2 = 2, index3 = 3; // 预定是先看这几个位置的
+                    // 1234 0234 0134 0124 0124
+                    if(index0 == iRemove) {
+                        index0++;
+                        index1++;
+                        index2++;
+                        index3++;
+                    } else if(index1 == iRemove) {
+                        index1++;
+                        index2++;
+                        index3++;
+                    } else if(index2 == iRemove) {
+                        index2++;
+                        index3++;
+                    } else if(index3 == iRemove) {
+                        index3++;
+                    } else {
+                        // 不用动了
+                    }
+                    int distance1 = tpc[index1].tile_type - tpc[index0].tile_type;
+                    int distance2 = tpc[index3].tile_type - tpc[index2].tile_type;
+                    if( (distance1 == 1 || distance1 == 2) 
+                    && (distance2 == 1 || distance2 == 2)) 
+                    {
+                        // 二人抬轿了
+                        discard_for_two_players_carry = tpc[iRemove].tile_type;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if(discard_for_two_players_carry != TileType.BLANK) {
+            // 既然有这个牌型，直接就打了，后面的判断全忽略 缺幺九的话，以后再调整，毕竟吃个幺九或者单砸也挺容易的
+            for (int i = 0; i < tiles.size; i++)
+            {
+                if(tiles[i].tile_type == discard_for_two_players_carry) {
+                    return tiles[i];
+                }
+            } 
+        }
+        
+
         backup.clear();
         backup.add_all(tiles);
-
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
@@ -1095,7 +1227,20 @@ class JulianBot : Bot
             if (tile.is_dragon_tile())
                 tiles.remove_at(i--);
         }
+        if (tiles.size == 0)
+            return RandomTileSmart(stats,backup);
 
+        backup.clear();
+        backup.add_all(tiles);
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            //  if (tile.is_dragon_tile() || tile.is_wind(round_state.self.wind) || tile.is_wind(round_state.round_wind))
+            //      tiles.remove_at(i--);
+            // 到这里肯定不是单数了 就留着
+            if (tile.is_dragon_tile())
+                tiles.remove_at(i--);
+        }
         if (tiles.size == 0)
             return RandomTileSmart(stats,backup);
 

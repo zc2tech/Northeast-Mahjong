@@ -134,7 +134,7 @@ namespace GameServer
         }
 
         private void start_round(float time)
-        {
+        {      
             foreach (var player in players)
                 player.ready = false;
             foreach (var player in spectators)
