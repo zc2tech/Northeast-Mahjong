@@ -56,27 +56,19 @@ class BotConnection : Object
     {
         ServerMessage? message;
 
-        // Only process GameStart message immediately (before bot thread starts)
-        // All other messages will be processed by poll() in the bot thread
         while ((message = connection.dequeue_message()) != null)
         {
             if (message is ServerMessageGameStart)
             {
                 ServerMessageGameStart start = message as ServerMessageGameStart;
                 bot.init_game(start.info, start.settings, start.player_index);
-
-                // After bot thread is started, disconnect this handler
-                // All subsequent messages will be processed via poll()
-                connection.received_message.disconnect(message_received);
             }
-            else
+            else if (message is ServerMessageRoundStart)
             {
-                // This shouldn't happen - GameStart should be first message
-                // But if it does, the message is already dequeued and will be lost
-                // To be safe, we could re-queue it, but the current architecture
-                // doesn't support that. Log a warning.
-                Environment.log(LogType.ERROR, "BotConnection",
-                    "Received non-GameStart message before bot initialized");
+                connection.received_message.disconnect(message_received);
+                var start = message as ServerMessageRoundStart;
+                bot.start_round(true, start.info);
+                break;
             }
         }
     }
@@ -91,7 +83,6 @@ class BotConnection : Object
     private void round_start(ServerMessage message)
     {
         ServerMessageRoundStart start = message as ServerMessageRoundStart;
-        // use_lock=false because we're already in the bot thread which holds the mutex
         bot.start_round(false, start.info);
     }
 

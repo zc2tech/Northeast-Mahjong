@@ -100,10 +100,23 @@ sources = files(
 
 includes = [include_directories('include'), engine_includes]
 
-executable('Northeast-Mahjong', sources,
+exe = executable('Northeast-Mahjong', sources,
     dependencies: dependencies,
     include_directories: includes,
     gui_app: true,
     install: true
 )
+
+# Copy compiled binary to ../bin folder for easy execution
+custom_target('copy-to-bin',
+    input: exe,
+    output: 'copy-marker',
+    command: [
+        'sh', '-c',
+        'cp @INPUT@ @SOURCE_ROOT@/bin/Northeast-Mahjong && touch @OUTPUT@'
+    ],
+    build_by_default: true,
+    build_always_stale: true
+)
+
 install_subdir('bin/Data', install_dir: dataDir)
