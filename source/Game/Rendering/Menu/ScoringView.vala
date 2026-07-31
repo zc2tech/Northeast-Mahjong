@@ -11,6 +11,8 @@ class ScoringView : View2D
     private LabelControl score_label;
     private RectangleControl rectangle;
     private MenuTextButton ready_button;
+    private MenuTextButton next_hand_button;
+    private MenuTextButton return_menu_button;
     private GameMenuButton next_score_button;
     private GameMenuButton prev_score_button;
     private ScoringInnerView scoring_view;
@@ -18,13 +20,17 @@ class ScoringView : View2D
     private bool display_timer;
     private float time;
     private float start_time;
+    private bool is_replay;
 
     public signal void score_finished();
+    public signal void next_hand_requested();
+    public signal void return_to_menu_requested();
 
-    public ScoringView(GameRenderContext context, int player_index, bool observing)
+    public ScoringView(GameRenderContext context, int player_index, bool observing, bool is_replay)
     {
         this.context = context;
         this.player_index = player_index;
+        this.is_replay = is_replay;
         relative_size = Size2(0.9f, 0.9f);
     }
 
@@ -72,6 +78,25 @@ class ScoringView : View2D
         ready_button.position = Vec2(padding, padding);
         ready_button.visible = true;
         ready_button.enabled = true;
+
+        // Replay mode buttons
+        next_hand_button = new MenuTextButton("MenuButtonSmall", "Next Hand (N)");
+        add_child(next_hand_button);
+        next_hand_button.clicked.connect(next_hand_clicked);
+        next_hand_button.inner_anchor = Vec2(0, 0);
+        next_hand_button.outer_anchor = Vec2(0, 0);
+        next_hand_button.position = Vec2(padding, padding);
+        next_hand_button.visible = false;
+        next_hand_button.enabled = true;
+
+        return_menu_button = new MenuTextButton("MenuButtonSmall", "Return to Menu (M)");
+        add_child(return_menu_button);
+        return_menu_button.clicked.connect(return_menu_clicked);
+        return_menu_button.inner_anchor = Vec2(1, 0);
+        return_menu_button.outer_anchor = Vec2(1, 0);
+        return_menu_button.position = Vec2(-padding, padding);
+        return_menu_button.visible = false;
+        return_menu_button.enabled = true;
 
         next_score_button = new GameMenuButton("Next");
         add_child(next_score_button);
@@ -123,8 +148,12 @@ class ScoringView : View2D
         {
             key.handled = true;
 
-            if (key.scancode == ScanCode.R && ready_button.enabled)
+            if (key.scancode == ScanCode.R && ready_button.enabled && ready_button.visible)
                 ready_clicked();
+            else if (key.scancode == ScanCode.N && next_hand_button.enabled && next_hand_button.visible)
+                next_hand_clicked();
+            else if (key.scancode == ScanCode.M && return_menu_button.enabled && return_menu_button.visible)
+                return_menu_clicked();
             else
                 key.handled = false;
         }
@@ -158,7 +187,21 @@ class ScoringView : View2D
         if (round_finished)
         {
             busy = true;
-            ready_button.visible = true;
+
+            if (is_replay)
+            {
+                // Show replay buttons instead of ready button
+                ready_button.visible = false;
+                next_hand_button.visible = true;
+                return_menu_button.visible = true;
+            }
+            else
+            {
+                // Show normal ready button
+                ready_button.visible = true;
+                next_hand_button.visible = false;
+                return_menu_button.visible = false;
+            }
         }
 
         update_score_view(round_finished);
@@ -243,10 +286,22 @@ class ScoringView : View2D
     {
         // Stop scoring sound effects when ready is clicked
         //  if (scoring_view != null)
-        //      scoring_view.stop_sounds(); 
+        //      scoring_view.stop_sounds();
 
         score_finished();
         ready_button.enabled = false;
+    }
+
+    private void next_hand_clicked()
+    {
+        next_hand_requested();
+        next_hand_button.enabled = false;
+    }
+
+    private void return_menu_clicked()
+    {
+        return_to_menu_requested();
+        return_menu_button.enabled = false;
     }
 
     private void next_score_clicked()

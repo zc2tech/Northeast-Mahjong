@@ -170,6 +170,8 @@ class GameController : Object
         menu = new GameMenuView(renderer.context, settings, index, player_index == -1);
         //  Environment.log(LogType.DEBUG, @"GameController", @"player_index: $(player_index)");
         menu.score_finished.connect(menu_score_finished);
+        menu.next_hand_requested.connect(menu_next_hand_requested);
+        menu.return_to_menu_requested.connect(menu_return_to_menu_requested);
 
         parent_view.add_child(menu);
 
@@ -187,6 +189,25 @@ class GameController : Object
             game_finished = true;
         else
             connection.send_message(new ClientMessageMenuReady());
+    }
+
+    private void menu_next_hand_requested()
+    {
+        // In replay mode, proceed to next hand automatically
+        Environment.log(LogType.DEBUG, "GameController", "Next hand requested in replay mode");
+        if (game.game_is_finished)
+        {
+            Environment.log(LogType.DEBUG, "GameController", "All hands replayed, no more hands");
+            return;
+        }
+        connection.send_message(new ClientMessageMenuReady());
+    }
+
+    private void menu_return_to_menu_requested()
+    {
+        // Exit replay and return to main menu
+        Environment.log(LogType.DEBUG, "GameController", "Return to menu requested");
+        game_finished = true;
     }
 
     private void round_over_timer_elapsed()

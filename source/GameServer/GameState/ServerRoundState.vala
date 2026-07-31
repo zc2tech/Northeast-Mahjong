@@ -625,53 +625,76 @@ namespace GameServer
         }
     }
 
+    // Lightweight state tracker for replay - no validation, just tile tracking
+    class ReplayWall
+    {
+        private ArrayList<Tile> wall_tiles;
+        private ArrayList<Tile> dead_wall_tiles;
+        private HashMap<int, Tile> tile_map;
+
+        public ReplayWall(Tile[] initial_tiles)
+        {
+            wall_tiles = new ArrayList<Tile>();
+            dead_wall_tiles = new ArrayList<Tile>();
+            tile_map = new HashMap<int, Tile>();
+
+            // Split tiles: first 104 go to wall, last 8 go to dead wall
+            // This matches RoundStateWall initialization logic
+            for (int i = 0; i < initial_tiles.length; i++)
+            {
+                Tile tile = initial_tiles[i];
+                tile_map.set(tile.ID, tile);
+
+                if (i < 104)
+                    wall_tiles.add(tile);
+                else
+                    dead_wall_tiles.add(tile);
+            }
+
+            Environment.log(LogType.DEBUG, "ReplayWall",
+                @"Initialized: $(wall_tiles.size) wall tiles, $(dead_wall_tiles.size) dead wall tiles");
+        }
+
+        public Tile? get_tile(int tile_ID)
+        {
+            return tile_map.get(tile_ID);
+        }
+
+        public Tile draw_tile()
+        {
+            if (wall_tiles.size == 0)
+            {
+                Environment.log(LogType.ERROR, "ReplayWall", "Attempted to draw from empty wall!");
+                return new Tile(0, TileType.MAN1);
+            }
+            return wall_tiles.remove_at(0);
+        }
+
+        public Tile draw_dead_tile()
+        {
+            if (dead_wall_tiles.size == 0)
+            {
+                Environment.log(LogType.ERROR, "ReplayWall", "Attempted to draw from empty dead wall!");
+                return new Tile(0, TileType.MAN1);
+            }
+            return dead_wall_tiles.remove_at(0);
+        }
+    }
+
     class LogServerRoundState : ServerRoundState
     {
         private ArrayList<GameLogLine> lines;
         private bool is_paused = false;
         private float pause_start_time = 0;
         private float speed_multiplier = 1.0f;
-        private bool replay_complete = false;  // Flag to stop all processing when log ends
+        private bool replay_complete = false;
+        private ReplayWall replay_wall;
 
         public LogServerRoundState(ServerSettings settings, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings, GameLogRound round)
         {
             base(settings, round_wind, dealer, round.start_info.wall_index, rnd,timings, round.tiles.to_array());
             lines = new ArrayList<GameLogLine>.wrap(round.lines.to_array());
-        }
-
-        // Override to prevent the base class from queueing decisions during replay
-        protected override void next_turn()
-        {
-            // Don't queue turn decisions - actions come from log only
-            // In replay, next_turn is triggered by log actions, not by game logic
-        }
-
-        // Override tile_discard to NOT queue call decisions
-        private new void tile_discard(Tile tile)
-        {
-            add_animation_delay(timings.tile_discard.total());
-            game_discard_tile(tile);
-            // DON'T call queue_call_decisions() - calls come from log
-        }
-
-        // Override next_turn's draw logic to NOT queue turn decisions
-        private new void draw_tile(int player_index, bool from_dead_wall)
-        {
-            Tile tile;
-            if (from_dead_wall)
-                tile = validator.draw_dead_wall();
-            else
-                tile = validator.draw_wall();
-
-            bool is_open = validator.get_player(player_index).open;
-
-            if (from_dead_wall)
-                game_draw_dead_tile(player_index, tile, is_open);
-            else
-                game_draw_tile(player_index, tile, is_open);
-
-            // DON'T call queue_turn_decision() - turns come from log
-            add_animation_delay(timings.tile_draw.total());
+            replay_wall = new ReplayWall(round.tiles.to_array());
         }
 
         public void set_paused(bool paused, float time)
@@ -744,23 +767,31 @@ namespace GameServer
             if (action is TileDrawServerAction)
             {
                 TileDrawServerAction draw_action = action as TileDrawServerAction;
-                Tile tile = validator.get_tile(draw_action.tile_ID);
-                // Don't call game_draw_tile() - it queues decisions
-                // Just emit the signal directly
-                bool is_open = validator.get_player(draw_action.player).open;
-                Environment.log(LogType.DEBUG, "LogServerRoundState", @"Drawing tile for player $(draw_action.player), tile_ID $(draw_action.tile_ID)");
-                game_draw_tile(draw_action.player, tile, is_open);
+
+                // Draw from replay_wall to get the tile
+                Tile tile = replay_wall.draw_tile();
+
+                // ALSO draw from validator to keep dead wall state synchronized for kan
+                validator.draw_wall();
+
+                Environment.log(LogType.DEBUG, "LogServerRoundState",
+                    @"Drawing tile for player $(draw_action.player), tile_ID $(tile.ID)");
+
+                // Just emit the signal - no decision logic
+                game_draw_tile(draw_action.player, tile, false);
             }
             else if (action is ClientServerAction)
             {
                 ClientServerAction client_action = action as ClientServerAction;
                 Environment.log(LogType.DEBUG, "LogServerRoundState", @"Processing client action from player $(client_action.client)");
+
+                // For now, use process_action - it handles the actions correctly
+                // My manual reconstruction was broken
                 process_action(client_action);
             }
             else if (action is DefaultDiscardServerAction || action is DefaultNoCallServerAction)
             {
-                // Don't call default_action() - it triggers game logic
-                // For replay, these should already be in the log as proper actions
+                // Skip default actions in replay
                 Environment.log(LogType.DEBUG, "LogServerRoundState", "Skipping default action in replay");
             }
         }

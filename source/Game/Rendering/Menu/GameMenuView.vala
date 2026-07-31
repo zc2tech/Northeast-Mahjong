@@ -41,6 +41,8 @@ class GameMenuView : View2D
     public signal void void_hand_pressed();
     public signal void display_score_pressed();
     public signal void score_finished();
+    public signal void next_hand_requested();
+    public signal void return_to_menu_requested();
 
     public signal void observe_next_pressed();
     public signal void observe_prev_pressed();
@@ -72,11 +74,14 @@ class GameMenuView : View2D
         this.settings = settings;
         this.player_index = player_index;
         this.observing = observing;
+        this.is_replay = settings.is_replay_mode;
 
         Environment.log(LogType.DEBUG, "GameMenuView", @"Created with: observing=$observing, is_replay=$is_replay, settings.is_replay_mode=$(settings.is_replay_mode)");
 
-        score_view = new ScoringView(context, player_index, observing);
+        score_view = new ScoringView(context, player_index, observing, is_replay);
         score_view.score_finished.connect(do_score_finished);
+        score_view.next_hand_requested.connect(do_next_hand_requested);
+        score_view.return_to_menu_requested.connect(do_return_to_menu_requested);
     }
 
     public override void added()
@@ -375,6 +380,16 @@ class GameMenuView : View2D
     private void do_score_finished()
     {
         score_finished();
+    }
+
+    private void do_next_hand_requested()
+    {
+        next_hand_requested();
+    }
+
+    private void do_return_to_menu_requested()
+    {
+        return_to_menu_requested();
     }
 
     protected override void process(DeltaArgs delta)

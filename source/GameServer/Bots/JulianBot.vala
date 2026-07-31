@@ -5,7 +5,9 @@ struct HandStatistics
 {
     public int terminal_count;
     public int dragon_count;
-    public ArrayList<Tile> two_player_carry;
+    // 全局（hand + calls）来看，我就一张这样的幺九中发牌 打掉就基本废了，虽然你有 2 , 8 还是有希望吃到幺九的
+    public TileType rare_dragon_terminal; 
+    public ArrayList<Tile> two_player_carry; // 为测试二人抬轿做准备
     public ArrayList<TileType> singles;
     public ArrayList<TileType> singles_ish; // 不是对子刻子， 而且 12 但是 3 被碰  89 7 被碰， 不考虑其他太复杂的情况
     public int pair_count;
@@ -227,6 +229,7 @@ class JulianBot : Bot
         stats.triplet_count = 0;
         stats.hasTerminalSeq = false; // 这个指标实在太关键了
         stats.hasTerminalTriplet= false; // 这个指标实在太关键了
+        stats.rare_dragon_terminal = TileType.BLANK;
 
         // Count tiles by suit
         foreach (Tile t in sorted_hand)
@@ -333,7 +336,9 @@ class JulianBot : Bot
         }
 
         // 已经碰完的牌了, 也给反映到数据上
+       
         foreach( RoundStateCall c in calls) {
+           
             if(c.call_type == RoundStateCall.CallType.CLOSED_KAN 
                 || c.call_type ==  RoundStateCall.CallType.LATE_KAN
                 || c.call_type ==  RoundStateCall.CallType.OPEN_KAN
@@ -357,7 +362,29 @@ class JulianBot : Bot
             }
             
         }
-      
+
+        if(stats.terminal_count > 0 || stats.dragon_count > 0) {
+            ArrayList<Tile> copy_for_rare_search = new ArrayList<Tile>();
+            copy_for_rare_search.add_all(sorted_hand);
+            foreach( RoundStateCall c in calls) {
+                copy_for_rare_search.add_all(c.tiles);
+            }
+
+            TileType theOne = TileType.BLANK;
+            int cnt = 0;
+            for (int i=0 ; i < copy_for_rare_search.size && cnt < 2; i++ ) { // 是否有两张是个分水岭
+                if(copy_for_rare_search[i].is_dragon_tile() || copy_for_rare_search[i].is_terminal_tile()) {
+                    cnt++;
+                    theOne = copy_for_rare_search[i].tile_type;
+                }
+            }
+            
+            if(cnt == 1) {
+                // 必须严格等于 1 的时候
+                stats.rare_dragon_terminal = theOne;
+            }
+        }
+
         return stats;
     }
 
@@ -1203,6 +1230,12 @@ class JulianBot : Bot
                 // 找个distance 和 最小的
                 int discard_for_distance = int.MAX ; // big enough to be impossible;
                 foreach(TileType  tileType in hDiscardCandi.keys ) {
+                    if(stats.rare_dragon_terminal != TileType.BLANK) {
+                        // 我们有一张幺九或者中发白的独苗
+                        if(tileType == stats.rare_dragon_terminal) {
+                            continue;
+                        }
+                    }
                     if(hDiscardCandi.get(tileType) < discard_for_distance) {
                         // 找到小一点了
                         discard_for_distance = hDiscardCandi.get(tileType);
