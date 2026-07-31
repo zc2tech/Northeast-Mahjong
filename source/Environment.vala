@@ -354,10 +354,18 @@ public class GameLogger
         log_lock.unlock();
     }
 
-    public void log_round(RoundStartInfo info, Tile[] tiles)
+    public void log_round(RoundStartInfo info, Tile[] tiles, SerializableList<SerializableList<Tile>>? initial_hands)
     {
         log_lock.lock();
-        game_log.start_round(info, tiles);
+        game_log.start_round(info, tiles, initial_hands);
+        write();
+        log_lock.unlock();
+    }
+
+    public void update_initial_hands(SerializableList<SerializableList<Tile>> initial_hands)
+    {
+        log_lock.lock();
+        game_log.update_current_round_initial_hands(initial_hands);
         write();
         log_lock.unlock();
     }

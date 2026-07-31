@@ -1,0 +1,136 @@
+using Gee;
+using Engine;
+
+namespace GameServer
+{
+    // Pure state tracker for replay - NO validation logic
+    public class ReplayState
+    {
+        private ArrayList<Tile> wall_tiles;
+        private ArrayList<Tile> dead_wall_tiles;
+        private HashMap<int, Tile> tile_map;
+        private ArrayList<Tile>[] player_hands;
+        private Tile? _last_discard;
+
+        public Tile? last_discard { get { return _last_discard; } }
+        public ArrayList<Tile> wall { get { return wall_tiles; } }
+
+        public ReplayState(Tile[] tiles)
+        {
+            wall_tiles = new ArrayList<Tile>();
+            dead_wall_tiles = new ArrayList<Tile>();
+            tile_map = new HashMap<int, Tile>();
+            player_hands = new ArrayList<Tile>[4];
+
+            for (int i = 0; i < 4; i++)
+                player_hands[i] = new ArrayList<Tile>();
+
+            // Split tiles: 0-103 to wall, 104-111 to dead wall
+            for (int i = 0; i < tiles.length; i++)
+            {
+                Tile tile = tiles[i];
+                tile_map.set(tile.ID, tile);
+
+                if (i < 104)
+                    wall_tiles.add(tile);
+                else
+                    dead_wall_tiles.add(tile);
+            }
+
+            Environment.log(LogType.DEBUG, "ReplayState",
+                @"Initialized: $(wall_tiles.size) wall tiles, $(dead_wall_tiles.size) dead wall tiles");
+        }
+
+        public Tile get_tile(int tile_ID)
+        {
+            Tile? tile = tile_map.get(tile_ID);
+            if (tile == null)
+            {
+                Environment.log(LogType.ERROR, "ReplayState", @"Tile $(tile_ID) not found!");
+                return new Tile(0, TileType.MAN1); // Dummy tile
+            }
+            return tile;
+        }
+
+        public Tile draw_from_wall()
+        {
+            if (wall_tiles.size == 0)
+            {
+                Environment.log(LogType.ERROR, "ReplayState", "Wall is empty!");
+                return new Tile(0, TileType.MAN1);
+            }
+            return wall_tiles.remove_at(0);
+        }
+
+        public void wall_remove_tile(Tile tile)
+        {
+            // Remove a specific tile from wall (used when log specifies exact tile)
+            for (int i = 0; i < wall_tiles.size; i++)
+            {
+                if (wall_tiles[i].ID == tile.ID)
+                {
+                    wall_tiles.remove_at(i);
+                    return;
+                }
+            }
+            Environment.log(LogType.ERROR, "ReplayState", @"Tile $(tile.ID) not found in wall!");
+        }
+
+        public Tile draw_from_dead_wall()
+        {
+            if (dead_wall_tiles.size == 0)
+            {
+                Environment.log(LogType.ERROR, "ReplayState", "Dead wall is empty!");
+                return new Tile(0, TileType.MAN1);
+            }
+            return dead_wall_tiles.remove_at(0);
+        }
+
+        public void add_tile_to_player(int player, Tile tile)
+        {
+            player_hands[player].add(tile);
+        }
+
+        public void remove_tile_from_player(int player, Tile tile)
+        {
+            for (int i = 0; i < player_hands[player].size; i++)
+            {
+                if (player_hands[player][i].ID == tile.ID)
+                {
+                    player_hands[player].remove_at(i);
+                    return;
+                }
+            }
+            Environment.log(LogType.ERROR, "ReplayState",
+                @"Tile $(tile.ID) not found in player $(player) hand");
+        }
+
+        public ArrayList<Tile> find_tiles_in_hand(int player, TileType type, int count)
+        {
+            ArrayList<Tile> result = new ArrayList<Tile>();
+
+            foreach (Tile tile in player_hands[player])
+            {
+                if (tile.tile_type == type)
+                {
+                    result.add(tile);
+                    if (result.size == count)
+                        break;
+                }
+            }
+
+            if (result.size < count)
+            {
+                Environment.log(LogType.ERROR, "ReplayState",
+                    @"Player $(player) doesn't have $(count) tiles of type $(type.to_string())");
+            }
+
+            return result;
+        }
+
+        public void set_last_discard(Tile tile)
+        {
+            _last_discard = tile;
+        }
+    }
+}

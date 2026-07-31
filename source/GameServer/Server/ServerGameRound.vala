@@ -282,13 +282,29 @@ namespace GameServer
 
         protected virtual void processing() {}
         public virtual void message_received(ServerPlayer player, ClientMessage message) {}
+
+        public Tile[] get_player_hand(int player_index)
+        {
+            // Get the player's hand from the round state
+            if (round != null && player_index >= 0 && player_index < 4)
+            {
+                ServerRoundStateValidator validator = round.get_validator();
+                if (validator != null && validator.players.length > player_index)
+                {
+                    return validator.players[player_index].hand.to_array();
+                }
+            }
+            return new Tile[0];
+        }
     }
 
     class RegularServerGameRound : ServerGameRound
     {
         private ClientMessageParser parser = new ClientMessageParser();
         public signal void log(GameLogLine line);
+        public signal void initial_hands_dealt(SerializableList<SerializableList<Tile>> hands);
         private int dealer;
+        private bool hands_collected = false;
 
         public RegularServerGameRound(RoundStartInfo info, ServerSettings settings, ArrayList<ServerPlayer> players, ArrayList<ServerPlayer> spectators, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings)
         {
@@ -341,7 +357,6 @@ namespace GameServer
             }
         }
 
-
         private void client_action(ServerPlayer player, ClientMessage message)
         {
             ClientMessageGameAction action = message as ClientMessageGameAction;
@@ -349,12 +364,37 @@ namespace GameServer
 
             if (p == null)
                 return;
-                
+
             round.buffer_action(new ClientServerAction(p.index, action.action));
         }
 
         protected override void processing()
         {
+            // Collect initial hands after first dealing is done
+            if (!hands_collected)
+            {
+                ServerRoundStateValidator validator = round.get_validator();
+                if (validator != null && validator.players.length > 0)
+                {
+                    // Check if hands have been dealt (first player has tiles)
+                    if (validator.players[0].hand.size > 0)
+                    {
+                        SerializableList<Tile>[] hand_lists = new SerializableList<Tile>[4];
+                        for (int i = 0; i < 4; i++)
+                        {
+                            Tile[] hand_array = validator.players[i].hand.to_array();
+                            hand_lists[i] = new SerializableList<Tile>(hand_array);
+                            Environment.log(LogType.DEBUG, "RegularServerGameRound",
+                                @"Collecting player $(i) hand: $(hand_array.length) tiles");
+                        }
+                        SerializableList<SerializableList<Tile>> initial_hands = new SerializableList<SerializableList<Tile>>(hand_lists);
+                        initial_hands_dealt(initial_hands);
+                        hands_collected = true;
+                        Environment.log(LogType.INFO, "RegularServerGameRound", "Initial hands collected and saved to log");
+                    }
+                }
+            }
+
             parser.execute_all();
         }
 

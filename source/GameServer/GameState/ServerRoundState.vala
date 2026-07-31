@@ -32,6 +32,11 @@ namespace GameServer
         }
 
         protected ServerRoundStateValidator validator;
+
+        public ServerRoundStateValidator get_validator()
+        {
+            return validator;
+        }
         private int dealer;
         private int wall_index;
         private float current_time;

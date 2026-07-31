@@ -381,6 +381,10 @@ public class ClientRoundState : Object
     {
         ServerMessageTileAssignment tile = (ServerMessageTileAssignment)message;
         Tile t = tile.tile;
+
+        Environment.log(LogType.DEBUG, "ClientRoundState",
+            @"TileAssignment received: tile $(t.ID) ($(t.tile_type.to_string()))");
+
         state.tile_assign(t);
         game_tile_assignment(t);
     }

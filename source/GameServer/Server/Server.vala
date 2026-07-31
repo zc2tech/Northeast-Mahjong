@@ -196,10 +196,10 @@ namespace GameServer
                 game_log.log(line);
         }
 
-        private void log_round(RoundStartInfo info, Tile[] tiles)
+        private void log_round(RoundStartInfo info, Tile[] tiles, SerializableList<SerializableList<Tile>>? initial_hands)
         {
             if (game_log != null)
-                game_log.log_round(info, tiles);
+                game_log.log_round(info, tiles, initial_hands);
         }
 
         protected override RoundStartInfo get_round_start_info()
@@ -208,14 +208,23 @@ namespace GameServer
             // and we confirmed it's a stack index like real world
             // a stack should contain upper and lower layers
             int wall_index = rnd.int_range(1, 7) + rnd.int_range(1, 7); // Emulate dual die roll probability
-            //  int wall_index = 0; 
-            return new RoundStartInfo(wall_index);
+            //  int wall_index = 0;
+            return new RoundStartInfo(wall_index, state.dealer_index);
         }
 
         protected override ServerGameRound create_round(RoundStartInfo info)
         {
             RegularServerGameRound round = new RegularServerGameRound(info, settings, players, spectators, state.round_wind, state.dealer_index, rnd, start_info.timings);
-            log_round(info, round.tiles);
+
+            // Log the round with empty hands initially (will be updated when dealt)
+            log_round(info, round.tiles, null);
+
+            // Connect to get initial hands once they're actually dealt
+            round.initial_hands_dealt.connect((hands) => {
+                if (game_log != null)
+                    game_log.update_initial_hands(hands);
+            });
+
             round.log.connect(log);
 
             return round;
@@ -335,8 +344,8 @@ namespace GameServer
         {
             if (rounds.length <= round_index)
             {
-                var info = new RoundStartInfo(rnd.int_range(2, 13));
-                round = new GameLogRound(info, null);
+                var info = new RoundStartInfo(rnd.int_range(2, 13), 0);
+                round = new GameLogRound(info, null, null);
                 return info;
             }
 

@@ -43,12 +43,14 @@ public class GameStartInfo : Serializable
 
 public class RoundStartInfo : Serializable
 {
-    public RoundStartInfo(int wall_index)
+    public RoundStartInfo(int wall_index, int dealer)
     {
         this.wall_index = wall_index;
+        this.dealer = dealer;
         this.dead_wall_mark_tile_id = -1; // Will be set after wall initialization
     }
 
     public int wall_index { get; protected set; }
+    public int dealer { get; protected set; }
     public int dead_wall_mark_tile_id { get; set; }
 }

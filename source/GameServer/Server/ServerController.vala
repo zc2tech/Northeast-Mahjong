@@ -6,6 +6,7 @@ namespace GameServer
     public class ServerController : Object
     {
         private Server server;
+        private ReplayServer replay_server;
         private ServerMenu menu = new ServerMenu();
         private ServerNetworking? net = null;
         private ClientMessageParser parser = new ClientMessageParser();
@@ -21,6 +22,7 @@ namespace GameServer
         private Mutex mutex = Mutex();
         private bool started = false;
         private bool finished = false;
+        private bool is_replay = false;
 
         public ServerController()
         {
@@ -110,7 +112,12 @@ namespace GameServer
                 settings = new ServerSettings.from_settings(log.settings);
                 settings.is_replay_mode = true;  // Mark as replay mode
                 this.info = log.start_info;
-                server = new LogServer(observers, rnd, settings, log);
+
+                // Use NEW clean replay system
+                replay_server = new ReplayServer(observers, settings, log);
+                is_replay = true;
+
+                Environment.log(LogType.DEBUG, "ServerController", "Created ReplayServer");
             }
             else
             {
@@ -142,14 +149,29 @@ namespace GameServer
             // Server was already created in game_start() - don't recreate it here!
             Timer timer = new Timer();
 
-            while (!finished && !server.finished)
+            if (is_replay)
             {
-                mutex.lock();
-                float time = (float)timer.elapsed();
-                process_messages(time);
-                server.process(time);
-                mutex.unlock();
-                sleep();
+                while (!finished && !replay_server.finished)
+                {
+                    mutex.lock();
+                    float time = (float)timer.elapsed();
+                    process_messages(time);
+                    replay_server.process(time);
+                    mutex.unlock();
+                    sleep();
+                }
+            }
+            else
+            {
+                while (!finished && !server.finished)
+                {
+                    mutex.lock();
+                    float time = (float)timer.elapsed();
+                    process_messages(time);
+                    server.process(time);
+                    mutex.unlock();
+                    sleep();
+                }
             }
 
             die();
@@ -179,7 +201,12 @@ namespace GameServer
                     //  server.handle_replay_speed(speed_msg.multiplier, time);
                 }
                 else
-                    server.message_received(message.player, message.message);
+                {
+                    if (is_replay)
+                        replay_server.message_received(message.player, message.message);
+                    else
+                        server.message_received(message.player, message.message);
+                }
             }
         }
 
@@ -197,7 +224,10 @@ namespace GameServer
             }
 
             mutex.lock();
-            server.player_disconnected(player);
+            if (is_replay)
+                replay_server.player_disconnected(player);
+            else
+                server.player_disconnected(player);
             mutex.unlock();
         }
 

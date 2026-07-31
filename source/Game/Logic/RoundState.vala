@@ -154,6 +154,9 @@ public class RoundState : Object
     {
         Tile t = get_tile(tile.ID);
         t.tile_type = tile.tile_type;
+
+        Environment.log(LogType.DEBUG, "RoundState",
+            @"tile_assign: tile $(tile.ID) type set to $(tile.tile_type.to_string())");
     }
 
     public void calls_finished()

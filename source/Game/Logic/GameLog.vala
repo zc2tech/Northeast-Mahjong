@@ -31,13 +31,19 @@ public class GameLog : Serializable
         this.rounds = new SerializableList<GameLogRound>(rounds);
     }
 
-    public void start_round(RoundStartInfo info, Tile[] tiles)
+    public void start_round(RoundStartInfo info, Tile[] tiles, SerializableList<SerializableList<Tile>>? initial_hands)
     {
         if (round != null)
             end_round();
 
-        round = new GameLogRound(info, tiles);
+        round = new GameLogRound(info, tiles, initial_hands);
         add_round(round);
+    }
+
+    public void update_current_round_initial_hands(SerializableList<SerializableList<Tile>> initial_hands)
+    {
+        if (round != null)
+            round.initial_hands = initial_hands;
     }
 
     public void end_round()
@@ -65,11 +71,27 @@ public class GameLog : Serializable
 
 public class GameLogRound : Serializable
 {
-    public GameLogRound(RoundStartInfo info, Tile[]? tiles)
+    public GameLogRound(RoundStartInfo info, Tile[]? tiles, SerializableList<SerializableList<Tile>>? initial_hands)
     {
         start_info = info;
         this.tiles = new SerializableList<Tile>(tiles);
         lines = new SerializableList<GameLogLine>.empty();
+
+        // Save initial hands (13 tiles per player)
+        if (initial_hands != null)
+        {
+            this.initial_hands = initial_hands;
+        }
+        else
+        {
+            // Empty hands for backwards compatibility
+            SerializableList<Tile>[] empty_hands = new SerializableList<Tile>[4];
+            for (int i = 0; i < 4; i++)
+            {
+                empty_hands[i] = new SerializableList<Tile>.empty();
+            }
+            this.initial_hands = new SerializableList<SerializableList<Tile>>(empty_hands);
+        }
     }
 
     public void add_line(GameLogLine line)
@@ -87,6 +109,7 @@ public class GameLogRound : Serializable
 
     public RoundStartInfo start_info { get; protected set; }
     public SerializableList<Tile> tiles { get; protected set; }
+    public SerializableList<SerializableList<Tile>> initial_hands { get; set; }
     public SerializableList<GameLogLine> lines { get; protected set; }
 }
 
