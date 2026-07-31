@@ -20,7 +20,6 @@ class GameController : Object
     private bool is_paused = false;
     private float saved_speed_multiplier = 1.0f;
     private float speed_multiplier = 1.0f;
-    private bool is_replay_mode = false;
     public signal void game_loaded();
     public signal void finished();
 
@@ -32,9 +31,8 @@ class GameController : Object
         this.connection = connection;
         this.player_index = player_index;
         this.options = options;
-        this.is_replay_mode = settings.is_replay_mode;
 
-        Environment.log(LogType.DEBUG, "GameController", @"Created: player_index=$player_index, settings.is_replay_mode=$(settings.is_replay_mode), is_replay_mode=$(is_replay_mode)");
+        //  Environment.log(LogType.DEBUG, "GameController", @"Created: player_index=$player_index, settings.is_replay_mode=$(settings.is_replay_mode), is_replay_mode=$(is_replay_mode)");
 
         this.connection.disconnected.connect(disconnected);
 
@@ -169,7 +167,8 @@ class GameController : Object
         renderer.game_loaded.connect(on_game_loaded);
         parent_view.add_child(renderer);
 
-        menu = new GameMenuView(renderer.context, settings, index, player_index == -1, is_replay_mode);
+        menu = new GameMenuView(renderer.context, settings, index, player_index == -1);
+        //  Environment.log(LogType.DEBUG, @"GameController", @"player_index: $(player_index)");
         menu.score_finished.connect(menu_score_finished);
 
         parent_view.add_child(menu);
@@ -249,10 +248,10 @@ class GameController : Object
 
     private void pause_continue()
     {
-        if (!is_replay_mode)
-            return;
+        //  if (!is_replay_mode)
+        //      return;
 
-        Environment.log(LogType.DEBUG, "GameController", @"pause_continue called: is_paused=$(is_paused)");
+        //  Environment.log(LogType.DEBUG, "GameController", @"pause_continue called: is_paused=$(is_paused)");
 
         if (is_paused)
         {

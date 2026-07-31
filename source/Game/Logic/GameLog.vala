@@ -9,6 +9,7 @@ public class GameLog : Serializable
         this.version = version;
         this.start_info = start_info;
         this.settings = settings;
+        this.human_player_index = -1;  // Default: no human player (all bots)
         rounds = new SerializableList<GameLogRound>.empty();
     }
 
@@ -59,6 +60,7 @@ public class GameLog : Serializable
     public GameStartInfo start_info { get; protected set; }
     public ServerSettings settings { get; protected set; }
     public SerializableList<GameLogRound> rounds { get; protected set; }
+    public int human_player_index { get; set; }  // -1 = no human (all bots), 0-3 = seat of human player
 }
 
 public class GameLogRound : Serializable

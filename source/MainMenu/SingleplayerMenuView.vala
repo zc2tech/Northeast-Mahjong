@@ -88,9 +88,15 @@ class SingleplayerMenuView : MenuSubView
     private void load_log(MenuSubView view)
     {
         SelectGameLogMenuView v = (SelectGameLogMenuView)view;
+
+        // Create ServerMenuView with the log
+        // Auto-start will happen automatically in load_finished() when log != null
         ServerMenuView s = new ServerMenuView.use_log(v.log);
         s.start.connect(game_start);
         load_sub_view(s);
+
+        // Hide the lobby UI immediately for replay
+        s.set_visibility(false);
     }
 
     private void game_start(GameStartInfo info, ServerSettings settings, IGameConnection connection, int player_index)

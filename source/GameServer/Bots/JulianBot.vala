@@ -1167,6 +1167,7 @@ class JulianBot : Bot
             } 
             
             if(!hasPair) {
+                HashMap<TileType,int>  hDiscardCandi = new HashMap<TileType,int>(); // 需要在里面选distance 和最小的
                 for(int iRemove = 0 ; iRemove < tpc.size; iRemove++) {
                     int index0 = 0 , index1 = 1, index2 = 2, index3 = 3; // 预定是先看这几个位置的
                     // 1234 0234 0134 0124 0124
@@ -1192,9 +1193,20 @@ class JulianBot : Bot
                     if( (distance1 == 1 || distance1 == 2) 
                     && (distance2 == 1 || distance2 == 2)) 
                     {
-                        // 二人抬轿了
-                        discard_for_two_players_carry = tpc[iRemove].tile_type;
+                        // 二人抬轿了 但未必最优
+                        hDiscardCandi.set(tpc[iRemove].tile_type, distance1 + distance2);
+                        //  discard_for_two_players_carry = tpc[iRemove].tile_type;
                         break;
+                    }
+                } // end loop for iRemove
+
+                // 找个distance 和 最小的
+                int discard_for_distance = int.MAX ; // big enough to be impossible;
+                foreach(TileType  tileType in hDiscardCandi.keys ) {
+                    if(hDiscardCandi.get(tileType) < discard_for_distance) {
+                        // 找到小一点了
+                        discard_for_distance = hDiscardCandi.get(tileType);
+                        discard_for_two_players_carry = tileType; 
                     }
                 }
             }

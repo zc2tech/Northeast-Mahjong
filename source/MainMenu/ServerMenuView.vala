@@ -57,11 +57,6 @@ class ServerMenuView : MenuSubView
         connection = game_connection;
 
         ServerHumanPlayer player = new ServerHumanPlayer(server_connection, player_name);
-
-        // For replay mode, set player as spectator so they receive all tile assignments
-        if (log != null)
-            player.state = ServerPlayer.State.SPECTATOR;
-
         server.add_player(player);
 
         if (listen)
@@ -141,7 +136,22 @@ class ServerMenuView : MenuSubView
         if (can_control)
             send_settings(settings);
         if (log != null)
+        {
             send_log(log);
+            // Auto-start replay after everything is set up
+            auto_start_replay();
+        }
+    }
+
+    public void auto_start_replay()
+    {
+        // For replay mode, automatically start once the log is loaded
+        // This bypasses the lobby screen entirely
+        if (log != null && connection != null)
+        {
+            Environment.log(LogType.DEBUG, "ServerMenuView", "Auto-starting replay");
+            connection.send_message(new ClientMessageMenuGameStart());
+        }
     }
 
     private void kick_slot(int slot)
@@ -250,8 +260,12 @@ class ServerMenuView : MenuSubView
         settings = message.settings;
         settings_button.enabled = true;
 
+        string log_status = (log != null) ? "not null" : "null";
+        Environment.log(LogType.DEBUG, "ServerMenuView", @"settings_message: host=$host, bots_added=$bots_added, log=$log_status");
+
         // Auto-add JulianBots to empty slots after settings are received (server is ready)
-        if (host && !bots_added)
+        // But NOT in replay mode - replay doesn't need real bots
+        if (host && !bots_added && log == null)
         {
             bots_added = true;
             Environment.log(LogType.DEBUG, "ServerMenuView", "Auto-adding bots to slots 1, 2, 3");
@@ -261,6 +275,10 @@ class ServerMenuView : MenuSubView
                 add_bot("JulianBot", i);
             }
             Environment.log(LogType.DEBUG, "ServerMenuView", "Finished adding bots");
+        }
+        else
+        {
+            Environment.log(LogType.DEBUG, "ServerMenuView", "Skipping bot auto-add (replay mode or already added)");
         }
     }
 

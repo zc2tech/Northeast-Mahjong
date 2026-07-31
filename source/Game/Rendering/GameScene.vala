@@ -165,7 +165,7 @@ class GameScene : WorldObject
     {
         draw_sound.play();
 
-        action.player.draw_tile(action.tile);
+        action.player.draw_tile(wall.draw_wall());
 
         if (action.player.seat == context.observer_index)
             active = true;

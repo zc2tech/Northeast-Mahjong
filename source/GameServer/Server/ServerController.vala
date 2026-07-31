@@ -139,11 +139,7 @@ namespace GameServer
 
         private void server_worker()
         {
-            if (log != null)
-                server = new LogServer(observers, rnd, settings, log);
-            else
-                server = new RegularServer(players, observers, rnd, info, settings);
-            
+            // Server was already created in game_start() - don't recreate it here!
             Timer timer = new Timer();
 
             while (!finished && !server.finished)
@@ -174,13 +170,13 @@ namespace GameServer
                 if (message.message is ClientMessageReplayPause)
                 {
                     ClientMessageReplayPause pause_msg = message.message as ClientMessageReplayPause;
-                    server.handle_replay_pause(pause_msg.paused, time);
+                    //  server.handle_replay_pause(pause_msg.paused, time);
                 }
                 else if (message.message is ClientMessageReplaySpeed)
                 {
                     
                     ClientMessageReplaySpeed speed_msg = message.message as ClientMessageReplaySpeed;
-                    server.handle_replay_speed(speed_msg.multiplier, time);
+                    //  server.handle_replay_speed(speed_msg.multiplier, time);
                 }
                 else
                     server.message_received(message.player, message.message);

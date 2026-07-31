@@ -19,7 +19,6 @@ public class AnimationTimings : Serializable
         AnimationTime players_points_counting,
         AnimationTime players_score_fade,
         AnimationTime players_score_counting,
-
         AnimationTime initial_draw,
         AnimationTime tile_draw,
         AnimationTime tile_discard,
@@ -28,8 +27,6 @@ public class AnimationTimings : Serializable
         AnimationTime split_wall,
         AnimationTime dead_wall_mark_flip,
         AnimationTime win,
-        AnimationTime riichi,
-
         AnimationTime hand_order,
         AnimationTime hand_angle
 	)
@@ -58,7 +55,6 @@ public class AnimationTimings : Serializable
         this.split_wall = split_wall;
         this.dead_wall_mark_flip = dead_wall_mark_flip;
         this.win = win;
-        this.riichi = riichi;
 
         this.hand_order = hand_order;
         this.hand_angle = hand_angle;
@@ -132,41 +128,7 @@ public class AnimationTimings : Serializable
     public AnimationTime split_wall { get; protected set; }
     public AnimationTime dead_wall_mark_flip { get; protected set; }
     public AnimationTime win { get; protected set; }
-    public AnimationTime riichi { get; protected set; }
 
     public AnimationTime hand_order { get; protected set; }
     public AnimationTime hand_angle { get; protected set; }
-
-    public AnimationTimings scale(float multiplier)
-    {
-        // Create a new AnimationTimings with all durations scaled
-        return new AnimationTimings(
-            winning_draw_animation_time * multiplier,
-            hand_reveal_animation_time * multiplier,
-            round_over_delay * multiplier,
-            round_end_delay * multiplier,
-            hanchan_end_delay * multiplier,
-            game_end_delay * multiplier,
-            decision_time * multiplier,
-            finish_label_fade.scale(multiplier),
-            menu_items_fade.scale(multiplier),
-            han_fade.scale(multiplier),
-            score_counting_fade.scale(multiplier),
-            score_counting.scale(multiplier),
-            players_points_counting.scale(multiplier),
-            players_score_fade.scale(multiplier),
-            players_score_counting.scale(multiplier),
-            initial_draw.scale(multiplier),
-            tile_draw.scale(multiplier),
-            tile_discard.scale(multiplier),
-            call.scale(multiplier),
-            hand_reveal.scale(multiplier),
-            split_wall.scale(multiplier),
-            dead_wall_mark_flip.scale(multiplier),
-            win.scale(multiplier),
-            riichi.scale(multiplier),
-            hand_order.scale(multiplier),
-            hand_angle.scale(multiplier)
-        );
-    }
 }

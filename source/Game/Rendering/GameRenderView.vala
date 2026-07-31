@@ -54,7 +54,7 @@ public class GameRenderView : View3D, IGameRenderer
         context = new GameRenderContext(game_start.timings, tile_scale, tile_size, observer_index, dealer_index, info.wall_index); // wall_index is wall_split
         observer_index = observer_index != -1 ? observer_index : 0;
 
-        Environment.log(LogType.INFO, "GameRenderView", @"Human player observer_index = $(observer_index)");
+        Environment.log(LogType.INFO, "--- GameRenderView ---", @"Human player observer_index = $(observer_index)");
 
         scene = new GameScene(context, observer_index, options, store.audio_player, score);
 
@@ -354,7 +354,7 @@ public class GameRenderView : View3D, IGameRenderer
         //  Environment.log(LogType.DEBUG, "GameRenderView",
         //      @"tile_draw: player=$player_index, tile_ID=$tile_ID, tile_type=$(tile.tile_type.tile_type.to_string())");
 
-        buffer_action(new RenderActionDraw(context.server_times.tile_draw, player, tile));
+        buffer_action(new RenderActionDraw(context.server_times.tile_draw, player));
     }
 
     public void dead_tile_draw(int player_index, int tile_ID)

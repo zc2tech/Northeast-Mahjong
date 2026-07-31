@@ -237,8 +237,7 @@ private static void run_bot_simulation(int num_hands)
         new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
         new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
         new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
-        new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
-        new AnimationTime.zero()  // 19 AnimationTime parameters
+        new AnimationTime.zero(),new AnimationTime.zero(),new AnimationTime.zero()
     );
 
     // Create game start info

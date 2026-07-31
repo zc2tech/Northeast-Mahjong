@@ -6,7 +6,7 @@ public class GameStartInfo : Serializable
     public GameStartInfo
     (
         GamePlayer[] players,
-        AnimationTimings timings,
+        AnimationTimings? timings,
         int starting_dealer,
         int starting_score,
         int round_count,

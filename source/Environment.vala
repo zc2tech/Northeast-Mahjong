@@ -136,6 +136,7 @@ public class Environment
         typeof(ClientMessageMenuReady).class_ref();
 
         typeof(ServerAction).class_ref();
+        typeof(TileDrawServerAction).class_ref();
         typeof(DefaultDiscardServerAction).class_ref();
         typeof(DefaultNoCallServerAction).class_ref();
         typeof(ClientServerAction).class_ref();
@@ -293,9 +294,9 @@ public class Environment
         logger.log(log_type, origin, message);
     }
 
-    public static GameLogger open_game_log(GameStartInfo start_info, ServerSettings settings)
+    public static GameLogger open_game_log(GameStartInfo start_info, ServerSettings settings, int human_player_index)
     {
-        return new GameLogger(start_info, settings);
+        return new GameLogger(start_info, settings, human_player_index);
     }
 
     public static GameLog? load_game_log(string name)
@@ -331,10 +332,11 @@ public class GameLogger
     private GameLog game_log;
     private string name;
 
-    public GameLogger(GameStartInfo start_info, ServerSettings settings)
+    public GameLogger(GameStartInfo start_info, ServerSettings settings, int human_player_index)
     {
         log_lock = Mutex();
         game_log = new GameLog(Environment.version_info, start_info, settings);
+        game_log.human_player_index = human_player_index;
         name = GLib.Path.build_filename(Environment.game_log_dir, Environment.get_datetime_string() + Environment.log_extension);
     }
 

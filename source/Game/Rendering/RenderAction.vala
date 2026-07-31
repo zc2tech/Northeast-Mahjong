@@ -43,16 +43,14 @@ public class RenderActionInitialDraw : RenderAction
 
 public class RenderActionDraw : RenderAction
 {
-    public RenderActionDraw(AnimationTime time, RenderPlayer player, RenderTile tile)
+    public RenderActionDraw(AnimationTime time, RenderPlayer player)
     {
         base(time);
 
         this.player = player;
-        this.tile = tile;
     }
 
     public RenderPlayer player { get; private set; }
-    public RenderTile tile { get; private set; }
 }
 
 public class RenderActionDrawDeadWall : RenderAction

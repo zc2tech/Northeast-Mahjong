@@ -631,11 +631,47 @@ namespace GameServer
         private bool is_paused = false;
         private float pause_start_time = 0;
         private float speed_multiplier = 1.0f;
+        private bool replay_complete = false;  // Flag to stop all processing when log ends
 
         public LogServerRoundState(ServerSettings settings, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings, GameLogRound round)
         {
             base(settings, round_wind, dealer, round.start_info.wall_index, rnd,timings, round.tiles.to_array());
             lines = new ArrayList<GameLogLine>.wrap(round.lines.to_array());
+        }
+
+        // Override to prevent the base class from queueing decisions during replay
+        protected override void next_turn()
+        {
+            // Don't queue turn decisions - actions come from log only
+            // In replay, next_turn is triggered by log actions, not by game logic
+        }
+
+        // Override tile_discard to NOT queue call decisions
+        private new void tile_discard(Tile tile)
+        {
+            add_animation_delay(timings.tile_discard.total());
+            game_discard_tile(tile);
+            // DON'T call queue_call_decisions() - calls come from log
+        }
+
+        // Override next_turn's draw logic to NOT queue turn decisions
+        private new void draw_tile(int player_index, bool from_dead_wall)
+        {
+            Tile tile;
+            if (from_dead_wall)
+                tile = validator.draw_dead_wall();
+            else
+                tile = validator.draw_wall();
+
+            bool is_open = validator.get_player(player_index).open;
+
+            if (from_dead_wall)
+                game_draw_dead_tile(player_index, tile, is_open);
+            else
+                game_draw_tile(player_index, tile, is_open);
+
+            // DON'T call queue_turn_decision() - turns come from log
+            add_animation_delay(timings.tile_draw.total());
         }
 
         public void set_paused(bool paused, float time)
@@ -665,17 +701,31 @@ namespace GameServer
 
         protected override void next_player_action(float time)
         {
+            // Stop all processing if replay is complete
+            if (replay_complete)
+                return;
+
             // Don't process actions when paused
             if (is_paused)
                 return;
 
             if (lines.size == 0)
             {
-                default_action();
+                // No more actions in log - round replay is complete
+                Environment.log(LogType.INFO, "LogServerRoundState", "Round replay complete - no more actions in log");
+                replay_complete = true;  // Stop all further processing
                 return;
             }
 
             GameLogLine line = lines[0];
+
+            // Skip null lines (shouldn't happen but prevents crashes)
+            if (line == null || line.action == null)
+            {
+                Environment.log(LogType.ERROR, "LogServerRoundState", "Skipping null log line or action");
+                lines.remove_at(0);
+                return;
+            }
 
             // Divide delta by speed_multiplier to make actions happen faster
             float adjusted_delta = line.delta / speed_multiplier;
@@ -689,16 +739,30 @@ namespace GameServer
 
         private void action(ServerAction action)
         {
+            Environment.log(LogType.DEBUG, "LogServerRoundState", @"Playing action: $(action.get_type().name())");
+
             if (action is TileDrawServerAction)
             {
                 TileDrawServerAction draw_action = action as TileDrawServerAction;
                 Tile tile = validator.get_tile(draw_action.tile_ID);
-                game_draw_tile(draw_action.player, tile, validator.get_player(draw_action.player).open);
+                // Don't call game_draw_tile() - it queues decisions
+                // Just emit the signal directly
+                bool is_open = validator.get_player(draw_action.player).open;
+                Environment.log(LogType.DEBUG, "LogServerRoundState", @"Drawing tile for player $(draw_action.player), tile_ID $(draw_action.tile_ID)");
+                game_draw_tile(draw_action.player, tile, is_open);
             }
             else if (action is ClientServerAction)
-                process_action(action as ClientServerAction);
+            {
+                ClientServerAction client_action = action as ClientServerAction;
+                Environment.log(LogType.DEBUG, "LogServerRoundState", @"Processing client action from player $(client_action.client)");
+                process_action(client_action);
+            }
             else if (action is DefaultDiscardServerAction || action is DefaultNoCallServerAction)
-                default_action();
+            {
+                // Don't call default_action() - it triggers game logic
+                // For replay, these should already be in the log as proper actions
+                Environment.log(LogType.DEBUG, "LogServerRoundState", "Skipping default action in replay");
+            }
         }
     }
 }

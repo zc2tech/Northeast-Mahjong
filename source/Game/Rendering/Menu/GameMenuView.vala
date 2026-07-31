@@ -66,13 +66,12 @@ class GameMenuView : View2D
         pause_continue_pressed();
     }
 
-    public GameMenuView(GameRenderContext context, ServerSettings settings, int player_index, bool observing, bool is_replay)
+    public GameMenuView(GameRenderContext context, ServerSettings settings, int player_index, bool observing)
     {
         this.context = context;
         this.settings = settings;
         this.player_index = player_index;
         this.observing = observing;
-        this.is_replay = is_replay;
 
         Environment.log(LogType.DEBUG, "GameMenuView", @"Created with: observing=$observing, is_replay=$is_replay, settings.is_replay_mode=$(settings.is_replay_mode)");
 
