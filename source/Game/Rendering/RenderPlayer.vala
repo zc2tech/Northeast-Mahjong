@@ -196,6 +196,25 @@ public class RenderPlayer : WorldObject
         hand.animate_angle(observed ? VIEW_ANGLE : 0);
     }
 
+    // Update view angle based on relative position to current observer
+    public void update_view_angle_for_observer(int observer_index)
+    {
+        // Calculate relative position from observer's perspective
+        int relative_seat = (seat - observer_index + 4) % 4;
+
+        float angle;
+        if (relative_seat == 2)  // Cross-player (toimen, opposite)
+            angle = CROSS_PLAYER_VIEW_ANGLE;
+        else if (relative_seat == 1)  // Right player (shimocha)
+            angle = RIGHT_PLAYER_VIEW_ANGLE;
+        else if (relative_seat == 3)  // Left player (kamicha)
+            angle = LEFT_PLAYER_VIEW_ANGLE;
+        else  // relative_seat == 0 (observer themselves)
+            angle = VIEW_ANGLE;
+
+        hand.animate_angle(angle);
+    }
+
     public ArrayList<RenderTile> hand_tiles { get { return hand.tiles; } }
     //public RenderTile last_drawn_tile { get; private set; }
     public int seat { get; private set; }

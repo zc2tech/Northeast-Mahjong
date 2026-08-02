@@ -268,7 +268,7 @@ private static void run_bot_simulation(int num_hands)
     {
         float time = (float)timer.elapsed();
         server.process(time);
-        Thread.usleep(10000); // 10ms sleep to avoid burning CPU
+        Thread.usleep(50000); // 10ms sleep to avoid burning CPU
     }
 
     stdout.printf("\nBot simulation completed!\n");

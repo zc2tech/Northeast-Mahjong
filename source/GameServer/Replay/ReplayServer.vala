@@ -202,5 +202,19 @@ namespace GameServer
             if (current_round != null)
                 current_round.set_speed(multiplier);
         }
+
+        public void replay_current_hand()
+        {
+            // Restart the current hand
+            // After a hand finishes, round_index points to the NEXT hand
+            // and current_round is null. Decrement to replay the same hand.
+            if (round_index > 0)
+            {
+                round_index--;
+                current_round = null;
+                finished = false;  // Un-finish in case we were at the last hand
+                Environment.log(LogType.INFO, "ReplayServer", @"Replaying hand, round_index reset to $(round_index)");
+            }
+        }
     }
 }

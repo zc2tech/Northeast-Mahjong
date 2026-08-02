@@ -27,7 +27,7 @@ namespace GameServer
                     player.send_message(assignment);
             }
             // 估计个时间让渲染那边把消息都处理完，要不等处理 draw/discard 时，前期的时候会赶紧把积压的渲染处理完，看起来就回特别赶，而且感觉服务器这边的控制容易失效
-            Thread.usleep(6 * 1000000); 
+            Thread.usleep(4 * 1000000); 
 
             // Connect signals to send messages to spectators
             round.game_initial_draw.connect(game_initial_draw);

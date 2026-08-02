@@ -192,13 +192,14 @@ namespace GameServer
                 if (message.message is ClientMessageReplayPause)
                 {
                     ClientMessageReplayPause pause_msg = message.message as ClientMessageReplayPause;
-                    //  server.handle_replay_pause(pause_msg.paused, time);
+                    if (is_replay)
+                        replay_server.set_paused(pause_msg.paused, time);
                 }
                 else if (message.message is ClientMessageReplaySpeed)
                 {
-                    
                     ClientMessageReplaySpeed speed_msg = message.message as ClientMessageReplaySpeed;
-                    //  server.handle_replay_speed(speed_msg.multiplier, time);
+                    if (is_replay)
+                        replay_server.set_speed(speed_msg.multiplier);
                 }
                 else
                 {

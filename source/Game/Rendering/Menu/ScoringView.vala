@@ -12,6 +12,7 @@ class ScoringView : View2D
     private RectangleControl rectangle;
     private MenuTextButton ready_button;
     private MenuTextButton next_hand_button;
+    private MenuTextButton replay_hand_button;
     private MenuTextButton return_menu_button;
     private GameMenuButton next_score_button;
     private GameMenuButton prev_score_button;
@@ -24,6 +25,7 @@ class ScoringView : View2D
 
     public signal void score_finished();
     public signal void next_hand_requested();
+    public signal void replay_hand_requested();
     public signal void return_to_menu_requested();
 
     public ScoringView(GameRenderContext context, int player_index, bool observing, bool is_replay)
@@ -89,6 +91,16 @@ class ScoringView : View2D
         next_hand_button.visible = false;
         next_hand_button.enabled = true;
 
+        replay_hand_button = new MenuTextButton("LinkReplayHand", "");
+        add_child(replay_hand_button);
+        replay_hand_button.clicked.connect(replay_hand_clicked);
+        replay_hand_button.inner_anchor = Vec2(0, 0);
+        replay_hand_button.outer_anchor = Vec2(0, 0);
+        replay_hand_button.position = Vec2(padding + 150, padding);  // To the right of Next Hand button
+        replay_hand_button.visible = false;
+        replay_hand_button.enabled = true;
+        Environment.log(LogType.DEBUG, "ScoringView", "Replay hand button created and added");
+
         return_menu_button = new MenuTextButton("LinkReturnMenu", "");
         add_child(return_menu_button);
         return_menu_button.clicked.connect(return_menu_clicked);
@@ -144,6 +156,8 @@ class ScoringView : View2D
 
     protected override void key_press(KeyArgs key)
     {
+        Environment.log(LogType.DEBUG, "ScoringView", @"Key received: scancode=$(key.scancode), handled=$(key.handled), visible=$(visible)");
+
         if (key.handled || !visible)
             return;
 
@@ -155,6 +169,8 @@ class ScoringView : View2D
                 ready_clicked();
             else if (key.scancode == ScanCode.N && next_hand_button.enabled && next_hand_button.visible)
                 next_hand_clicked();
+            else if (key.scancode == ScanCode.P && replay_hand_button.enabled && replay_hand_button.visible)
+                replay_hand_clicked();
             else if (key.scancode == ScanCode.M && return_menu_button.enabled && return_menu_button.visible)
                 return_menu_clicked();
             else
@@ -196,7 +212,9 @@ class ScoringView : View2D
                 // Show replay buttons instead of ready button
                 ready_button.visible = false;
                 next_hand_button.visible = true;
+                replay_hand_button.visible = true;
                 return_menu_button.visible = true;
+                Environment.log(LogType.DEBUG, "ScoringView", "Replay buttons shown (next_hand, replay_hand, return_menu)");
             }
             else
             {
@@ -299,6 +317,12 @@ class ScoringView : View2D
     {
         next_hand_requested();
         next_hand_button.enabled = false;
+    }
+
+    private void replay_hand_clicked()
+    {
+        replay_hand_requested();
+        replay_hand_button.enabled = false;
     }
 
     private void return_menu_clicked()

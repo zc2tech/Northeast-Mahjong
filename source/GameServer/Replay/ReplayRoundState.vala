@@ -200,14 +200,12 @@ namespace GameServer
                 lines.remove_at(0);
                 return;
             }
-            Environment.log(LogType.DEBUG, "----- ReplayRoundState action ", @"$(line.action.to_string())");
 
             // Use fixed animation delay instead of recorded delta
             float standard_delay = get_standard_delay_for_action(line.action);
             float adjusted_delay = standard_delay / speed_multiplier;
             play_action(line.action);
             lines.remove_at(0);
-            Environment.log(LogType.DEBUG, "----- ReplayRoundState process", @"adjusted_delay: $(adjusted_delay)");
             while(adjusted_delay > 0 ) {
                 // Sleep for the adjusted delay (in microseconds)
                 Thread.usleep((ulong)(SLEEP_STRIDE * 1000000)); // sleep slice

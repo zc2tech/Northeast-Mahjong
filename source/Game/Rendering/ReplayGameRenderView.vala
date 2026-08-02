@@ -50,7 +50,9 @@ public class ReplayGameRenderView : GameRenderView
         observe_object.cancel_buffered_animations();
         observe_object.animate(animation, true);
 
+        // In replay mode, all hands stay revealed but angles adjust based on relative position
+        // Update each player's view angle based on their position relative to new observer
         foreach (var player in scene.players)
-            player.set_observed(player == observer);
+            player.update_view_angle_for_observer(observer_index);
     }
 }

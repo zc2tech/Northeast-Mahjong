@@ -179,6 +179,13 @@ public class ClientMessageReplaySpeed : ClientMessage
     public float multiplier { get { return _multiplier; } }
 }
 
+public class ClientMessageReplayRestart : ClientMessage
+{
+    public ClientMessageReplayRestart()
+    {
+    }
+}
+
 public class ClientMessageGameAction : ClientMessage
 {
     public ClientMessageGameAction(ClientAction action)

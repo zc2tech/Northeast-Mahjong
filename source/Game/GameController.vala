@@ -176,6 +176,7 @@ class GameController : Object
             var replay_menu = new ReplayMenuView(renderer.context, settings, index);
             replay_menu.score_finished.connect(menu_score_finished);
             replay_menu.next_hand_requested.connect(menu_next_hand_requested);
+            replay_menu.replay_hand_requested.connect(menu_replay_hand_requested);
             replay_menu.return_to_menu_requested.connect(menu_return_to_menu_requested);
             replay_menu.observe_next_pressed.connect(((ReplayGameRenderView)renderer).observe_next);
             replay_menu.observe_prev_pressed.connect(((ReplayGameRenderView)renderer).observe_prev);
@@ -232,6 +233,13 @@ class GameController : Object
             return;
         }
         connection.send_message(new ClientMessageMenuReady());
+    }
+
+    private void menu_replay_hand_requested()
+    {
+        Environment.log(LogType.INFO, "GameController", "Replay hand requested - not yet implemented");
+        // TODO: Implement replay same hand functionality
+        // This requires either fixing the connection or restarting the game with the same log
     }
 
     private void menu_return_to_menu_requested()
@@ -319,7 +327,7 @@ class GameController : Object
     {
         if (is_paused)
         {
-            // Resume
+            // Resume - server will control message flow
             is_paused = false;
             connection.send_message(new ClientMessageReplayPause(false));
             if (renderer != null)
@@ -336,11 +344,9 @@ class GameController : Object
         }
         else
         {
-            // Pause - just set flag, don't change speed
+            // Pause - server will stop sending messages
             is_paused = true;
             connection.send_message(new ClientMessageReplayPause(true));
-            if (renderer != null)
-                renderer.set_paused(true);
             if (menu is ReplayMenuView)
             {
                 ((ReplayMenuView)menu).show_speed_toast_text("Paused");
