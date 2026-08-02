@@ -160,9 +160,17 @@ namespace GameServer
                     mutex.unlock();
                     sleep();
                 }
+
+                // TODO: if you want to realize 'replay same hand' function, 
+                // you should do something before 'die' to send message to this Cotroller
+                // watch how ClientMessageReplayPause is processed
+
+                die();
+                unref(); // Allow graceful deallocation
             }
             else
             {
+                //  while (!finished && !server.finished)
                 while (!finished && !server.finished)
                 {
                     mutex.lock();
@@ -172,16 +180,16 @@ namespace GameServer
                     mutex.unlock();
                     sleep();
                 }
+                die();
+                unref(); // Allow graceful deallocation
             }
 
-            die();
-
-            unref(); // Allow graceful deallocation
+         
         }
 
         private void sleep()
         {
-            Thread.usleep(10000); // Server is not cpu intensive at all (can save cycles)
+            Thread.usleep(50000); // Server is not cpu intensive at all (can save cycles)
         }
 
         private void process_messages(float time)
