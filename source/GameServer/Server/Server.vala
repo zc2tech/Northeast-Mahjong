@@ -62,6 +62,9 @@ namespace GameServer
                     RoundFinishResult result = round.result;
                     var score = state.round_finished(result);
 
+                    // Notify subclass that round finished (for logging)
+                    round_finished(score);
+
                     timer.set_time(start_info.timings.get_animation_round_end_delay(score));
 
                     if (state.game_is_finished)
@@ -75,9 +78,10 @@ namespace GameServer
             else
             {
                 bool done = false;
-                if (timer.active(time))
-                    done = true;
-                else
+                // Removed auto-advance timer - always wait for human player to click Ready
+                // if (timer.active(time))
+                //     done = true;
+                // else
                 {
                     done = true;
                     foreach (var player in players)
@@ -154,6 +158,7 @@ namespace GameServer
 
         protected abstract ServerGameRound create_round(RoundStartInfo info);
         protected abstract RoundStartInfo get_round_start_info();
+        protected virtual void round_finished(RoundScoreState score) {}
 
         public bool finished { get; private set; }
 
@@ -229,6 +234,55 @@ namespace GameServer
 
             return round;
         }
+
+        protected override void round_finished(RoundScoreState score)
+        {
+            if (game_log == null)
+                return;
+
+            try
+            {
+                // Extract score transfers from the score state
+                int[] transfers = new int[4];
+
+                if (score == null || score.players == null)
+                {
+                    Environment.log(LogType.ERROR, "RegularServer", "round_finished: score or score.players is null");
+                    return;
+                }
+
+                for (int i = 0; i < 4 && i < score.players.length; i++)
+                {
+                    if (score.players[i] != null)
+                        transfers[i] = score.players[i].transfer;
+                    else
+                        transfers[i] = 0;
+                }
+
+                // Determine result type
+                RoundResultType result_type = RoundResultType.NONE;
+                if (score.result != null)
+                {
+                    if (score.result.result == RoundFinishResult.RoundResultEnum.RON)
+                        result_type = RoundResultType.RON;
+                    else if (score.result.result == RoundFinishResult.RoundResultEnum.TSUMO)
+                        result_type = RoundResultType.TSUMO;
+                    else if (score.result.result == RoundFinishResult.RoundResultEnum.DRAW)
+                        result_type = RoundResultType.DRAW;
+                }
+
+                Environment.log(LogType.DEBUG, "RegularServer",
+                    @"About to save round result: type=$(result_type), transfers=[$(transfers[0]), $(transfers[1]), $(transfers[2]), $(transfers[3])]");
+
+                game_log.set_round_result(transfers, result_type);
+
+                Environment.log(LogType.DEBUG, "RegularServer", "Round result saved successfully");
+            }
+            catch (Error e)
+            {
+                Environment.log(LogType.ERROR, "RegularServer", @"Error saving round result: $(e.message)");
+            }
+        }
     }
 
     class LogServer : Server
@@ -286,7 +340,7 @@ namespace GameServer
             float winning_draw_animation_time = 0.5f;
             float hand_reveal_animation_time = 0.5f;
             float round_over_delay = 1.0f;
-            float round_end_delay = 10 + 1;
+            float round_end_delay = 3 + 1;
             float hanchan_end_delay = 30 + 1;
             float game_end_delay = 60 + 1;
             //  int decision_time = (settings != null ? settings.decision_time : 10) + 1;

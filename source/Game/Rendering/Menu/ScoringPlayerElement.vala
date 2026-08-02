@@ -133,7 +133,7 @@ class ScoringPlayerElement : Control
 
     private void animation_points_animate_start()
     {
-        score_sound.play(true);
+        //  score_sound.play(true);
     }
 
     private void animation_points_animate_finish()
@@ -193,7 +193,7 @@ class ScoringPlayerElement : Control
 
     private void animation_score_count_animate_start()
     {
-        score_sound.play(true);
+        //  score_sound.play(true);
     }
 
     private void animation_score_count_animate_finish()

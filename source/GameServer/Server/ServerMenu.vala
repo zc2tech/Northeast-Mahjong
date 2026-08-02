@@ -283,7 +283,7 @@ namespace GameServer
             float round_over_delay = 1.0f;
 
             // Add a second so the indicator counts down from the specific second to 0
-            float round_end_delay = 10 + 1;
+            float round_end_delay = 3 + 1;
             float hanchan_end_delay = 30 + 1;
             float game_end_delay = 60 + 1;
             int decision_time = settings.decision_time + 1;

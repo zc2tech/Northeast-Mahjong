@@ -1,7 +1,7 @@
 using Engine;
 using Gee;
 
-class GameScene : WorldObject
+public class GameScene : WorldObject
 {
     private GameRenderContext context;
     private int observer_index;

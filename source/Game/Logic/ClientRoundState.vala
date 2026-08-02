@@ -382,8 +382,7 @@ public class ClientRoundState : Object
         ServerMessageTileAssignment tile = (ServerMessageTileAssignment)message;
         Tile t = tile.tile;
 
-        Environment.log(LogType.DEBUG, "ClientRoundState",
-            @"TileAssignment received: tile $(t.ID) ($(t.tile_type.to_string()))");
+        // Removed excessive debug logging
 
         state.tile_assign(t);
         game_tile_assignment(t);
@@ -409,8 +408,8 @@ public class ClientRoundState : Object
         ServerMessageTileDiscard discard = (ServerMessageTileDiscard)message;
         state.tile_discard(discard.tile_ID);
 
-        //  Environment.log(LogType.DEBUG, "ClientRoundState",
-        //      @"server_tile_discard: player=$(state.current_player.index), tile_ID=$(discard.tile_ID)");
+        Environment.log(LogType.DEBUG, "ClientRoundState",
+            @"server_tile_discard: current_player=$(state.current_player.index), tile_ID=$(discard.tile_ID)");
 
         game_tile_discard(state.current_player.index, discard.tile_ID);
     }
@@ -479,7 +478,7 @@ public class ClientRoundState : Object
         decision_finished();
 
         ServerMessageOpenKan kan = (ServerMessageOpenKan)message;
-        int discard_index = state.current_player.index;
+        int discard_index = state.get_last_discard_player_index();
         state.open_kan(kan.player_index, kan.tile_1_ID, kan.tile_2_ID, kan.tile_3_ID);
 
         game_open_kan(state.current_player.index, discard_index, state.discard_tile.ID, kan.tile_1_ID, kan.tile_2_ID, kan.tile_3_ID);
@@ -491,7 +490,7 @@ public class ClientRoundState : Object
         decision_finished();
 
         ServerMessagePon pon = (ServerMessagePon)message;
-        int discard_index = state.current_player.index;
+        int discard_index = state.get_last_discard_player_index();
         state.pon(pon.player_index, pon.tile_1_ID, pon.tile_2_ID);
 
         game_pon(state.current_player.index, discard_index, state.discard_tile.ID, pon.tile_1_ID, pon.tile_2_ID);
@@ -503,7 +502,7 @@ public class ClientRoundState : Object
         decision_finished();
 
         ServerMessageChii chii = (ServerMessageChii)message;
-        int discard_index = state.current_player.index;
+        int discard_index = state.get_last_discard_player_index();
         state.chii(chii.player_index, chii.tile_1_ID, chii.tile_2_ID);
 
         game_chii(state.current_player.index, discard_index, state.discard_tile.ID, chii.tile_1_ID, chii.tile_2_ID);
@@ -512,10 +511,16 @@ public class ClientRoundState : Object
 
     public void server_calls_finished(ServerMessage message)
     {
+        Environment.log(LogType.DEBUG, "ClientRoundState",
+            @"server_calls_finished: current_player before=$(state.current_player.index)");
+
         decision_finished();
 
         bool kan = state.chankan_call != ChankanCall.NONE;
         state.calls_finished();
+
+        Environment.log(LogType.DEBUG, "ClientRoundState",
+            @"server_calls_finished: current_player after=$(state.current_player.index)");
 
         if (kan)
         {

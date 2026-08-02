@@ -369,6 +369,14 @@ public class GameLogger
         write();
         log_lock.unlock();
     }
+
+    public void set_round_result(int[] transfers, RoundResultType result_type)
+    {
+        log_lock.lock();
+        game_log.set_round_result(transfers, result_type);
+        write();
+        log_lock.unlock();
+    }
 }
 
 public class Logger

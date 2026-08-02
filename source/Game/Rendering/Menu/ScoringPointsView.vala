@@ -511,12 +511,12 @@ class ScoringPointsView : View2D
 
         private void animation_score_count_animate_start()
         {
-            score_sound.play(true);
+            //  score_sound.play(true);
         }
 
         private void animation_score_count_animate_finish()
         {
-            score_sound.stop();
+            //  score_sound.stop();
         }
 
         private void animation_score_count_animate(float time)

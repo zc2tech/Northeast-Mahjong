@@ -38,11 +38,13 @@ sources = files(
     'source/Game/Options.vala',
     'source/Game/Rendering/GameAnimationTimings.vala',
     'source/Game/Rendering/GameRenderView.vala',
+    'source/Game/Rendering/ReplayGameRenderView.vala',
     'source/Game/Rendering/GameScene.vala',
     'source/Game/Rendering/IGameRenderer.vala',
     'source/Game/Rendering/Menu/GameEscapeMenuView.vala',
     'source/Game/Rendering/Menu/GameMenuButton.vala',
     'source/Game/Rendering/Menu/GameMenuView.vala',
+    'source/Game/Rendering/Menu/ReplayMenuView.vala',
     'source/Game/Rendering/Menu/ScoringHandView.vala',
     'source/Game/Rendering/Menu/ScoringInnerView.vala',
     'source/Game/Rendering/Menu/ScoringPlayerElement.vala',
@@ -109,6 +111,20 @@ exe = executable('Northeast-Mahjong', sources,
     include_directories: includes,
     gui_app: true,
     install: true
+)
+
+# Log reader utility - reuse main sources but exclude main.vala
+read_log_sources = []
+foreach src : sources
+    if not src.full_path().endswith('main.vala')
+        read_log_sources += src
+    endif
+endforeach
+
+read_log_exe = executable('read_log', ['read_log.vala'] + read_log_sources,
+    dependencies: dependencies,
+    include_directories: includes,
+    install: false
 )
 
 # Copy compiled binary to ../bin folder for easy execution

@@ -5,7 +5,7 @@ class GameController : Object
     private GameState game;
     private ClientRoundState round;
     private GameRenderView? renderer = null;
-    private GameMenuView? menu = null;
+    private View2D? menu = null;  // Can be GameMenuView or ReplayMenuView
     private EventTimer? round_over_timer = null;
 
     private unowned Container parent_view;
@@ -72,13 +72,16 @@ class GameController : Object
                 {
                     ServerMessageRoundStart start = message as ServerMessageRoundStart;
                     create_round(start.info);
-                    if (menu != null)
-                        menu.update_scores(game.scores.to_array());
+                    if (menu is GameMenuView)
+                        ((GameMenuView)menu).update_scores(game.scores.to_array());
+                    else if (menu is ReplayMenuView)
+                        ((ReplayMenuView)menu).update_scores(game.scores.to_array());
                 }
                 else if (message is ServerMessagePlayerLeft && !game.game_is_finished)
                 {
                     ServerMessagePlayerLeft msg = message as ServerMessagePlayerLeft;
-                    menu.display_player_left(game.get_player(msg.player_index).name);
+                    if (menu is GameMenuView)
+                        ((GameMenuView)menu).display_player_left(game.get_player(msg.player_index).name);
                 }
             }
 
@@ -105,14 +108,32 @@ class GameController : Object
     {
         round = new ClientRoundState(round_start, settings, player_index, game.round_wind, game.dealer_index);
         round.do_action.connect(do_action);
-        round.set_chii_state.connect(menu.set_chii);
-        round.set_pon_state.connect(menu.set_pon);
-        round.set_kan_state.connect(menu.set_kan);
-        round.set_tsumo_state.connect(menu.set_tsumo);
-        round.set_ron_state.connect(menu.set_ron);
-        round.set_timer_state.connect(menu.set_move_timer);
-        round.set_continue_state.connect(menu.set_continue);
-        round.set_void_hand_state.connect(menu.set_void_hand);
+
+        // Only connect game action signals in normal mode
+        if (!settings.is_replay_mode && menu is GameMenuView)
+        {
+            var game_menu = (GameMenuView)menu;
+
+            round.set_chii_state.connect(game_menu.set_chii);
+            round.set_pon_state.connect(game_menu.set_pon);
+            round.set_kan_state.connect(game_menu.set_kan);
+            round.set_tsumo_state.connect(game_menu.set_tsumo);
+            round.set_ron_state.connect(game_menu.set_ron);
+            round.set_timer_state.connect(game_menu.set_move_timer);
+            round.set_continue_state.connect(game_menu.set_continue);
+            round.set_void_hand_state.connect(game_menu.set_void_hand);
+
+            game_menu.chii_pressed.connect(round.client_chii);
+            game_menu.pon_pressed.connect(round.client_pon);
+            game_menu.kan_pressed.connect(round.client_kan);
+            game_menu.tsumo_pressed.connect(round.client_tsumo);
+            game_menu.ron_pressed.connect(round.client_ron);
+            game_menu.continue_pressed.connect(round.client_continue);
+            game_menu.void_hand_pressed.connect(round.client_void_hand);
+
+            renderer.tile_selected.connect(round.client_tile_selected);
+        }
+
         round.set_tile_select_state.connect(renderer.set_active);
         round.set_tile_select_groups.connect(renderer.set_tile_select_groups);
 
@@ -126,25 +147,6 @@ class GameController : Object
         round.game_open_kan.connect(renderer.open_kan);
         round.game_pon.connect(renderer.pon);
         round.game_chii.connect(renderer.chii);
-
-        renderer.tile_selected.connect(round.client_tile_selected);
-
-        if (menu != null)
-        {
-            menu.chii_pressed.connect(round.client_chii);
-            menu.pon_pressed.connect(round.client_pon);
-            menu.kan_pressed.connect(round.client_kan);
-            menu.tsumo_pressed.connect(round.client_tsumo);
-            menu.ron_pressed.connect(round.client_ron);
-            menu.continue_pressed.connect(round.client_continue);
-            menu.void_hand_pressed.connect(round.client_void_hand);
-
-            menu.observe_next_pressed.connect(renderer.observe_next);
-            menu.observe_prev_pressed.connect(renderer.observe_prev);
-            menu.speed_up_pressed.connect(speed_up);
-            menu.speed_down_pressed.connect(speed_down);
-            menu.pause_continue_pressed.connect(pause_continue);
-        }
     }
 
     private void do_action(ClientAction action)
@@ -163,17 +165,46 @@ class GameController : Object
 
         game.start_round(info);
 
-        renderer = new GameRenderView(player_index, game.dealer_index, start_info, info, options, game.score);
-        renderer.game_loaded.connect(on_game_loaded);
-        parent_view.add_child(renderer);
+        // Create appropriate view based on replay mode
+        if (settings.is_replay_mode)
+        {
+            // Replay mode: use ReplayGameRenderView and ReplayMenuView
+            renderer = new ReplayGameRenderView(player_index, game.dealer_index, start_info, info, options, game.score);
+            renderer.game_loaded.connect(on_game_loaded);
+            parent_view.add_child(renderer);
 
-        menu = new GameMenuView(renderer.context, settings, index, player_index == -1);
-        //  Environment.log(LogType.DEBUG, @"GameController", @"player_index: $(player_index)");
-        menu.score_finished.connect(menu_score_finished);
-        menu.next_hand_requested.connect(menu_next_hand_requested);
-        menu.return_to_menu_requested.connect(menu_return_to_menu_requested);
+            var replay_menu = new ReplayMenuView(renderer.context, settings, index);
+            replay_menu.score_finished.connect(menu_score_finished);
+            replay_menu.next_hand_requested.connect(menu_next_hand_requested);
+            replay_menu.return_to_menu_requested.connect(menu_return_to_menu_requested);
+            replay_menu.observe_next_pressed.connect(((ReplayGameRenderView)renderer).observe_next);
+            replay_menu.observe_prev_pressed.connect(((ReplayGameRenderView)renderer).observe_prev);
+            replay_menu.speed_up_pressed.connect(speed_up);
+            replay_menu.speed_down_pressed.connect(speed_down);
+            replay_menu.pause_continue_pressed.connect(pause_continue);
 
-        parent_view.add_child(menu);
+            menu = replay_menu;
+            parent_view.add_child(menu);
+
+            Environment.log(LogType.DEBUG, "GameController", "Created ReplayGameRenderView and ReplayMenuView");
+        }
+        else
+        {
+            // Normal game: use GameRenderView and GameMenuView
+            renderer = new GameRenderView(player_index, game.dealer_index, start_info, info, options, game.score);
+            renderer.game_loaded.connect(on_game_loaded);
+            parent_view.add_child(renderer);
+
+            var game_menu = new GameMenuView(renderer.context, settings, index, player_index == -1);
+            game_menu.score_finished.connect(menu_score_finished);
+            game_menu.next_hand_requested.connect(menu_next_hand_requested);
+            game_menu.return_to_menu_requested.connect(menu_return_to_menu_requested);
+
+            menu = game_menu;
+            parent_view.add_child(menu);
+
+            Environment.log(LogType.DEBUG, "GameController", "Created GameRenderView and GameMenuView");
+        }
 
         create_round_state(info);
     }
@@ -212,8 +243,16 @@ class GameController : Object
 
     private void round_over_timer_elapsed()
     {
-        menu.update_scores(game.scores.to_array());
-        menu.round_finished();
+        if (menu is GameMenuView)
+        {
+            ((GameMenuView)menu).update_scores(game.scores.to_array());
+            ((GameMenuView)menu).round_finished();
+        }
+        else if (menu is ReplayMenuView)
+        {
+            ((ReplayMenuView)menu).update_scores(game.scores.to_array());
+            ((ReplayMenuView)menu).round_finished();
+        }
     }
 
     private void disconnected()
@@ -224,8 +263,17 @@ class GameController : Object
         {
             if (round != null)
                 round.disconnected();
-            menu.game_over();
-            menu.display_disconnected();
+
+            if (menu is GameMenuView)
+            {
+                ((GameMenuView)menu).game_over();
+                ((GameMenuView)menu).display_disconnected();
+            }
+            else if (menu is ReplayMenuView)
+            {
+                ((ReplayMenuView)menu).game_over();
+                // Replay doesn't need disconnected message
+            }
         }
     }
 
@@ -237,8 +285,8 @@ class GameController : Object
             speed_multiplier += 0.25f;
             apply_speed();
             connection.send_message(new ClientMessageReplaySpeed(speed_multiplier));
-            if (menu != null)
-                menu.show_speed_toast(speed_multiplier);
+            if (menu is ReplayMenuView)
+                ((ReplayMenuView)menu).show_speed_toast(speed_multiplier);
             Environment.log(LogType.INFO, "GameController", @"Replay speed: $(speed_multiplier)x");
         }
     }
@@ -251,8 +299,8 @@ class GameController : Object
             speed_multiplier -= 0.25f;
             apply_speed();
             connection.send_message(new ClientMessageReplaySpeed(speed_multiplier));
-            if (menu != null)
-                menu.show_speed_toast(speed_multiplier);
+            if (menu is ReplayMenuView)
+                ((ReplayMenuView)menu).show_speed_toast(speed_multiplier);
             Environment.log(LogType.INFO, "GameController", @"Replay speed: $(speed_multiplier)x");
         }
     }
@@ -269,14 +317,9 @@ class GameController : Object
 
     private void pause_continue()
     {
-        //  if (!is_replay_mode)
-        //      return;
-
-        //  Environment.log(LogType.DEBUG, "GameController", @"pause_continue called: is_paused=$(is_paused)");
-
         if (is_paused)
         {
-            // Resume 
+            // Resume
             is_paused = false;
             connection.send_message(new ClientMessageReplayPause(false));
             if (renderer != null)
@@ -284,10 +327,10 @@ class GameController : Object
                 // Reapply the speed multiplier after resuming
                 apply_speed();
             }
-            if (menu != null)
+            if (menu is ReplayMenuView)
             {
-                menu.show_speed_toast(speed_multiplier);
-                menu.set_pause_button_icon(false);  // Show pause icon (||)
+                ((ReplayMenuView)menu).show_speed_toast(speed_multiplier);
+                ((ReplayMenuView)menu).set_pause_button_icon(false);  // Show pause icon (||)
             }
             Environment.log(LogType.INFO, "GameController", @"Replay resumed at $(speed_multiplier)x");
         }
@@ -298,10 +341,10 @@ class GameController : Object
             connection.send_message(new ClientMessageReplayPause(true));
             if (renderer != null)
                 renderer.set_paused(true);
-            if (menu != null)
+            if (menu is ReplayMenuView)
             {
-                menu.show_speed_toast_text("Paused");
-                menu.set_pause_button_icon(true);  // Show play icon (▶)
+                ((ReplayMenuView)menu).show_speed_toast_text("Paused");
+                ((ReplayMenuView)menu).set_pause_button_icon(true);  // Show play icon (▶)
             }
             Environment.log(LogType.INFO, "GameController", "Replay paused");
         }

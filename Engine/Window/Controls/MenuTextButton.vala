@@ -10,6 +10,8 @@ namespace Engine
         private Sound click_sound;
         private Sound hover_sound;
 
+        public float transparency { get; set; default = 1.0f; }  // 1.0 = opaque, 0.0 = invisible
+
         public MenuTextButton(string name, string text)
         {
             this.name = name;
@@ -38,8 +40,8 @@ namespace Engine
         {
             if (!enabled)
             {
-                button.diffuse_color = Color.with_alpha(0.1f);
-                label.color = Color(0, 0, 0, 0.1f);
+                button.diffuse_color = Color.with_alpha(0.1f * transparency);
+                label.color = Color(0, 0, 0, 0.1f * transparency);
             }
             else
             {
@@ -47,19 +49,19 @@ namespace Engine
                 {
                     if (mouse_pressed)
                     {
-                        button.diffuse_color = Color(0.2f, 0.2f, 0.05f, 1);
-                        label.color = Color(0.2f, 0.2f, 0.05f, 1);
+                        button.diffuse_color = Color(0.2f, 0.2f, 0.05f, transparency);
+                        label.color = Color(0.2f, 0.2f, 0.05f, transparency);
                     }
                     else
                     {
-                        button.diffuse_color = Color(0.4f, 0.4f, 0.2f, 1);
-                        label.color = Color(0.4f, 0.4f, 0.2f, 1);
+                        button.diffuse_color = Color(0.4f, 0.4f, 0.2f, transparency);
+                        label.color = Color(0.4f, 0.4f, 0.2f, transparency);
                     }
                 }
                 else
                 {
-                    button.diffuse_color = Color.with_alpha(1);
-                    label.color = Color(0, 0, 0, 1);
+                    button.diffuse_color = Color.with_alpha(transparency);
+                    label.color = Color(0, 0, 0, transparency);
                 }
             }
         }

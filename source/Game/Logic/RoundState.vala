@@ -13,6 +13,7 @@ public class RoundState : Object
     private bool flow_interrupted = false;
     private int turn_counter = 1;
     private bool rinshan = false;
+    private int last_discard_player_index = -1;
 
     public RoundState(ServerSettings settings, int player_index, Wind round_wind, int dealer, int wall_index)
     {
@@ -155,8 +156,7 @@ public class RoundState : Object
         Tile t = get_tile(tile.ID);
         t.tile_type = tile.tile_type;
 
-        Environment.log(LogType.DEBUG, "RoundState",
-            @"tile_assign: tile $(tile.ID) type set to $(tile.tile_type.to_string())");
+        // Removed excessive debug logging
     }
 
     public void calls_finished()
@@ -255,10 +255,16 @@ public class RoundState : Object
             return false;
 
         discard_tile = tile;
+        last_discard_player_index = current_player.index;
         rinshan = false;
         chankan_call = ChankanCall.NONE;
 
         return true;
+    }
+
+    public int get_last_discard_player_index()
+    {
+        return last_discard_player_index;
     }
 
     public void ron(int[] player_indices)

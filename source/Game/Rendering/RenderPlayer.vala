@@ -12,21 +12,18 @@ public class RenderPlayer : WorldObject
     private bool dealer;
     private Vec3 tile_size;
     private float hand_offset;
-    private Vec3 riichi_offset;
     private bool observed;
     private Wind wind;
 
     private RenderHand hand;
     private RenderPond pond;
     private RenderCalls calls;
-    private RenderStick render_riichi;
 
-    public RenderPlayer(GameRenderContext context, int seat, bool dealer, float hand_offset, Vec3 riichi_offset, bool observed, Wind wind)
+    public RenderPlayer(GameRenderContext context, int seat, bool dealer, float hand_offset, bool observed, Wind wind)
     {
         this.context = context;
         this.dealer = dealer;
         this.hand_offset = hand_offset;
-        this.riichi_offset = riichi_offset;
         this.seat = seat;
         this.tile_size = context.tile_size;
         this.observed = observed;
@@ -86,12 +83,15 @@ public class RenderPlayer : WorldObject
 
     public void discard(RenderTile tile)
     {
+        Environment.log(LogType.DEBUG, "RenderPlayer", @"Player $(seat) discarding tile $(tile.tile_type.ID)");
         hand.remove(tile);
         pond.add_tile(tile);
     }
 
     public void rob_tile(RenderTile tile)
     {
+        Environment.log(LogType.DEBUG, "RenderPlayer",
+            @"Player $(seat) rob_tile: removing tile $(tile.tile_type.ID) from pond");
         pond.remove(tile);
     }
 
@@ -115,39 +115,9 @@ public class RenderPlayer : WorldObject
         hand.close_hand();
     }
 
-    public void riichi(bool open)
-    {
-        render_riichi.visible = true;
-
-        WorldObjectAnimation animation = new WorldObjectAnimation(new AnimationTime.preset(0.3f));
-        Vec3 position = Vec3(0, riichi_offset.y, riichi_offset.z);
-        Path3D path = new LinearPath3D(position);
-        animation.do_absolute_position(path);
-        animation.curve = new SmoothApproachCurve();
-
-        render_riichi.animate(animation);
-
-        pond.riichi();
-        in_riichi = true;
-
-        if (open)
-            hand.open_hand();
-    }
-
     public void adjust_hand_angle(float delta)
     {
         hand.adjust_angle(delta);
-    }
-
-    public void return_riichi(AnimationTime time)
-    {
-        WorldObjectAnimation animation = new WorldObjectAnimation(new AnimationTime.preset(0.3f));
-        Vec3 position = Vec3(0, riichi_offset.y, hand_offset);
-        Path3D path = new LinearPath3D(position);
-        animation.do_absolute_position(path);
-        animation.curve = new SmoothApproachCurve();
-
-        render_riichi.animate(animation);
     }
 
     public void late_kan(RenderTile tile, AnimationTime time)
@@ -192,6 +162,9 @@ public class RenderPlayer : WorldObject
 
     public void pon(RenderPlayer discard_player, RenderTile discard_tile, RenderTile tile_1, RenderTile tile_2)
     {
+        Environment.log(LogType.DEBUG, "RenderPlayer",
+            @"Player $(seat) calling pon from player $(discard_player.seat), tiles $(tile_1.tile_type.ID), $(tile_2.tile_type.ID)");
+
         hand.remove(tile_1);
         hand.remove(tile_2);
 
@@ -205,6 +178,9 @@ public class RenderPlayer : WorldObject
 
     public void chii(RenderTile discard_tile, RenderTile tile_1, RenderTile tile_2, AnimationTime time)
     {
+        Environment.log(LogType.DEBUG, "RenderPlayer",
+            @"Player $(seat) calling chii, tiles $(tile_1.tile_type.ID), $(tile_2.tile_type.ID)");
+
         hand.remove(tile_1);
         hand.remove(tile_2);
 

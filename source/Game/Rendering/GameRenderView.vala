@@ -4,10 +4,10 @@ using Gee;
 public class GameRenderView : View3D, IGameRenderer
 {
     public GameRenderContext context { get; private set; }
-    private RenderTile[] tiles { get { return scene.tiles; } }
-    private RenderPlayer[] players { get { return scene.players; } }
+    protected RenderTile[] tiles { get { return scene.tiles; } }
+    protected RenderPlayer[] players { get { return scene.players; } }
 
-    private GameScene scene;
+    protected GameScene scene;  // Changed from private to protected for ReplayGameView access
     private RenderTile? mouse_down_tile;
     private ArrayList<TileSelectionGroup>? select_groups = null;
 
@@ -15,14 +15,14 @@ public class GameRenderView : View3D, IGameRenderer
 
     private GameStartInfo game_start;
     private RoundStartInfo info;
-    private int observer_index;
+    protected int observer_index;  // Changed from private to protected for ReplayGameView
     private int dealer_index;
     private Options options;
     private RoundScoreState score;
 
     private WorldCamera camera;
     private WorldObject target;
-    private WorldObject observe_object;
+    protected WorldObject observe_object;  // Changed from private to protected for ReplayGameView
 
     public signal void game_loaded();
     private bool has_loaded = false;
@@ -242,36 +242,6 @@ public class GameRenderView : View3D, IGameRenderer
         scene.load_options(options);
     }
 
-    public void observe_next()
-    {
-        observer_index = (observer_index + 1) % 4;
-        observe_animate();
-    }
-
-    public void observe_prev()
-    {
-        observer_index = (observer_index + 3) % 4;
-        observe_animate();
-    }
-
-    private void observe_animate()
-    {
-        var observer = scene.players[observer_index];
-        observer.convert_object(observe_object);
-
-        WorldObjectAnimation animation = new WorldObjectAnimation(new AnimationTime.preset(2));
-        PathQuat rot = new LinearPathQuat(Quat());
-        animation.do_absolute_rotation(rot);
-
-        animation.curve = new SCurve(0.5f);
-        
-        observe_object.cancel_buffered_animations();
-        observe_object.animate(animation, true);
-
-        foreach (var player in players)
-            player.set_observed( player == observer);
-    }
-
     private void game_finished(RoundFinishResult results)
     {
         switch (results.result)
@@ -456,7 +426,7 @@ public class GameRenderView : View3D, IGameRenderer
 
     /////////////////////
 
-    private void buffer_action(RenderAction action)
+    protected void buffer_action(RenderAction action)
     {
         scene.add_action(action);
     }

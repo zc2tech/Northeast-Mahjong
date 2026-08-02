@@ -10,3 +10,4 @@ bin/Data/Fonts/.uuid
 *.o
 *.lldb
 *.DS_Store
+.claude/

@@ -8,7 +8,7 @@ namespace GameServer
     {
         private ArrayList<ServerPlayer> spectators;
         private ServerSettings settings;
-        private GameLog log;
+        private GameLog game_log;
         private AnimationTimings timings;
 
         private ReplayGameRound? current_round;
@@ -16,22 +16,22 @@ namespace GameServer
 
         public bool finished { get; private set; default = false; }
 
-        public ReplayServer(ArrayList<ServerPlayer> spectators, ServerSettings settings, GameLog log)
+        public ReplayServer(ArrayList<ServerPlayer> spectators, ServerSettings settings, GameLog game_log)
         {
             this.spectators = spectators;
             this.settings = settings;
-            this.log = log;
+            this.game_log = game_log;
 
             // Create replay timings (normal human-viewable speeds)
             timings = create_replay_timings();
 
             Environment.log(LogType.DEBUG, "ReplayServer",
-                @"Created with $(log.rounds.items.length) rounds, $(spectators.size) spectators");
+                @"Created with $(game_log.rounds.items.length) rounds, $(spectators.size) spectators");
 
             // Debug: inspect initial_hands in the log
-            for (int r = 0; r < log.rounds.items.length; r++)
+            for (int r = 0; r < game_log.rounds.items.length; r++)
             {
-                GameLogRound round = log.rounds.items[r];
+                GameLogRound round = game_log.rounds.items[r];
                 Environment.log(LogType.DEBUG, "ReplayServer",
                     @"Round $(r): initial_hands count=$(round.initial_hands.items.length)");
                 for (int p = 0; p < round.initial_hands.items.length && p < 4; p++)
@@ -43,11 +43,11 @@ namespace GameServer
             }
 
             // Send game start to spectators
-            int human_seat = log.human_player_index;
+            int human_seat = game_log.human_player_index;
             for (int i = 0; i < spectators.size; i++)
             {
                 int player_idx = (i == 0 && human_seat >= 0 && human_seat < 4) ? human_seat : -1;
-                ServerMessageGameStart start = new ServerMessageGameStart(log.start_info, settings, player_idx);
+                ServerMessageGameStart start = new ServerMessageGameStart(game_log.start_info, settings, player_idx);
                 spectators[i].send_message(start);
             }
         }
@@ -57,7 +57,7 @@ namespace GameServer
             float winning_draw_animation_time = 0.5f;
             float hand_reveal_animation_time = 0.5f;
             float round_over_delay = 1.0f;
-            float round_end_delay = 10 + 1;
+            float round_end_delay = 3 + 1;
             float hanchan_end_delay = 30 + 1;
             float game_end_delay = 60 + 1;
             int decision_time = 360000;
@@ -127,13 +127,27 @@ namespace GameServer
             current_round.process(time);
 
             // Check if round finished
-            if (current_round.finished)
+            if (current_round.is_finished)
             {
-                // TODO: Send round result/scoring
+                // Get the score transfers from the game log
+                GameLogRound log_round = game_log.rounds.items[round_index - 1];
+
+                // Log the result for debugging
+                int[] transfers = {
+                    log_round.transfer_p0,
+                    log_round.transfer_p1,
+                    log_round.transfer_p2,
+                    log_round.transfer_p3
+                };
+                Environment.log(LogType.INFO, "ReplayServer",
+                    @"Round finished: type=$(log_round.result_type), transfers=[$(transfers[0]), $(transfers[1]), $(transfers[2]), $(transfers[3])]");
+
+                // TODO: Send a replay scoring message to spectators
+                // For now, just clean up and check for next round
                 current_round = null;
 
                 // Check if more rounds available
-                if (round_index >= log.rounds.items.length)
+                if (round_index >= game_log.rounds.items.length)
                 {
                     Environment.log(LogType.INFO, "ReplayServer", "All rounds replayed");
                     finished = true;
@@ -143,25 +157,25 @@ namespace GameServer
 
         private void start_next_round()
         {
-            if (round_index >= log.rounds.items.length)
+            if (round_index >= game_log.rounds.items.length)
             {
                 finished = true;
                 return;
             }
 
-            GameLogRound log_round = log.rounds.items[round_index];
+            GameLogRound log_round = game_log.rounds.items[round_index];
 
             // Use dealer from saved RoundStartInfo (no more guessing!)
             int dealer = log_round.start_info.dealer;
 
             round_index++;
 
-            Environment.log(LogType.DEBUG, "ReplayServer", @"Starting round $(round_index)/$(log.rounds.items.length), dealer=$(dealer)");
+            Environment.log(LogType.DEBUG, "ReplayServer", @"Starting round $(round_index)/$(game_log.rounds.items.length), dealer=$(dealer)");
 
             // Send round start message
             ServerMessageRoundStart round_start = new ServerMessageRoundStart(log_round.start_info);
-            foreach (ServerPlayer player in spectators)
-                player.send_message(round_start);
+            foreach (ServerPlayer spectator in spectators)
+                spectator.send_message(round_start);
 
             // Create replay round with dealer from log
             current_round = new ReplayGameRound(timings, log_round, dealer, spectators);

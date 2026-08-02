@@ -79,8 +79,8 @@ class ScoringView : View2D
         ready_button.visible = true;
         ready_button.enabled = true;
 
-        // Replay mode buttons
-        next_hand_button = new MenuTextButton("MenuButtonSmall", "Next Hand (N)");
+        // Replay mode buttons - using transparent link-style images
+        next_hand_button = new MenuTextButton("LinkNextHand", "");
         add_child(next_hand_button);
         next_hand_button.clicked.connect(next_hand_clicked);
         next_hand_button.inner_anchor = Vec2(0, 0);
@@ -89,7 +89,7 @@ class ScoringView : View2D
         next_hand_button.visible = false;
         next_hand_button.enabled = true;
 
-        return_menu_button = new MenuTextButton("MenuButtonSmall", "Return to Menu (M)");
+        return_menu_button = new MenuTextButton("LinkReturnMenu", "");
         add_child(return_menu_button);
         return_menu_button.clicked.connect(return_menu_clicked);
         return_menu_button.inner_anchor = Vec2(1, 0);
@@ -121,6 +121,9 @@ class ScoringView : View2D
 
     protected override void process(DeltaArgs delta)
     {
+        if (time_label == null)
+            return;
+
         if (start_time == 0)
             start_time = delta.time;
 

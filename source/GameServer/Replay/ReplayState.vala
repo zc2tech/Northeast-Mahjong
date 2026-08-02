@@ -132,5 +132,15 @@ namespace GameServer
         {
             _last_discard = tile;
         }
+
+        public ArrayList<Tile> get_player_hand(int player)
+        {
+            if (player < 0 || player >= 4)
+            {
+                Environment.log(LogType.ERROR, "ReplayState", @"Invalid player index $(player)");
+                return new ArrayList<Tile>();
+            }
+            return player_hands[player];
+        }
     }
 }

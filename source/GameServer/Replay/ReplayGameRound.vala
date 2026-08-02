@@ -8,37 +8,79 @@ namespace GameServer
     {
         private ReplayRoundState round;
         private ArrayList<ServerPlayer> spectators;
+        private int last_draw_player = -1;  // Track who last drew a tile
+        private bool finished = false;  // Track if we've sent winner messages
 
-        public bool finished { get { return round.finished; } }
+        public bool is_finished { get { return round.finished; } }
 
         public ReplayGameRound(AnimationTimings timings, GameLogRound log_round, int dealer, ArrayList<ServerPlayer> spectators)
         {
             this.spectators = spectators;
             round = new ReplayRoundState(timings, log_round, dealer);
 
+            // CRITICAL: Reveal ALL tiles at the start, just like normal games do in round_starting()
+            // This ensures the client knows all tile types before animations play
+            foreach (Tile tile in log_round.tiles.to_array())
+            {
+                ServerMessageTileAssignment assignment = new ServerMessageTileAssignment(tile);
+                foreach (ServerPlayer player in spectators)
+                    player.send_message(assignment);
+            }
+            // 估计个时间让渲染那边把消息都处理完，要不等处理 draw/discard 时，前期的时候会赶紧把积压的渲染处理完，看起来就回特别赶，而且感觉服务器这边的控制容易失效
+            Thread.usleep(6 * 1000000); 
+
             // Connect signals to send messages to spectators
             round.game_initial_draw.connect(game_initial_draw);
             round.game_draw_tile.connect(game_draw_tile);
             round.game_discard_tile.connect(game_discard_tile);
+            round.game_calls_finished.connect(game_calls_finished);
             round.game_draw_dead_tile.connect(game_draw_dead_tile);
             round.game_late_kan.connect(game_late_kan);
             round.game_closed_kan.connect(game_closed_kan);
             round.game_open_kan.connect(game_open_kan);
             round.game_pon.connect(game_pon);
             round.game_chii.connect(game_chii);
-            round.game_ron.connect(game_ron);
-            round.game_tsumo.connect(game_tsumo);
-            round.game_draw.connect(game_draw);
+            // Note: game_ron, game_tsumo, game_draw signals not used - we detect winners in process() instead
 
-            // NOW restore initial hands after signals are connected
+            // NOW restore initial hands after all tiles are revealed
             round.start_initial_hands();
+            round.tidyActions();
 
-            Environment.log(LogType.INFO, "ReplayGameRound", "Constructor complete, initial hands should be sent");
+            Environment.log(LogType.INFO, "ReplayGameRound", "Constructor complete, all tiles revealed, initial hands sent");
         }
 
         public void process(float time)
         {
             round.process(time);
+
+            // Check if round just finished with a winner
+            if (round.finished && !finished)
+            {
+                finished = true;
+
+                // Send winner messages to spectators
+                if (round.is_ron_win)
+                {
+                    int[] winner_indices = { round.winner_index };
+                    ServerMessageRon ron = new ServerMessageRon(winner_indices);
+
+                    foreach (ServerPlayer player in spectators)
+                        player.send_message(ron);
+
+                    Environment.log(LogType.INFO, "ReplayGameRound",
+                        @"Sent Ron message for player $(round.winner_index)");
+                }
+                else if (round.is_tsumo_win)
+                {
+                    ServerMessageTsumo tsumo = new ServerMessageTsumo();
+
+                    foreach (ServerPlayer player in spectators)
+                        player.send_message(tsumo);
+
+                    Environment.log(LogType.INFO, "ReplayGameRound",
+                        @"Sent Tsumo message for player $(round.winner_index)");
+                }
+            }
         }
 
         public void set_paused(bool paused, float time)
@@ -53,49 +95,54 @@ namespace GameServer
 
         private void game_initial_draw(int player_index, ArrayList<Tile> hand)
         {
-            // In replay, reveal ALL tiles to observers
+            // Initial dealing: ALL tile assignments were already sent in constructor
+            // Just like normal games, we don't send anything here
+            // The buffered RenderActionInitialDraw will handle the animations
             Environment.log(LogType.DEBUG, "ReplayGameRound",
-                @"game_initial_draw: player $(player_index), $(hand.size) tiles, $(spectators.size) spectators");
-
-            foreach (Tile tile in hand)
-            {
-                Environment.log(LogType.DEBUG, "ReplayGameRound",
-                    @"  Sending TileAssignment: tile $(tile.ID) ($(tile.tile_type.to_string()))");
-                foreach (ServerPlayer player in spectators)
-                    player.send_message(new ServerMessageTileAssignment(tile));
-            }
+                @"game_initial_draw: player $(player_index), $(hand.size) tiles (assignments already sent)");
         }
 
         private void game_draw_tile(int player_index, Tile tile, bool open)
         {
-            ServerMessageTileAssignment assignment = new ServerMessageTileAssignment(tile);
+            // Track who drew so we know whose turn it is
+            last_draw_player = player_index;
+
+            // All tiles were assigned at start, just send draw message
             ServerMessageTileDraw draw = new ServerMessageTileDraw(tile.ID);
 
             foreach (ServerPlayer player in spectators)
-            {
-                player.send_message(assignment);
                 player.send_message(draw);
-            }
         }
 
         private void game_draw_dead_tile(int player_index, Tile tile, bool open)
         {
-            ServerMessageTileAssignment assignment = new ServerMessageTileAssignment(tile);
+            // All tiles assigned at start, just send draw
             ServerMessageTileDraw draw = new ServerMessageTileDraw(tile.ID);
 
             foreach (ServerPlayer player in spectators)
-            {
-                player.send_message(assignment);
                 player.send_message(draw);
-            }
         }
 
         private void game_discard_tile(Tile tile)
         {
+            // Tiles already assigned, just send discard
+            Environment.log(LogType.DEBUG, "ReplayGameRound",
+                @"game_discard_tile: player $(last_draw_player) discards tile $(tile.ID)");
+
             ServerMessageTileDiscard discard = new ServerMessageTileDiscard(tile.ID);
 
             foreach (ServerPlayer player in spectators)
                 player.send_message(discard);
+        }
+
+        private void game_calls_finished()
+        {
+            Environment.log(LogType.DEBUG, "ReplayGameRound", "game_calls_finished: sending CallsFinished message");
+
+            ServerMessageCallsFinished message = new ServerMessageCallsFinished();
+
+            foreach (ServerPlayer player in spectators)
+                player.send_message(message);
         }
 
         private void game_late_kan(Tile tile)
@@ -138,6 +185,9 @@ namespace GameServer
         private void game_pon(int player_index, ArrayList<Tile> tiles)
         {
             // Pon needs: player_index, tile_1_ID, tile_2_ID
+            Environment.log(LogType.DEBUG, "ReplayGameRound",
+                @"game_pon: player $(player_index) calls pon with tiles $(tiles[1].ID), $(tiles[2].ID)");
+
             ServerMessagePon pon = new ServerMessagePon(
                 player_index,
                 tiles[1].ID,  // First tile from hand
@@ -151,6 +201,9 @@ namespace GameServer
         private void game_chii(int player_index, ArrayList<Tile> tiles)
         {
             // Chii needs: player_index, tile_1_ID, tile_2_ID
+            Environment.log(LogType.DEBUG, "ReplayGameRound",
+                @"game_chii: player $(player_index) calls chii with tiles $(tiles[1].ID), $(tiles[2].ID)");
+
             ServerMessageChii chii = new ServerMessageChii(
                 player_index,
                 tiles[1].ID,  // First tile from hand
@@ -159,21 +212,6 @@ namespace GameServer
 
             foreach (ServerPlayer player in spectators)
                 player.send_message(chii);
-        }
-
-        private void game_ron(int[] player_indices, ArrayList<Tile>[] hands, int discard_player_index, Tile discard_tile, Scoring[] scores)
-        {
-            // TODO: Send ron message
-        }
-
-        private void game_tsumo(int player_index, ArrayList<Tile> hand, Scoring score)
-        {
-            // TODO: Send tsumo message
-        }
-
-        private void game_draw(int[] tenpai_indices, int[] nagashi_indices, GameDrawType draw_type, ArrayList<Tile> all_tiles)
-        {
-            // TODO: Send draw message
         }
     }
 }

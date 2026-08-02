@@ -1,6 +1,10 @@
 using Engine;
 
-public abstract class ClientAction : Serializable {}
+public abstract class ClientAction : Serializable {
+    public new string to_string() {
+        return "%s".printf(this.get_type().name());
+    }
+}
 
 public class TileDiscardClientAction : ClientAction
 {

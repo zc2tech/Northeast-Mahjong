@@ -25,7 +25,7 @@ public class RenderTable : WorldObject
         players = new RenderPlayer[4];
         for (int i = 0; i < players.length; i++)
         {
-            players[i] = new RenderPlayer(context, i, i == context.dealer, hand_offset, center.riichi_offset, true, INT_TO_WIND(i - context.dealer));
+            players[i] = new RenderPlayer(context, i, i == context.dealer, hand_offset, true, INT_TO_WIND(i - context.dealer));
             add_object(players[i]);
             players[i].rotation = Quat.from_euler(i / 2.0f, 0, 0);
         }
