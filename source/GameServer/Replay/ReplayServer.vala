@@ -25,20 +25,14 @@ namespace GameServer
             // Create replay timings (normal human-viewable speeds)
             timings = create_replay_timings();
 
-            Environment.log(LogType.DEBUG, "ReplayServer",
-                @"Created with $(game_log.rounds.items.length) rounds, $(spectators.size) spectators");
 
             // Debug: inspect initial_hands in the log
             for (int r = 0; r < game_log.rounds.items.length; r++)
             {
                 GameLogRound round = game_log.rounds.items[r];
-                Environment.log(LogType.DEBUG, "ReplayServer",
-                    @"Round $(r): initial_hands count=$(round.initial_hands.items.length)");
                 for (int p = 0; p < round.initial_hands.items.length && p < 4; p++)
                 {
                     SerializableList<Tile> hand = round.initial_hands.items[p];
-                    Environment.log(LogType.DEBUG, "ReplayServer",
-                        @"  Player $(p): $(hand.items.length) tiles");
                 }
             }
 
@@ -111,7 +105,7 @@ namespace GameServer
             );
         }
 
-        public void process(float time)
+        public void process_in_worker_loop(float time)
         {
             if (finished)
                 return;
@@ -139,8 +133,6 @@ namespace GameServer
                     log_round.transfer_p2,
                     log_round.transfer_p3
                 };
-                Environment.log(LogType.INFO, "ReplayServer",
-                    @"Round finished: type=$(log_round.result_type), transfers=[$(transfers[0]), $(transfers[1]), $(transfers[2]), $(transfers[3])]");
 
                 // TODO: Send a replay scoring message to spectators
                 // For now, just clean up and check for next round
@@ -149,7 +141,6 @@ namespace GameServer
                 // Check if more rounds available
                 if (round_index >= game_log.rounds.items.length)
                 {
-                    Environment.log(LogType.INFO, "ReplayServer", "All rounds replayed");
                     finished = true;
                 }
             }
@@ -170,7 +161,6 @@ namespace GameServer
 
             round_index++;
 
-            Environment.log(LogType.DEBUG, "ReplayServer", @"Starting round $(round_index)/$(game_log.rounds.items.length), dealer=$(dealer)");
 
             // Send round start message
             ServerMessageRoundStart round_start = new ServerMessageRoundStart(log_round.start_info);
@@ -213,7 +203,6 @@ namespace GameServer
                 round_index--;
                 current_round = null;
                 finished = false;  // Un-finish in case we were at the last hand
-                Environment.log(LogType.INFO, "ReplayServer", @"Replaying hand, round_index reset to $(round_index)");
             }
         }
     }

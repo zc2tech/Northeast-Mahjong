@@ -29,25 +29,20 @@ class ReplayMenuView : View2D
     public signal void score_finished();
 
     private void press_next() {
-        Environment.log(LogType.DEBUG, "ReplayMenuView", "press_next called");
         observe_next_pressed();
         if (score_view != null) score_view.next();
     }
     private void press_prev() {
-        Environment.log(LogType.DEBUG, "ReplayMenuView", "press_prev called");
         observe_prev_pressed();
         if (score_view != null) score_view.prev();
     }
     private void press_speed_up() {
-        Environment.log(LogType.DEBUG, "ReplayMenuView", "press_speed_up called");
         speed_up_pressed();
     }
     private void press_speed_down() {
-        Environment.log(LogType.DEBUG, "ReplayMenuView", "press_speed_down called");
         speed_down_pressed();
     }
     private void press_pause_continue() {
-        Environment.log(LogType.DEBUG, "ReplayMenuView", "press_pause_continue called");
         pause_continue_pressed();
     }
 
@@ -55,8 +50,6 @@ class ReplayMenuView : View2D
     {
         this.context = context;
         this.settings = settings;
-
-        Environment.log(LogType.DEBUG, "ReplayMenuView", "Created replay menu view");
 
         score_view = new ScoringView(context, player_index, true, true);  // observing=true, is_replay=true
         score_view.score_finished.connect(do_score_finished);
@@ -163,39 +156,31 @@ class ReplayMenuView : View2D
 
         if (key.down && !key.repeat)
         {
-            Environment.log(LogType.DEBUG, "ReplayMenuView", @"Key pressed: scancode=$(key.scancode)");
-
             key.handled = true;
 
             // Replay controls - don't check visible since buttons are hidden
             if ((key.scancode == ScanCode.COMMA || key.scancode == ScanCode.LEFT) && prev != null)
             {
-                Environment.log(LogType.DEBUG, "ReplayMenuView", "Prev key detected");
                 press_prev();
             }
             else if ((key.scancode == ScanCode.PERIOD || key.scancode == ScanCode.RIGHT) && next != null)
             {
-                Environment.log(LogType.DEBUG, "ReplayMenuView", "Next key detected");
                 press_next();
             }
             else if (key.scancode == ScanCode.UP && speed_up != null)
             {
-                Environment.log(LogType.DEBUG, "ReplayMenuView", "Speed up key detected");
                 press_speed_up();
             }
             else if (key.scancode == ScanCode.DOWN && speed_down != null)
             {
-                Environment.log(LogType.DEBUG, "ReplayMenuView", "Speed down key detected");
                 press_speed_down();
             }
             else if (key.scancode == ScanCode.SPACE && pause_continue != null)
             {
-                Environment.log(LogType.DEBUG, "ReplayMenuView", "Spacebar detected");
                 press_pause_continue();
             }
             else
             {
-                Environment.log(LogType.DEBUG, "ReplayMenuView", "Key not handled");
                 key.handled = false;
             }
         }

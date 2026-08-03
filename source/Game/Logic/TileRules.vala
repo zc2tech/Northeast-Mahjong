@@ -51,7 +51,6 @@ public class TileRules
         if (readings_cache != null) {
             //  int size = readings_cache.size;
             readings_cache.clear();
-            //  Environment.log(LogType.DEBUG, "TileRules", @"hand_readings cache cleared ($(size) entries, $(cache_hits) hits, $(cache_misses) misses)");
             cache_hits = 0;
             cache_misses = 0;
         }
@@ -461,7 +460,6 @@ public class TileRules
             ArrayList<HandReading> cached_result = readings_cache.get(cache_key);
             cache_hits++;
             //  int64 elapsed = get_monotonic_time() - start_time;
-            //  Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (CACHE HIT, $(cached_result.size) readings) [hits: $(cache_hits), misses: $(cache_misses)]");
             return cached_result;
         }
 
@@ -473,7 +471,6 @@ public class TileRules
              ArrayList<HandReading> empty_result = new ArrayList<HandReading>();
              readings_cache.set(cache_key, empty_result);
             //   int64 elapsed = get_monotonic_time() - start_time;
-            //   Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (0 readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
              return empty_result;
         }
 
@@ -542,7 +539,6 @@ public class TileRules
                     // Cache the result before returning
                     readings_cache.set(cache_key, northeastReadings);
                     //  int64 elapsed = get_monotonic_time() - start_time;
-                    //  Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds (early_return, $(northeastReadings.size) readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
                     return northeastReadings;
                 }
             }
@@ -552,7 +548,6 @@ public class TileRules
         readings_cache.set(cache_key, northeastReadings);
 
         //  int64 elapsed = get_monotonic_time() - start_time;
-        //  Environment.log(LogType.DEBUG, "TileRules", @"hand_readings completed in $(elapsed) microseconds ($(northeastReadings.size) readings, CACHED) [hits: $(cache_hits), misses: $(cache_misses)]");
         return northeastReadings;
     }
 

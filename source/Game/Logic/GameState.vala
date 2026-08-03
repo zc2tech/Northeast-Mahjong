@@ -106,7 +106,6 @@ public class GameState : Object
                     string winner_name = players[winner_index].name;
                     Wind winner_wind = players[winner_index].wind;
                     string result_type = ron ? "Ron" : "Tsumo";
-                    Environment.log(LogType.DEBUG, "GameState.SERVER", @"Round finished: $(result_type) by $(winner_name) ($(winner_wind.to_string()))");
 
                     // Check if dealer won
                     if (winner_index == dealer_index)
@@ -115,7 +114,6 @@ public class GameState : Object
             }
             else
             {
-                Environment.log(LogType.DEBUG, "GameState.SERVER", "Round finished: Draw");
             }
         }
         else
@@ -241,7 +239,6 @@ public class GameState : Object
             // Always advance to next round after each hand finishes
             current_round++;
 
-            Environment.log(LogType.DEBUG, "GameState.SERVER", @"Hand finished: hand_count_played=$(hand_count_played), current_round=$(current_round), round_count=$(round_count), dealer_won=$(dealer_won)");
 
             // Store dealer_won for start_round to use
             // If dealer won, they keep dealer position in next round
@@ -256,7 +253,6 @@ public class GameState : Object
                 if (hand_count_played >= round_count)
                 {
                     // Reached the configured hand count, end the game
-                    Environment.log(LogType.DEBUG, "GameState.SERVER", @"Bot simulation finished: played $(hand_count_played) hands");
                     // Don't set hanchan_is_finished - it triggers a reset of current_round in start_round()
                     game_is_finished = true;
                 }

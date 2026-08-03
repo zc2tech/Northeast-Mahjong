@@ -395,7 +395,6 @@ public class ClientRoundState : Object
         ServerMessageTileDraw draw_msg = (ServerMessageTileDraw)message;
         Tile tile = state.tile_draw();
 
-        //  Environment.log(LogType.DEBUG, "ClientRoundState",
         //      @"server_tile_draw: player=$(state.current_player.index), msg.tile_ID=$(draw_msg.tile_ID), state.tile.ID=$(tile.ID), state.tile.type=$(tile.tile_type.to_string())");
 
         game_tile_draw(state.current_player.index, draw_msg.tile_ID);
@@ -408,8 +407,6 @@ public class ClientRoundState : Object
         ServerMessageTileDiscard discard = (ServerMessageTileDiscard)message;
         state.tile_discard(discard.tile_ID);
 
-        Environment.log(LogType.DEBUG, "ClientRoundState",
-            @"server_tile_discard: current_player=$(state.current_player.index), tile_ID=$(discard.tile_ID)");
 
         game_tile_discard(state.current_player.index, discard.tile_ID);
     }
@@ -511,16 +508,12 @@ public class ClientRoundState : Object
 
     public void server_calls_finished(ServerMessage message)
     {
-        Environment.log(LogType.DEBUG, "ClientRoundState",
-            @"server_calls_finished: current_player before=$(state.current_player.index)");
 
         decision_finished();
 
         bool kan = state.chankan_call != ChankanCall.NONE;
         state.calls_finished();
 
-        Environment.log(LogType.DEBUG, "ClientRoundState",
-            @"server_calls_finished: current_player after=$(state.current_player.index)");
 
         if (kan)
         {

@@ -97,6 +97,38 @@ public class AnimationTimings : Serializable
         return time;
 	}
 
+	// Create a scaled copy of all animation times
+	public AnimationTimings scale(float multiplier)
+	{
+		return new AnimationTimings(
+			winning_draw_animation_time * multiplier,
+			hand_reveal_animation_time * multiplier,
+			round_over_delay * multiplier,
+			round_end_delay * multiplier,
+			hanchan_end_delay * multiplier,
+			game_end_delay * multiplier,
+			decision_time * multiplier,
+			finish_label_fade.scale(multiplier),
+			menu_items_fade.scale(multiplier),
+			han_fade.scale(multiplier),
+			score_counting_fade.scale(multiplier),
+			score_counting.scale(multiplier),
+			players_points_counting.scale(multiplier),
+			players_score_fade.scale(multiplier),
+			players_score_counting.scale(multiplier),
+			initial_draw.scale(multiplier),
+			tile_draw.scale(multiplier),
+			tile_discard.scale(multiplier),
+			call.scale(multiplier),
+			hand_reveal.scale(multiplier),
+			split_wall.scale(multiplier),
+			dead_wall_mark_flip.scale(multiplier),
+			win.scale(multiplier),
+			hand_order.scale(multiplier),
+			hand_angle.scale(multiplier)
+		);
+	}
+
 	public float winning_draw_animation_time { get; protected set; }
 	public float hand_reveal_animation_time { get; protected set; }
 

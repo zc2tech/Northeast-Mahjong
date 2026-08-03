@@ -34,8 +34,6 @@ public class ScoringHandView : View3D
             RenderCalls.RenderCall c = create_call(call, score.player.index, tile_size);
             c.set_tile_gap(TILE_GAP);  // Apply gap to call tiles
 
-            Environment.log(LogType.DEBUG, "ScoringHandView", @"Call width after gap: $(c.width), tile_gap: $(TILE_GAP)");
-
             calls.add(c);
             width += c.width + tile_size.x + TILE_GAP;  // Reduced group spacing
         }
@@ -101,7 +99,6 @@ public class ScoringHandView : View3D
         if (width_ratio > 1.0f)
         {
             len = len * width_ratio * 0.8f;  // Scale camera distance with width
-            Environment.log(LogType.DEBUG, "ScoringHandView", @"Adjusted camera distance: len=$(len) for width=$(width)");
         }
 
         Vec3 pos = Vec3(0, len * 0.8f, len * 0.6f);  // Lower angle for better tile face view

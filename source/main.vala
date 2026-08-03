@@ -380,7 +380,6 @@ public static int main(string[] args)
             break;
     }
 
-    Environment.log(LogType.INFO, "Main", "Application stopped normally");
 
     return 0;
 }

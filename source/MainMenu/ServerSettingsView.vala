@@ -58,9 +58,7 @@ class ServerSettingsView : MenuSubView
         decision_time_option = new OptionItemControl(can_control, "Decision time (seconds)", decision_time_choices, decision_time_selected);
         reveal_all_tiles_option = new OptionItemControl(can_control, "Reveal all tiles", enabled_disabled_choices, (int)settings.reveal_all_tiles);
 
-        Environment.log(LogType.DEBUG, "ServerSettingsView", "shuffle_tiles value: " + ((int)settings.shuffle_tiles).to_string());
         shuffle_tiles_option = new OptionItemControl(can_control, "Shuffle tiles", enabled_disabled_choices, (int)settings.shuffle_tiles);
-        Environment.log(LogType.DEBUG, "ServerSettingsView", "shuffle_tiles_option created");
 
         // opts.add(riichi_option);  // TODO: Not implemented yet
         // opts.add(aka_option);  // TODO: Not implemented yet
@@ -70,7 +68,6 @@ class ServerSettingsView : MenuSubView
         opts.add(reveal_all_tiles_option);
         opts.add(shuffle_tiles_option);
 
-        Environment.log(LogType.DEBUG, "ServerSettingsView", "Total options added: " + opts.size.to_string());
 
         int padding = 30;
 

@@ -6,6 +6,7 @@ public class MainWindow : RenderWindow
     private MainMenuControlView? menu;
     private View2D game_view;
     private GameController? game_controller = null;
+    private ReplayController? replay_controller = null;
     private GameEscapeMenuView? escape_menu;
     private bool game_running = false;
     private MusicPlayer music;
@@ -86,11 +87,23 @@ public class MainWindow : RenderWindow
     private GameController game_start(GameStartInfo info, ServerSettings settings, IGameConnection connection, int player_index)
     {
         menu.visible = false;
-        game_controller = new GameController(game_view, info, settings, connection, player_index, new Options.from_disk());
-        game_controller.game_loaded.connect(game_loaded);
-        game_controller.finished.connect(game_finished);
 
-        game_running = true;
+        if (settings.is_replay_mode)
+        {
+            // Create ReplayController for replay mode
+            replay_controller = new ReplayController(game_view, info, settings, connection, new Options.from_disk());
+            replay_controller.game_loaded.connect(game_loaded);
+            replay_controller.finished.connect(game_finished);
+            game_running = true;
+        }
+        else
+        {
+            // Create GameController for normal gameplay
+            game_controller = new GameController(game_view, info, settings, connection, player_index, new Options.from_disk());
+            game_controller.game_loaded.connect(game_loaded);
+            game_controller.finished.connect(game_finished);
+            game_running = true;
+        }
 
         fade_rect = new RectangleControl();
         main_view.add_child(fade_rect);
@@ -104,6 +117,7 @@ public class MainWindow : RenderWindow
     {
         game_running = false;
         game_controller = null;
+        replay_controller = null;
         menu.visible = true;
         if (escape_menu != null)
         {
@@ -114,7 +128,10 @@ public class MainWindow : RenderWindow
 
     private void leave_game_pressed()
     {
-        game_controller.finished();
+        if (game_controller != null)
+            game_controller.finished();
+        else if (replay_controller != null)
+            replay_controller.finished();
     }
 
     private void restart()
@@ -130,8 +147,13 @@ public class MainWindow : RenderWindow
 
     protected override void do_process(DeltaArgs delta)
     {
-        if (game_running && game_controller != null)
-            game_controller.process(delta);
+        if (game_running)
+        {
+            if (game_controller != null)
+                game_controller.process(delta);
+            else if (replay_controller != null)
+                replay_controller.process(delta);
+        }
     }
 
     protected override bool key_press(KeyArgs key)
@@ -176,7 +198,10 @@ public class MainWindow : RenderWindow
     private void apply_options(Options options)
     {
         load_options(options);
-        game_controller.load_options(options);
+        if (game_controller != null)
+            game_controller.load_options(options);
+        else if (replay_controller != null)
+            replay_controller.load_options(options);
     }
 
     private void load_options(Options options)

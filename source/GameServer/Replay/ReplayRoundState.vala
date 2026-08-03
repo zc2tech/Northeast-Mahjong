@@ -75,7 +75,6 @@ namespace GameServer
             this.lines = new ArrayList<GameLogLine>.wrap(round.lines.to_array());
             this.state = new ReplayState(round.tiles.to_array());
 
-            Environment.log(LogType.DEBUG, "ReplayRoundState", @"Created with $(lines.size) actions, dealer=$(dealer)");
 
             // Don't restore initial hands here - must be done after signals are connected!
         }
@@ -102,15 +101,11 @@ namespace GameServer
             
             if (has_saved_hands)
             {
-                Environment.log(LogType.DEBUG, "ReplayRoundState", "Using saved initial hands");
-
                 // Send assignments for all tiles, then update state
                 // This matches normal game: all assignments first, then animations play
                 for (int player = 0; player < hands.length && player < 4; player++)
                 {
                     Tile[] player_tiles = hands[player].to_array();
-                    Environment.log(LogType.DEBUG, "ReplayRoundState",
-                        @"Player $(player) initial hand: $(player_tiles.length) tiles");
 
                     // Add tiles to state so calls can find them later
                     ArrayList<Tile> hand_list = new ArrayList<Tile>();
@@ -128,7 +123,6 @@ namespace GameServer
             else
             {
                 // Old log format - simulate dealing pattern
-                Environment.log(LogType.INFO, "ReplayRoundState", "Old log format - simulating deal");
                 deal_initial_hands_simulation();
             }
         }
@@ -177,7 +171,6 @@ namespace GameServer
                 }
             }
            
-            Environment.log(LogType.DEBUG, "ReplayRoundState", @"Simulated dealing complete, dealt $(wall_tile_index) tiles");
         }
 
         public void process(float time)
@@ -187,7 +180,6 @@ namespace GameServer
 
             if (lines.size == 0)
             {
-                Environment.log(LogType.INFO, "ReplayRoundState", "Replay complete");
                 finished = true;
                 return;
             }
@@ -234,8 +226,6 @@ namespace GameServer
 
         private void play_action(ServerAction action)
         {
-            Environment.log(LogType.DEBUG, "ReplayRoundState", @"Playing: $(action.get_type().name())");
-
             if (action is TileDrawServerAction)
             {
                 handle_draw(action as TileDrawServerAction);
@@ -245,8 +235,6 @@ namespace GameServer
                 ClientServerAction csa = action as ClientServerAction;
                 ClientAction ca = csa.action;
                 string action_type = ca.get_type().name();
-                Environment.log(LogType.DEBUG, "ReplayRoundState",
-                    @"  ClientServerAction: player=$(csa.client), action=$(action_type)");
 
                 handle_client_action(csa);
             }
@@ -261,8 +249,6 @@ namespace GameServer
 
             state.add_tile_to_player(action.player, tile);
 
-            Environment.log(LogType.DEBUG, "ReplayRoundState",
-                @"Draw: Player $(action.player) draws tile $(tile.ID) ($(tile.tile_type.to_string()))");
 
             // Regular draw
             game_draw_tile(action.player, tile, false);
@@ -451,7 +437,6 @@ namespace GameServer
         private void handle_ron(int player)
         {
             // Ron detected - store winner info
-            Environment.log(LogType.INFO, "ReplayRoundState", @"Ron by player $(player) - finishing round");
             has_ron_winner = true;
             ron_winner_index = player;
             finished = true;
@@ -460,7 +445,6 @@ namespace GameServer
         private void handle_tsumo(int player)
         {
             // Tsumo detected - store winner info
-            Environment.log(LogType.INFO, "ReplayRoundState", @"Tsumo by player $(player) - finishing round");
             has_tsumo_winner = true;
             tsumo_winner_index = player;
             finished = true;

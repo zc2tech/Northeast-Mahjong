@@ -117,7 +117,6 @@ namespace GameServer
                 replay_server = new ReplayServer(observers, settings, log);
                 is_replay = true;
 
-                Environment.log(LogType.DEBUG, "ServerController", "Created ReplayServer");
             }
             else
             {
@@ -156,7 +155,7 @@ namespace GameServer
                     mutex.lock();
                     float time = (float)timer.elapsed();
                     process_messages(time);
-                    replay_server.process(time);
+                    replay_server.process_in_worker_loop(time);
                     mutex.unlock();
                     sleep();
                 }

@@ -384,13 +384,10 @@ namespace GameServer
                         {
                             Tile[] hand_array = validator.players[i].hand.to_array();
                             hand_lists[i] = new SerializableList<Tile>(hand_array);
-                            Environment.log(LogType.DEBUG, "RegularServerGameRound",
-                                @"Collecting player $(i) hand: $(hand_array.length) tiles");
                         }
                         SerializableList<SerializableList<Tile>> initial_hands = new SerializableList<SerializableList<Tile>>(hand_lists);
                         initial_hands_dealt(initial_hands);
                         hands_collected = true;
-                        Environment.log(LogType.INFO, "RegularServerGameRound", "Initial hands collected and saved to log");
                     }
                 }
             }
@@ -449,11 +446,9 @@ namespace GameServer
         protected override void round_starting()
         {
             Tile[] tiles_array = log_round.tiles.to_array();
-            Environment.log(LogType.DEBUG, "LogServerGameRound", @"round_starting: revealing $(tiles_array.length) tiles from log");
 
             foreach (Tile tile in tiles_array)
             {
-                Environment.log(LogType.DEBUG, "LogServerGameRound", @"Revealing tile: $(tile.tile_type.to_string()) ID=$(tile.ID)");
                 game_reveal_tile(tile);
             }
 

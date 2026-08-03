@@ -37,8 +37,6 @@ namespace GameServer
                     dead_wall_tiles.add(tile);
             }
 
-            Environment.log(LogType.DEBUG, "ReplayState",
-                @"Initialized: $(wall_tiles.size) wall tiles, $(dead_wall_tiles.size) dead wall tiles");
         }
 
         public Tile get_tile(int tile_ID)
@@ -101,8 +99,6 @@ namespace GameServer
                     return;
                 }
             }
-            Environment.log(LogType.ERROR, "ReplayState",
-                @"Tile $(tile.ID) not found in player $(player) hand");
         }
 
         public ArrayList<Tile> find_tiles_in_hand(int player, TileType type, int count)
@@ -122,7 +118,7 @@ namespace GameServer
             if (result.size < count)
             {
                 Environment.log(LogType.ERROR, "ReplayState",
-                    @"Player $(player) doesn't have $(count) tiles of type $(type.to_string())");
+                    @"Could not find $(count) tiles of type $(type) for player $(player), only found $(result.size)");
             }
 
             return result;

@@ -35,26 +35,18 @@ private class RenderPond : WorldObject
         }
 
         tiles.add(tile);
-        Environment.log(LogType.DEBUG, "RenderPond",
-            @"add_tile: tile $(tile.tile_type.ID), pond size now=$(tiles.size)");
         arrange_pond();
     }
 
     public void remove(RenderTile tile)
     {
-        Environment.log(LogType.DEBUG, "RenderPond",
-            @"remove: attempting to remove tile $(tile.tile_type.ID), pond has $(tiles.size) tiles");
 
         // Check if tile is in the list
         for (int i = 0; i < tiles.size; i++)
         {
-            Environment.log(LogType.DEBUG, "RenderPond",
-                @"  pond[$(i)]: tile $(tiles[i].tile_type.ID), same object? $(tiles[i] == tile)");
         }
 
         bool found = tiles.remove(tile);
-        Environment.log(LogType.DEBUG, "RenderPond",
-            @"remove: tile $(tile.tile_type.ID), found=$(found), pond size now=$(tiles.size)");
 
         // Always arrange pond to ensure proper positioning
         arrange_pond();

@@ -99,7 +99,6 @@ class ScoringView : View2D
         replay_hand_button.position = Vec2(padding + 150, padding);  // To the right of Next Hand button
         replay_hand_button.visible = false;
         replay_hand_button.enabled = true;
-        Environment.log(LogType.DEBUG, "ScoringView", "Replay hand button created and added");
 
         return_menu_button = new MenuTextButton("LinkReturnMenu", "");
         add_child(return_menu_button);
@@ -156,7 +155,6 @@ class ScoringView : View2D
 
     protected override void key_press(KeyArgs key)
     {
-        Environment.log(LogType.DEBUG, "ScoringView", @"Key received: scancode=$(key.scancode), handled=$(key.handled), visible=$(visible)");
 
         if (key.handled || !visible)
             return;
@@ -214,7 +212,6 @@ class ScoringView : View2D
                 next_hand_button.visible = true;
                 replay_hand_button.visible = true;
                 return_menu_button.visible = true;
-                Environment.log(LogType.DEBUG, "ScoringView", "Replay buttons shown (next_hand, replay_hand, return_menu)");
             }
             else
             {
@@ -255,7 +252,19 @@ class ScoringView : View2D
     {
         check_score_change_buttons();
 
+        if (scores == null || scores.length == 0 || score_index >= scores.length)
+        {
+            Environment.log(LogType.ERROR, "ScoringView", @"Invalid scores state: scores=$(scores != null), length=$(scores != null ? scores.length : 0), index=$(score_index)");
+            return;
+        }
+
         var score = scores[score_index];
+        if (score == null || score.players == null)
+        {
+            Environment.log(LogType.ERROR, "ScoringView", "Score or score.players is null");
+            return;
+        }
+
         if (scoring_view != null)
         {
             if (scoring_view.score == score && !round_finished)

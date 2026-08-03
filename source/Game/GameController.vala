@@ -32,7 +32,6 @@ class GameController : Object
         this.player_index = player_index;
         this.options = options;
 
-        //  Environment.log(LogType.DEBUG, "GameController", @"Created: player_index=$player_index, settings.is_replay_mode=$(settings.is_replay_mode), is_replay_mode=$(is_replay_mode)");
 
         this.connection.disconnected.connect(disconnected);
 
@@ -41,7 +40,6 @@ class GameController : Object
 
     ~GameController()
     {
-        Environment.log(LogType.DEBUG, "GameController", "Destroying game controller");
         connection.close();
 
         parent_view.remove_child(renderer);
@@ -187,7 +185,6 @@ class GameController : Object
             menu = replay_menu;
             parent_view.add_child(menu);
 
-            Environment.log(LogType.DEBUG, "GameController", "Created ReplayGameRenderView and ReplayMenuView");
         }
         else
         {
@@ -204,7 +201,6 @@ class GameController : Object
             menu = game_menu;
             parent_view.add_child(menu);
 
-            Environment.log(LogType.DEBUG, "GameController", "Created GameRenderView and GameMenuView");
         }
 
         create_round_state(info);
@@ -226,10 +222,8 @@ class GameController : Object
     private void menu_next_hand_requested()
     {
         // In replay mode, proceed to next hand automatically
-        Environment.log(LogType.DEBUG, "GameController", "Next hand requested in replay mode");
         if (game.game_is_finished)
         {
-            Environment.log(LogType.DEBUG, "GameController", "All hands replayed, no more hands");
             return;
         }
         connection.send_message(new ClientMessageMenuReady());
@@ -237,7 +231,6 @@ class GameController : Object
 
     private void menu_replay_hand_requested()
     {
-        Environment.log(LogType.INFO, "GameController", "Replay hand requested - not yet implemented");
         // TODO: Implement replay same hand functionality
         // This requires either fixing the connection or restarting the game with the same log
     }
@@ -245,7 +238,6 @@ class GameController : Object
     private void menu_return_to_menu_requested()
     {
         // Exit replay and return to main menu
-        Environment.log(LogType.DEBUG, "GameController", "Return to menu requested");
         game_finished = true;
     }
 
@@ -295,7 +287,6 @@ class GameController : Object
             connection.send_message(new ClientMessageReplaySpeed(speed_multiplier));
             if (menu is ReplayMenuView)
                 ((ReplayMenuView)menu).show_speed_toast(speed_multiplier);
-            Environment.log(LogType.INFO, "GameController", @"Replay speed: $(speed_multiplier)x");
         }
     }
 
@@ -309,7 +300,6 @@ class GameController : Object
             connection.send_message(new ClientMessageReplaySpeed(speed_multiplier));
             if (menu is ReplayMenuView)
                 ((ReplayMenuView)menu).show_speed_toast(speed_multiplier);
-            Environment.log(LogType.INFO, "GameController", @"Replay speed: $(speed_multiplier)x");
         }
     }
 
@@ -340,7 +330,6 @@ class GameController : Object
                 ((ReplayMenuView)menu).show_speed_toast(speed_multiplier);
                 ((ReplayMenuView)menu).set_pause_button_icon(false);  // Show pause icon (||)
             }
-            Environment.log(LogType.INFO, "GameController", @"Replay resumed at $(speed_multiplier)x");
         }
         else
         {
@@ -352,7 +341,6 @@ class GameController : Object
                 ((ReplayMenuView)menu).show_speed_toast_text("Paused");
                 ((ReplayMenuView)menu).set_pause_button_icon(true);  // Show play icon (▶)
             }
-            Environment.log(LogType.INFO, "GameController", "Replay paused");
         }
     }
 

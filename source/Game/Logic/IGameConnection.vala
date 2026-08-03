@@ -120,26 +120,22 @@ public class GameLocalConnection : IGameConnection
 
     public void set_connection(GameServer.ServerPlayerLocalConnection connection)
     {
-        Environment.log(LogType.DEBUG, "GameLocalConnection", @"set_connection called, connection=$(connection != null)");
         ref();
 
         if (this.connection != null)
         {
-            Environment.log(LogType.DEBUG, "GameLocalConnection", "Disconnecting old connection");
             this.connection.disconnected.disconnect(connection_disconnected);
             this.connection.close();
         }
 
         this.connection = connection;
         this.connection.disconnected.connect(connection_disconnected);
-        Environment.log(LogType.DEBUG, "GameLocalConnection", "Connection established");
 
         unref();
     }
 
     public override void send_message(ClientMessage message)
     {
-        Environment.log(LogType.DEBUG, "GameLocalConnection", @"send_message: $(message.get_type().name()), connection=$(connection != null)");
         if (connection != null)
             connection.receive_message(message);
         else

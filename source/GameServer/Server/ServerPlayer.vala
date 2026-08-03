@@ -157,7 +157,6 @@ namespace GameServer
 
         public override void send_message(ServerMessage message)
         {
-            //Environment.log(LogType.DEBUG, "ServerPlayer:158", message.to_string());
             Message msg = new Message(message.serialize());
             connection.send(msg);
         }
@@ -176,7 +175,6 @@ namespace GameServer
                 Environment.log(LogType.NETWORK, "ServerPlayerNetworkConnection", "Server discarding invalid client message");
                 return;
             }
-            //Environment.log(LogType.DEBUG, "ServerPlayer:177", msg.to_string());
             receive_message((ClientMessage)msg);
         }
 

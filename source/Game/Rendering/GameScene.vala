@@ -329,6 +329,5 @@ public class GameScene : WorldObject
     public void set_paused(bool paused)
     {
         is_paused = paused;
-        Environment.log(LogType.DEBUG, "GameScene", @"Animation paused: $(is_paused)");
     }
 }

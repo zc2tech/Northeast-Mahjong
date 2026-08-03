@@ -48,7 +48,6 @@ class GameMenuView : View2D
         this.settings = settings;
         this.player_index = player_index;
 
-        Environment.log(LogType.DEBUG, "GameMenuView", @"Created with: observing=$observing");
 
         score_view = new ScoringView(context, player_index, observing, false);  // is_replay=false
         score_view.score_finished.connect(do_score_finished);

@@ -83,15 +83,12 @@ public class RenderPlayer : WorldObject
 
     public void discard(RenderTile tile)
     {
-        Environment.log(LogType.DEBUG, "RenderPlayer", @"Player $(seat) discarding tile $(tile.tile_type.ID)");
         hand.remove(tile);
         pond.add_tile(tile);
     }
 
     public void rob_tile(RenderTile tile)
     {
-        Environment.log(LogType.DEBUG, "RenderPlayer",
-            @"Player $(seat) rob_tile: removing tile $(tile.tile_type.ID) from pond");
         pond.remove(tile);
     }
 
@@ -162,9 +159,6 @@ public class RenderPlayer : WorldObject
 
     public void pon(RenderPlayer discard_player, RenderTile discard_tile, RenderTile tile_1, RenderTile tile_2)
     {
-        Environment.log(LogType.DEBUG, "RenderPlayer",
-            @"Player $(seat) calling pon from player $(discard_player.seat), tiles $(tile_1.tile_type.ID), $(tile_2.tile_type.ID)");
-
         hand.remove(tile_1);
         hand.remove(tile_2);
 
@@ -178,8 +172,6 @@ public class RenderPlayer : WorldObject
 
     public void chii(RenderTile discard_tile, RenderTile tile_1, RenderTile tile_2, AnimationTime time)
     {
-        Environment.log(LogType.DEBUG, "RenderPlayer",
-            @"Player $(seat) calling chii, tiles $(tile_1.tile_type.ID), $(tile_2.tile_type.ID)");
 
         hand.remove(tile_1);
         hand.remove(tile_2);

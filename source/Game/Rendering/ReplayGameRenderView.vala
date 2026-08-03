@@ -11,7 +11,11 @@ public class ReplayGameRenderView : GameRenderView
         // Override observer_index with the actual one for replay
         this.observer_index = (observer_index >= 0 && observer_index < 4) ? observer_index : 0;
 
-        Environment.log(LogType.DEBUG, "ReplayGameRenderView", @"Created replay view, observer=$(this.observer_index)");
+    }
+
+    public void set_animation_speed(float multiplier)
+    {
+        context.set_animation_speed(multiplier);
     }
 
     //  private void tile_discard(int player_index, int tile_ID)
@@ -26,14 +30,12 @@ public class ReplayGameRenderView : GameRenderView
     {
         observer_index = (observer_index + 1) % 4;
         observe_animate();
-        Environment.log(LogType.DEBUG, "ReplayGameRenderView", @"Switched to player $(observer_index)");
     }
 
     public void observe_prev()
     {
         observer_index = (observer_index + 3) % 4;
         observe_animate();
-        Environment.log(LogType.DEBUG, "ReplayGameRenderView", @"Switched to player $(observer_index)");
     }
 
     private void observe_animate()

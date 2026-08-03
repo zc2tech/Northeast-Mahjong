@@ -1091,10 +1091,6 @@ class RoundStateWall
         // Add to the end of dead_wall_tiles
         dead_wall_tiles.insert(dead_wall_tiles.size, tile);
 
-        Environment.log(LogType.DEBUG, "RoundStateWall",
-            "dead_tile_add: Moved tile %s (ID=%d) from draw_wall head to dead_wall, new dead_wall size: %d"
-            .printf(tile.tile_type.to_string(), tile.ID, dead_wall_tiles.size));
-
         return tile;
     }
 

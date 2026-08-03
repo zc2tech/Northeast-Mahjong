@@ -16,6 +16,7 @@ sources = files(
     'source/main.vala',
     'source/Environment.vala',
     'source/Game/GameController.vala',
+    'source/Game/ReplayController.vala',
     'source/Game/Logic/AnimationTimings.vala',
     'source/Game/Logic/ClientAction.vala',
     'source/Game/Logic/ClientMessage.vala',

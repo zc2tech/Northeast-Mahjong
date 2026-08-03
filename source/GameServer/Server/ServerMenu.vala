@@ -231,7 +231,6 @@ namespace GameServer
             do_log = (log != null && Environment.compatible(log.version));
 
             if (log != null && !Environment.compatible(log.version))
-                Environment.log(LogType.DEBUG, "ServerMenu", "Incompatible game log version");
 
             if (!do_log)
                 log = null;

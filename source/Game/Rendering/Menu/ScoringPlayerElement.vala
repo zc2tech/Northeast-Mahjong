@@ -90,8 +90,6 @@ class ScoringPlayerElement : Control
         if (_animate)
             p -= transfer;
 
-        Environment.log(LogType.DEBUG, "ScoringPlayerElement", @"Player $(wind.to_string()): points=$(points), transfer=$(transfer), animate=$(_animate)");
-
         set_points_text(p, transfer);
         if (_animate)
             transfer_label.visible = false;
@@ -116,7 +114,6 @@ class ScoringPlayerElement : Control
 
     public void animate()
     {
-        Environment.log(LogType.DEBUG, "ScoringPlayerElement", @"Starting animation for $(wind.to_string()): transfer=$(transfer)");
         animation_points_start();
     }
 

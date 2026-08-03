@@ -54,8 +54,6 @@ public class GameRenderView : View3D, IGameRenderer
         context = new GameRenderContext(game_start.timings, tile_scale, tile_size, observer_index, dealer_index, info.wall_index); // wall_index is wall_split
         observer_index = observer_index != -1 ? observer_index : 0;
 
-        Environment.log(LogType.INFO, "--- GameRenderView ---", @"Human player observer_index = $(observer_index)");
-
         scene = new GameScene(context, observer_index, options, store.audio_player, score);
 
         world.add_object(scene);
@@ -129,7 +127,6 @@ public class GameRenderView : View3D, IGameRenderer
                 options.save();
                 camera_settings_dirty = false;
                 camera_save_timer = 0;
-                Environment.log(LogType.DEBUG, "GameRenderView", "Camera settings saved");
             }
         }
     }
@@ -142,7 +139,6 @@ public class GameRenderView : View3D, IGameRenderer
             options.camera_height = camera.position.y;
             camera_settings_dirty = true;
             camera_save_timer = 0;
-            Environment.log(LogType.DEBUG, "GameRenderView", "Camera height: " + camera.position.y.to_string());
         }
         else if (key.keycode == KeyCode.NUM_2)
         {
@@ -150,7 +146,6 @@ public class GameRenderView : View3D, IGameRenderer
             options.camera_height = camera.position.y;
             camera_settings_dirty = true;
             camera_save_timer = 0;
-            Environment.log(LogType.DEBUG, "GameRenderView", "Camera height: " + camera.position.y.to_string());
         }
         else if (key.keycode == KeyCode.NUM_3)
         {
@@ -158,7 +153,6 @@ public class GameRenderView : View3D, IGameRenderer
             options.target_height = target.position.y;
             camera_settings_dirty = true;
             camera_save_timer = 0;
-            Environment.log(LogType.DEBUG, "GameRenderView", "Target height: " + target.position.y.to_string());
         }
         else if (key.keycode == KeyCode.NUM_4)
         {
@@ -166,17 +160,14 @@ public class GameRenderView : View3D, IGameRenderer
             options.target_height = target.position.y;
             camera_settings_dirty = true;
             camera_save_timer = 0;
-            Environment.log(LogType.DEBUG, "GameRenderView", "Target height: " + target.position.y.to_string());
         }
         if (key.keycode == KeyCode.NUM_5)
         {
             camera.view_angle += 0.5f;
-            Environment.log(LogType.DEBUG, "GameRenderView", "Camera fov: " + camera.view_angle.to_string());
         }
         else if (key.keycode == KeyCode.NUM_6)
         {
             camera.view_angle -= 0.5f;
-            Environment.log(LogType.DEBUG, "GameRenderView", "Camera fov: " + camera.view_angle.to_string());
         }
         else if (key.keycode == KeyCode.NUM_7)
         {
@@ -187,7 +178,6 @@ public class GameRenderView : View3D, IGameRenderer
         }
         else if (key.keycode == KeyCode.NUM_8)
         {
-            Environment.log(LogType.DEBUG, @"GameRenderView", @"Observer Index $(observer_index) ");
             // Decrease your own hand angle
             players[observer_index].adjust_hand_angle(-0.02f);
 
@@ -197,7 +187,6 @@ public class GameRenderView : View3D, IGameRenderer
         {
             // Increase right-player (shimocha) hand angle
             int right_player_index = (observer_index + 1) % 4;
-            Environment.log(LogType.DEBUG, @"GameRenderView", @"Right Player Index $(right_player_index) ");
             players[right_player_index].adjust_hand_angle(0.02f);
         }
         else if (key.keycode == KeyCode.NUM_0)
@@ -210,28 +199,24 @@ public class GameRenderView : View3D, IGameRenderer
         {
              // Increase cross-player (opposite, toimen) hand angle
             int cross_player_index = (observer_index + 2) % 4;
-            Environment.log(LogType.DEBUG, @"GameRenderView", @"Cross Player Index $(cross_player_index): ");
             players[cross_player_index].adjust_hand_angle(0.02f);
         }
         else if (key.keycode == KeyCode.EQUALS)
         {
              // Decrease cross-player (opposite, toimen) hand angle
             int cross_player_index = (observer_index + 2) % 4;
-             Environment.log(LogType.DEBUG, @"GameRenderView", @"Cross Player Index $(cross_player_index): ");
             players[cross_player_index].adjust_hand_angle(-0.02f);    
         }
         else if (key.keycode == KeyCode.LEFTBRACKET)
         { 
             // Increase left-player (kamicha) hand angle
             int left_player_index = (observer_index + 3) % 4;
-            Environment.log(LogType.DEBUG, @"GameRenderView", @"Left Player Index $(left_player_index): ");
             players[left_player_index].adjust_hand_angle(0.02f);
         }
         else if (key.keycode == KeyCode.RIGHTBRACKET)
         {
              // Decrease left-player (kamicha) hand angle
             int left_player_index = (observer_index + 3) % 4;
-            Environment.log(LogType.DEBUG, @"GameRenderView", @"Left Player Index $(left_player_index): ");
             players[left_player_index].adjust_hand_angle(-0.02f);
           
         }
@@ -321,7 +306,6 @@ public class GameRenderView : View3D, IGameRenderer
         RenderPlayer player = players[player_index];
         RenderTile tile = tiles[tile_ID];
 
-        //  Environment.log(LogType.DEBUG, "GameRenderView",
         //      @"tile_draw: player=$player_index, tile_ID=$tile_ID, tile_type=$(tile.tile_type.tile_type.to_string())");
 
         buffer_action(new RenderActionDraw(context.server_times.tile_draw, player));
@@ -331,10 +315,6 @@ public class GameRenderView : View3D, IGameRenderer
     {
         RenderPlayer player = players[player_index];
         RenderTile tile = tiles[tile_ID];
-
-        Environment.log(LogType.DEBUG, "GameRenderView",
-            "DEAD_WALL_DRAW: player=%d drew tile_ID=%d (%s)".printf(
-                player_index, tile_ID, tile.tile_type.tile_type.to_string()));
 
         buffer_action(new RenderActionDrawDeadWall(context.server_times.tile_draw, player, tile));
     }

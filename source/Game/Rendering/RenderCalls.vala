@@ -89,7 +89,6 @@ public class RenderCalls : WorldObject
         public void set_tile_gap(float gap)
         {
             tile_gap = gap;
-            Environment.log(LogType.DEBUG, "RenderCall", @"tile_gap set to: $(tile_gap)");
         }
 
         public void animate_to(float height, AnimationTime time)

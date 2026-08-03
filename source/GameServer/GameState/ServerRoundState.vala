@@ -28,7 +28,6 @@ namespace GameServer
 
         private void debug_log(string log)
         {
-            Environment.log(LogType.DEBUG, "ServerRoundState", log);
         }
 
         protected ServerRoundStateValidator validator;
@@ -656,8 +655,6 @@ namespace GameServer
                     dead_wall_tiles.add(tile);
             }
 
-            Environment.log(LogType.DEBUG, "ReplayWall",
-                @"Initialized: $(wall_tiles.size) wall tiles, $(dead_wall_tiles.size) dead wall tiles");
         }
 
         public Tile? get_tile(int tile_ID)
@@ -709,7 +706,6 @@ namespace GameServer
                 // Entering pause
                 pause_start_time = time;
                 is_paused = true;
-                Environment.log(LogType.DEBUG, "LogServerRoundState", @"Paused at time $(time)");
             }
             else if (!paused && is_paused)
             {
@@ -717,14 +713,12 @@ namespace GameServer
                 float pause_duration = time - pause_start_time;
                 move_start_time += pause_duration;
                 is_paused = false;
-                Environment.log(LogType.DEBUG, "LogServerRoundState", @"Resumed at time $(time), shifted move_start_time by $(pause_duration)");
             }
         }
 
         public void set_speed(float multiplier)
         {
             speed_multiplier = multiplier;
-            Environment.log(LogType.DEBUG, "LogServerRoundState", @"Speed set to $(speed_multiplier)x");
         }
 
         protected override void next_player_action(float time)
@@ -740,7 +734,6 @@ namespace GameServer
             if (lines.size == 0)
             {
                 // No more actions in log - round replay is complete
-                Environment.log(LogType.INFO, "LogServerRoundState", "Round replay complete - no more actions in log");
                 replay_complete = true;  // Stop all further processing
                 return;
             }
@@ -767,7 +760,6 @@ namespace GameServer
 
         private void action(ServerAction action)
         {
-            Environment.log(LogType.DEBUG, "LogServerRoundState", @"Playing action: $(action.get_type().name())");
 
             if (action is TileDrawServerAction)
             {
@@ -779,8 +771,6 @@ namespace GameServer
                 // ALSO draw from validator to keep dead wall state synchronized for kan
                 validator.draw_wall();
 
-                Environment.log(LogType.DEBUG, "LogServerRoundState",
-                    @"Drawing tile for player $(draw_action.player), tile_ID $(tile.ID)");
 
                 // Just emit the signal - no decision logic
                 game_draw_tile(draw_action.player, tile, false);
@@ -788,7 +778,6 @@ namespace GameServer
             else if (action is ClientServerAction)
             {
                 ClientServerAction client_action = action as ClientServerAction;
-                Environment.log(LogType.DEBUG, "LogServerRoundState", @"Processing client action from player $(client_action.client)");
 
                 // For now, use process_action - it handles the actions correctly
                 // My manual reconstruction was broken
@@ -797,7 +786,6 @@ namespace GameServer
             else if (action is DefaultDiscardServerAction || action is DefaultNoCallServerAction)
             {
                 // Skip default actions in replay
-                Environment.log(LogType.DEBUG, "LogServerRoundState", "Skipping default action in replay");
             }
         }
     }

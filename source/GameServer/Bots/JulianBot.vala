@@ -910,8 +910,6 @@ class JulianBot : Bot
             ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();
             ArrayList<Tile> tiles_allowed = round_state.self.get_discard_tiles();
 
-            //  Environment.log(LogType.DEBUG, "JulianBot", @"Checking tenpai for $(tiles_allowed.size) tiles");
-
             Tile discard_for_tenpai = null;
             HashSet<TileType> checked = new HashSet<TileType>();
             foreach (Tile tile in tiles_allowed)
@@ -927,7 +925,6 @@ class JulianBot : Bot
                 // 能听牌当然就打你了
                 if (TileRules.in_tenpai(copy_for_tenpai, round_state.self.calls)) {
                     discard_for_tenpai = tile;
-                    copy_for_tenpai.clear();
                     // 到时候会算舍去这张牌能听多少 <类型,张数>
                      Environment.log(LogType.DEBUG, "JulianBot", @"Found tenpai discard ($(round_state.self.wind.to_string())): $(tile.tile_type.to_string())");
                     hDiscardForTenpai.set(discard_for_tenpai, new HashMap<TileType, int>());
@@ -1088,8 +1085,6 @@ class JulianBot : Bot
         if (should_call_pon(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
         {
             call_pon();
-              Environment.log(LogType.DEBUG, "JulianBot",
-                @"do_call_decision ($(round_state.self.wind.to_string())) call_pon");
             return;
         }
 
@@ -1099,8 +1094,6 @@ class JulianBot : Bot
         if (should_call_chii(tile, sortedhand, calls, beforeBenefit, stats, discarding_player, out chii_tile1, out chii_tile2))
         {
             call_chii(chii_tile1, chii_tile2);
-              Environment.log(LogType.DEBUG, "JulianBot",
-                @"do_call_decision ($(round_state.self.wind.to_string())) call_chii");
             return;
         }
 

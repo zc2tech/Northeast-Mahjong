@@ -149,7 +149,6 @@ class ServerMenuView : MenuSubView
         // This bypasses the lobby screen entirely
         if (log != null && connection != null)
         {
-            Environment.log(LogType.DEBUG, "ServerMenuView", "Auto-starting replay");
             connection.send_message(new ClientMessageMenuGameStart());
         }
     }
@@ -166,7 +165,6 @@ class ServerMenuView : MenuSubView
 
     private void start_clicked()
     {
-        Environment.log(LogType.DEBUG, "ServerMenuView", "Start button clicked, sending game start message");
         connection.send_message(new ClientMessageMenuGameStart());
     }
 
@@ -261,24 +259,19 @@ class ServerMenuView : MenuSubView
         settings_button.enabled = true;
 
         string log_status = (log != null) ? "not null" : "null";
-        Environment.log(LogType.DEBUG, "ServerMenuView", @"settings_message: host=$host, bots_added=$bots_added, log=$log_status");
 
         // Auto-add JulianBots to empty slots after settings are received (server is ready)
         // But NOT in replay mode - replay doesn't need real bots
         if (host && !bots_added && log == null)
         {
             bots_added = true;
-            Environment.log(LogType.DEBUG, "ServerMenuView", "Auto-adding bots to slots 1, 2, 3");
             for (int i = 1; i <= 3; i++)
             {
-                Environment.log(LogType.DEBUG, "ServerMenuView", @"Adding bot to slot $i");
                 add_bot("JulianBot", i);
             }
-            Environment.log(LogType.DEBUG, "ServerMenuView", "Finished adding bots");
         }
         else
         {
-            Environment.log(LogType.DEBUG, "ServerMenuView", "Skipping bot auto-add (replay mode or already added)");
         }
     }
 

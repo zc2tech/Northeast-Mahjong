@@ -271,12 +271,9 @@ namespace GameServer
                         result_type = RoundResultType.DRAW;
                 }
 
-                Environment.log(LogType.DEBUG, "RegularServer",
-                    @"About to save round result: type=$(result_type), transfers=[$(transfers[0]), $(transfers[1]), $(transfers[2]), $(transfers[3])]");
 
                 game_log.set_round_result(transfers, result_type);
 
-                Environment.log(LogType.DEBUG, "RegularServer", "Round result saved successfully");
             }
             catch (Error e)
             {
@@ -294,23 +291,19 @@ namespace GameServer
 
         public LogServer(ArrayList<ServerPlayer> spectators, RandomClass rnd, ServerSettings settings, GameLog log)
         {
-            Environment.log(LogType.DEBUG, "LogServer", "Constructor started");
 
             ArrayList<ServerPlayer> players = new ArrayList<ServerPlayer>();
             for (int i = 0; i < 4; i++)
                 players.add(new ServerLogPlayer()); // Dummies
 
-            Environment.log(LogType.DEBUG, "LogServer", "Created dummy players");
 
             // Call base constructor FIRST before anything else
             base(players, spectators, rnd, log.start_info, settings);
 
-            Environment.log(LogType.DEBUG, "LogServer", "Base constructor completed");
 
             // Create timings AFTER base constructor
             replay_timings = create_replay_timings();
 
-            Environment.log(LogType.DEBUG, "LogServer", "Created replay timings");
 
             // Override spectator messages to send correct player_index from log
             int human_seat = log.human_player_index;
@@ -321,16 +314,13 @@ namespace GameServer
                 ServerMessageGameStart start = new ServerMessageGameStart(log.start_info, settings, player_idx);
                 this.spectators[i].send_message(start);
 
-                Environment.log(LogType.DEBUG, "LogServer", @"Spectator $(i) gets player_index = $(player_idx)");
             }
 
             rounds = log.rounds.to_array();
 
-            Environment.log(LogType.DEBUG, "LogServer", "About to call start()");
 
             start();
 
-            Environment.log(LogType.DEBUG, "LogServer", "Constructor completed successfully");
         }
 
         private static AnimationTimings create_replay_timings()
