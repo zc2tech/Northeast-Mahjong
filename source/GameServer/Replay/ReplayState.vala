@@ -15,7 +15,7 @@ namespace GameServer
         public Tile? last_discard { get { return _last_discard; } }
         public ArrayList<Tile> wall { get { return wall_tiles; } }
 
-        public ReplayState(Tile[] tiles)
+        public ReplayState(Tile[] tiles, int dealer, int wall_index)
         {
             wall_tiles = new ArrayList<Tile>();
             dead_wall_tiles = new ArrayList<Tile>();
@@ -25,18 +25,31 @@ namespace GameServer
             for (int i = 0; i < 4; i++)
                 player_hands[i] = new ArrayList<Tile>();
 
-            // Split tiles: 0-103 to wall, 104-111 to dead wall
-            for (int i = 0; i < tiles.length; i++)
-            {
-                Tile tile = tiles[i];
+            // Apply the same rotation as gameplay
+            // This matches RoundStateWall logic at lines 1033-1050
+            int start_wall = (4 - dealer) % 4;
+            int index = start_wall * 28 + wall_index * 2;
+
+            // Create tile map from original tiles
+            foreach (Tile tile in tiles)
                 tile_map.set(tile.ID, tile);
 
-                if (i < 104)
-                    wall_tiles.add(tile);
-                else
-                    dead_wall_tiles.add(tile);
+            // Add tiles in rotated order (same as gameplay)
+            ArrayList<Tile> rotated_tiles = new ArrayList<Tile>();
+            for (int i = 0; i < tiles.length; i++)
+            {
+                int t = (index + i) % 112;
+                rotated_tiles.add(tiles[t]);
             }
 
+            // Split rotated tiles: 0-103 to wall, 104-111 to dead wall
+            for (int i = 0; i < rotated_tiles.size; i++)
+            {
+                if (i < 104)
+                    wall_tiles.add(rotated_tiles[i]);
+                else
+                    dead_wall_tiles.add(rotated_tiles[i]);
+            }
         }
 
         public Tile get_tile(int tile_ID)

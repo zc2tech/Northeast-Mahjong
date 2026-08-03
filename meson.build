@@ -75,6 +75,7 @@ sources = files(
     'source/GameServer/Replay/ReplayGameRound.vala',
     'source/GameServer/Replay/ReplayServer.vala',
     'source/GameServer/Server/Server.vala',
+    'source/GameServer/Server/BotController.vala',
     'source/GameServer/Server/ServerController.vala',
     'source/GameServer/Server/ServerGameRound.vala',
     'source/GameServer/Server/ServerMenu.vala',

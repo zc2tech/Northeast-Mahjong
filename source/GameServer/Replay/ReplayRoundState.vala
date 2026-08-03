@@ -73,7 +73,7 @@ namespace GameServer
             this.log_round = round;
             this.dealer = dealer;
             this.lines = new ArrayList<GameLogLine>.wrap(round.lines.to_array());
-            this.state = new ReplayState(round.tiles.to_array());
+            this.state = new ReplayState(round.tiles.to_array(), round.start_info.dealer, round.start_info.wall_index);
 
 
             // Don't restore initial hands here - must be done after signals are connected!

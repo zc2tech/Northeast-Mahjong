@@ -887,7 +887,6 @@ class JulianBot : Bot
             do_tsumo();
             return;
         }
-
         // 没有九种九牌 就流局的概念
         //  else if (round_state.can_void_hand())
         //  {
@@ -937,8 +936,8 @@ class JulianBot : Bot
                 BestDiscardResult result = find_best_discard(discard_benefit);
 
                 if (result.tile != null) {
-                        do_discard(result.tile);
-                        return;
+                    do_discard(result.tile);
+                    return;
                 }
             }
         }
@@ -1003,7 +1002,7 @@ class JulianBot : Bot
                
             }
         }
-        
+
         // 没杠 没听 没胡
         Tile  tile = get_discard_tile(stats);
         do_discard(tile);
@@ -1040,16 +1039,12 @@ class JulianBot : Bot
     // 别人打牌之后，做个处理决定
     protected override void do_call_decision(RoundStatePlayer discarding_player, Tile tile)
     {
-        int64 start_time = get_monotonic_time();
 
         ArrayList<Tile> sortedhand = Tile.sort_tiles_type(round_state.self.hand);
         ArrayList<RoundStateCall> calls = round_state.self.calls;
         if(sortedhand.size < 4) {
             // 手牌只剩两张的话,就没法胡了
             call_nothing();  // CRITICAL: Must notify server we're done deciding
-            //  int64 elapsed = get_monotonic_time() - start_time;
-            //  Environment.log(LogType.DEBUG, "JulianBot",
-            //      @"do_call_decision ($(round_state.self.wind.to_string())) completed in $(elapsed / 1000) microseconds - skip (hand too small)");
             return;
         }
 
@@ -1105,35 +1100,6 @@ class JulianBot : Bot
         }
 
         call_nothing();
-    }
-
-    // Toimen (opposite) Kamicha(left)  Shimocha (right) 
-    // Add this helper method to JulianBot class
-    // onlyShimocha: 只看下家 , 不然的话就看所有其他玩家
-    // peepLimit: 在池中看几张牌, 0 表示所有牌
-    private bool is_tile_safe(Tile tile, bool onlyShimocha, int peepLimit )
-    {
-        // Check if this tile has been discarded by other players
-        for (int i = 1; i < 4; i++)  // Check all other players
-        {
-            if(onlyShimocha && i != 1 ) {
-                continue;
-            }
-            int player_index = (round_state.self.index + i) % 4;
-            RoundStatePlayer player = round_state.get_player(player_index);
-            int peeped = 0;
-            foreach (Tile discarded in player.pond)
-            {
-                if(peepLimit !=0 && peeped >= peepLimit) {
-                    break;
-                }
-                if (discarded.tile_type == tile.tile_type)
-                    return true;  // Safe - someone already discarded this tile type
-                
-                peeped ++;
-            }
-        }
-        return false;
     }
 
     // 找出需要舍弃的牌 能听牌的我都不进这里
@@ -1514,23 +1480,6 @@ class JulianBot : Bot
         }
 
         return result;
-    }
-
-    // 也就是听章数量
-    private int find_best_benefit(HashMap<Tile, int> discard_benefit)
-    {
-        Tile? best_discard = null;
-        int best_benefit = 0;
-
-        foreach (Tile tDiscard in discard_benefit.keys) {
-            int benefit = discard_benefit.get(tDiscard);
-            if (benefit > best_benefit) {
-                best_benefit = benefit;
-                best_discard = tDiscard;
-            }
-        }
-
-        return best_benefit;
     }
 
     private Tile RandomNonTerminalHonor(ArrayList<Tile> tiles)

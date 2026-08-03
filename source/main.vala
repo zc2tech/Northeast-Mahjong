@@ -231,7 +231,7 @@ private static void run_bot_simulation(int num_hands)
 
     // Create animation timings (all zero for fast simulation)
     AnimationTimings timings = new AnimationTimings(
-        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,  // 7 float parameters
+        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,  // 7 float parameters (all zero for bot simulation)
         new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
         new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
         new AnimationTime.zero(), new AnimationTime.zero(), new AnimationTime.zero(),
@@ -259,17 +259,9 @@ private static void run_bot_simulation(int num_hands)
     // Create random number generator
     Engine.RandomClass rnd = new Engine.RandomClass();
 
-    // Create and start server
-    GameServer.RegularServer server = new GameServer.RegularServer(players_list, spectators, rnd, info, settings);
-
-    // Run the server until all rounds are finished
-    Timer timer = new Timer();
-    while (!server.finished)
-    {
-        float time = (float)timer.elapsed();
-        server.process(time);
-        Thread.usleep(50000); // 10ms sleep to avoid burning CPU
-    }
+    // Create and run bot controller
+    GameServer.BotController controller = new GameServer.BotController(players_list, rnd, info, settings);
+    controller.run();
 
     stdout.printf("\nBot simulation completed!\n");
 }

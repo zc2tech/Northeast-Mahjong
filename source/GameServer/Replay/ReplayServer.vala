@@ -13,6 +13,7 @@ namespace GameServer
 
         private ReplayGameRound? current_round;
         private int round_index = 0;
+        private bool waiting_for_next_hand = false;  // Flag to wait for user to click "Next Hand"
 
         public bool finished { get; private set; default = false; }
 
@@ -36,12 +37,21 @@ namespace GameServer
                 }
             }
 
-            // Send game start to spectators
+            // Send game start to spectators with replay timings (not log's zero timings)
+            GameStartInfo replay_start_info = new GameStartInfo(
+                game_log.start_info.get_players(),
+                timings,  // Use replay_timings instead of log's zero timings from bot simulation
+                game_log.start_info.starting_dealer,
+                game_log.start_info.starting_score,
+                game_log.start_info.round_count,
+                game_log.start_info.hanchan_count
+            );
+
             int human_seat = game_log.human_player_index;
             for (int i = 0; i < spectators.size; i++)
             {
                 int player_idx = (i == 0 && human_seat >= 0 && human_seat < 4) ? human_seat : -1;
-                ServerMessageGameStart start = new ServerMessageGameStart(game_log.start_info, settings, player_idx);
+                ServerMessageGameStart start = new ServerMessageGameStart(replay_start_info, settings, player_idx);
                 spectators[i].send_message(start);
             }
         }
@@ -111,11 +121,15 @@ namespace GameServer
                 return;
 
             // Start first round if needed
-            if (current_round == null)
+            if (current_round == null && !waiting_for_next_hand)
             {
                 start_next_round();
                 return;
             }
+
+            // If waiting for user to click "Next Hand", don't process anything
+            if (waiting_for_next_hand)
+                return;
 
             // Process current round
             current_round.process(time);
@@ -135,13 +149,15 @@ namespace GameServer
                 };
 
                 // TODO: Send a replay scoring message to spectators
-                // For now, just clean up and check for next round
+                // Clean up and wait for user to click "Next Hand"
                 current_round = null;
+                waiting_for_next_hand = true;
 
                 // Check if more rounds available
                 if (round_index >= game_log.rounds.items.length)
                 {
                     finished = true;
+                    waiting_for_next_hand = false;
                 }
             }
         }
@@ -202,7 +218,17 @@ namespace GameServer
             {
                 round_index--;
                 current_round = null;
+                waiting_for_next_hand = false;
                 finished = false;  // Un-finish in case we were at the last hand
+            }
+        }
+
+        public void advance_to_next_hand()
+        {
+            // User clicked "Next Hand" button - resume replay
+            if (waiting_for_next_hand)
+            {
+                waiting_for_next_hand = false;
             }
         }
     }

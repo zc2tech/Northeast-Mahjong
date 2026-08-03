@@ -236,6 +236,9 @@ public class GameState : Object
             // Count each hand played (for both bot simulation and normal play)
             hand_count_played++;
 
+            Environment.log(LogType.DEBUG, "GameState",
+                @"[HAND COUNT] Hand $(hand_count_played) completed (target: $(round_count))");
+
             // Always advance to next round after each hand finishes
             current_round++;
 
@@ -252,6 +255,8 @@ public class GameState : Object
                 // Note: round_count is actually hand count target for bot simulation
                 if (hand_count_played >= round_count)
                 {
+                    Environment.log(LogType.DEBUG, "GameState",
+                        @"[GAME END] Bot simulation reached $(hand_count_played) hands, ending game");
                     // Reached the configured hand count, end the game
                     // Don't set hanchan_is_finished - it triggers a reset of current_round in start_round()
                     game_is_finished = true;

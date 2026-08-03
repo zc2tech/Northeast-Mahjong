@@ -36,8 +36,15 @@ namespace GameServer
         {
             return validator;
         }
+
+        public Tile[] get_rotated_tiles()
+        {
+            return validator.get_rotated_tiles();
+        }
+
         private int dealer;
         private int wall_index;
+        protected ServerSettings settings;  // Store settings to check bot_simulation flag
         private float current_time;
         private bool round_finished;
         private int pending_turn_decision = -1;
@@ -49,6 +56,7 @@ namespace GameServer
 
         protected ServerRoundState(ServerSettings settings, Wind round_wind, int dealer, int wall_index, RandomClass rnd,  AnimationTimings timings, Tile[]? tiles)
         {
+            this.settings = settings;  // Store settings for later use
             validator = new ServerRoundStateValidator(settings, dealer, wall_index, rnd, round_wind,tiles);
             this.dealer = dealer;
             this.wall_index = wall_index;
@@ -611,6 +619,10 @@ namespace GameServer
         {
             while (actions.size > 0)
                 process_action(actions.remove_at(0));
+
+            // In bot simulation mode, never timeout - wait for bots to respond
+            if (settings.bot_simulation)
+                return;
 
             if (!move_timer.is_active || !move_timer.active(time))
                 return;

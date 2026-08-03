@@ -23,6 +23,7 @@ namespace GameServer
             this.settings = settings;
 
             state = new GameState(start_info, settings);
+            state.mark_as_server_state();  // Mark this as the authoritative server GameState
 
             for (int i = 0; i < players.size; i++)
             {
@@ -78,11 +79,14 @@ namespace GameServer
             else
             {
                 bool done = false;
-                // Removed auto-advance timer - always wait for human player to click Ready
-                // if (timer.active(time))
-                //     done = true;
-                // else
+                // In bot simulation mode, skip ready checks and use zero-delay timer
+                if (settings.bot_simulation)
                 {
+                    done = timer.active(time);
+                }
+                else
+                {
+                    // Normal mode: wait for all players to be ready
                     done = true;
                     foreach (var player in players)
                         if (!player.ready)

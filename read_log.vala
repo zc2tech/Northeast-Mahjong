@@ -63,6 +63,9 @@ void main(string[] args)
         print("Round %d:\n", r + 1);
         print("  Tiles: %d\n", round.tiles.to_array().length);
         print("  Actions: %d\n", round.lines.to_array().length);
+        print("  Result Type: %s\n", round.result_type.to_string());
+        print("  Transfers: P0=%d, P1=%d, P2=%d, P3=%d\n",
+              round.transfer_p0, round.transfer_p1, round.transfer_p2, round.transfer_p3);
 
         // Print initial hands with tile types
         print("\n  Initial Hands:\n");

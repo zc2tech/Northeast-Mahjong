@@ -74,7 +74,9 @@ public abstract class Bot : Object
 
     protected virtual void sleep()
     {
-        Thread.usleep(100000);
+        // In bot simulation mode, use minimal sleep for fast execution
+        // In normal gameplay, use 100ms to avoid excessive CPU usage
+        Thread.usleep(settings.bot_simulation ? 100 : 100000);
     }
 
     /////////////

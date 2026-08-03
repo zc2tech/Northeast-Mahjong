@@ -35,6 +35,11 @@ namespace GameServer
             return state.tile_draw();
         }
 
+        public Tile[] get_rotated_tiles()
+        {
+            return state.get_rotated_tiles();
+        }
+
         public bool discard_tile(int tile_ID)
         {
             if (state.tile_discard(tile_ID))

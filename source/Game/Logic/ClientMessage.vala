@@ -186,6 +186,13 @@ public class ClientMessageReplayRestart : ClientMessage
     }
 }
 
+public class ClientMessageReplayNextHand : ClientMessage
+{
+    public ClientMessageReplayNextHand()
+    {
+    }
+}
+
 public class ClientMessageGameAction : ClientMessage
 {
     public ClientMessageGameAction(ClientAction action)

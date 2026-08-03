@@ -208,6 +208,11 @@ namespace GameServer
                     if (is_replay)
                         replay_server.set_speed(speed_msg.multiplier);
                 }
+                else if (message.message is ClientMessageReplayNextHand)
+                {
+                    if (is_replay)
+                        replay_server.advance_to_next_hand();
+                }
                 else
                 {
                     if (is_replay)

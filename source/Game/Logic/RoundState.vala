@@ -109,6 +109,9 @@ public class RoundState : Object
             wall = new RoundStateWall.custom(dealer, wall_index, tiles);
         else
             wall = new RoundStateWall(dealer, wall_index);
+
+        // Set wall owner context for logging: -1 = server, 0-3 = bot client
+        wall.set_owner_context(player_index);
         discard_tile = null;
 
         for (int i = 0; i < players.length; i++)
@@ -165,6 +168,8 @@ public class RoundState : Object
         {
             if (wall.empty)
             {
+                Environment.log(LogType.DEBUG, "RoundState",
+                    "Wall is empty! Setting game_draw_type to EMPTY_WALL, game_over = true");
                 game_over = true;
                 game_draw_type = GameDrawType.EMPTY_WALL;
                 return;
@@ -540,6 +545,11 @@ public class RoundState : Object
     public Tile[] get_tiles()
     {
         return wall.tiles;
+    }
+
+    public Tile[] get_rotated_tiles()
+    {
+        return wall.rotated_tiles;
     }
 
     public RoundStatePlayer self { get { return players[player_index]; } }
@@ -967,6 +977,12 @@ class RoundStateWall
 {
     private ArrayList<Tile> wall_tiles = new ArrayList<Tile>();
     public ArrayList<Tile> dead_wall_tiles = new ArrayList<Tile>();
+    private int owner_player_index = -1;  // -1 = server, 0-3 = bot player index
+
+    public void set_owner_context(int player_index)
+    {
+        owner_player_index = player_index;
+    }
 
     public RoundStateWall(int dealer, int wall_index)
     {
@@ -1043,6 +1059,7 @@ class RoundStateWall
         // Physical positions 104-111 after reordering
         // wall_tiles currently has positions [0...111], so we remove [104...111]
         int dead_wall_start_pos = 104;
+
         for (int i = 0; i < 8; i++)
         {
             // Remove position (104+i) from wall_tiles
@@ -1051,6 +1068,14 @@ class RoundStateWall
             dead_wall_tiles.add(tile);
         }
         // Now wall_tiles has 104 tiles (0-103), and dead_wall_tiles has 8 tiles (104-111)
+
+        // Save rotated tiles BEFORE dead wall reversal - this is what should be saved to game log
+        rotated_tiles = new Tile[112];
+        int rt_idx = 0;
+        foreach (Tile tile in wall_tiles)
+            rotated_tiles[rt_idx++] = tile;
+        foreach (Tile tile in dead_wall_tiles)
+            rotated_tiles[rt_idx++] = tile;
 
         // REVERSE the dead_wall_tiles array so drawing from index 0 draws from the far end
         // But swap pairs so upper tiles come before lower tiles in each stack
@@ -1071,7 +1096,8 @@ class RoundStateWall
     {
         assert(wall_tiles.size > 0);
 
-        return wall_tiles.remove_at(0);
+        Tile tile = wall_tiles.remove_at(0);
+        return tile;
     }
 
     public Tile draw_dead_wall()
@@ -1217,6 +1243,7 @@ class RoundStateWall
     public bool can_call { get { return wall_tiles.size > 0; } }
     public bool can_riichi { get { return wall_tiles.size >= 4; } }
     public Tile[] tiles { get; private set; }
+    public Tile[] rotated_tiles { get; private set; }
 
     // Get the dead wall mark tile (the tile near the draw wall that gets revealed)
     // In Northeast Mahjong, the mark is tile 104 (the first dead wall tile logically, upper layer)
