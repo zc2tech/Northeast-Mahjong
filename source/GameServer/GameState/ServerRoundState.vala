@@ -102,6 +102,11 @@ namespace GameServer
             current_time = time;
 
             validator.start();
+
+            // Fire signal so RegularServerRoundState can collect initial hands
+            // At this point, all players have exactly 13 tiles (initial hands complete)
+            fire_initial_hands_ready();
+
             add_animation_delay(timings.split_wall.total());
             initial_draw();
             next_turn();
@@ -591,6 +596,7 @@ namespace GameServer
 
         protected virtual void call_decisions_started() {}
         protected virtual void turn_decision_started() {}
+        protected virtual void fire_initial_hands_ready() {}
         public virtual void buffer_action(ClientServerAction action) {}
 
         public Tile? dead_wall_mark { owned get { return validator.dead_wall_mark; } }
@@ -604,6 +610,8 @@ namespace GameServer
     {
         private ArrayList<ClientServerAction> actions = new ArrayList<ClientServerAction>();
         private DelayTimer move_timer = new DelayTimer();
+
+        public signal void initial_hands_ready();
 
         public RegularServerRoundState(ServerSettings settings, Wind round_wind, int dealer, int wall_index, RandomClass rnd, AnimationTimings timings)
         {
@@ -638,6 +646,11 @@ namespace GameServer
         protected override void turn_decision_started()
         {
             move_timer.set_time(timings.decision_time);
+        }
+
+        protected override void fire_initial_hands_ready()
+        {
+            initial_hands_ready();
         }
     }
 

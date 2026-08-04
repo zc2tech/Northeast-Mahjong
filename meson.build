@@ -129,13 +129,15 @@ read_log_exe = executable('read_log', ['read_log.vala'] + read_log_sources,
     install: false
 )
 
-# Copy compiled binary to ../bin folder for easy execution
+# Copy compiled binaries to ../bin folder for easy execution
 custom_target('copy-to-bin',
-    input: exe,
-    output: 'copy-marker',
+    input: [exe, read_log_exe],
+    output: ['copy-marker', 'copy-read-log-marker'],
     command: [
         'sh', '-c',
-        'cp @INPUT@ @SOURCE_ROOT@/bin/Northeast-Mahjong && touch @OUTPUT@'
+        'test "@INPUT0@" = "@SOURCE_ROOT@/bin/Northeast-Mahjong" || cp @INPUT0@ @SOURCE_ROOT@/bin/Northeast-Mahjong; ' +
+        'test "@INPUT1@" = "@SOURCE_ROOT@/bin/read_log" || cp @INPUT1@ @SOURCE_ROOT@/bin/read_log; ' +
+        'touch @OUTPUT0@ @OUTPUT1@'
     ],
     build_by_default: true,
     build_always_stale: true

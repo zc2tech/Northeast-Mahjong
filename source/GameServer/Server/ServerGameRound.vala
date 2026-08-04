@@ -323,6 +323,10 @@ namespace GameServer
 
             init();
             round.log.connect(do_log);
+
+            // Connect to initial_hands_ready signal to collect hands at the right time
+            ((RegularServerRoundState)round).initial_hands_ready.connect(collect_initial_hands);
+
             parser.connect(client_action, typeof(ClientMessageGameAction));
 
             for (int i = 0; i < players.size; i++)
@@ -368,30 +372,29 @@ namespace GameServer
             round.buffer_action(new ClientServerAction(p.index, action.action));
         }
 
+        private void collect_initial_hands()
+        {
+            if (hands_collected)
+                return;
+
+            ServerRoundStateValidator validator = round.get_validator();
+            if (validator == null || validator.players.length != 4)
+                return;
+
+            // Collect hands - at this point all players have exactly 13 tiles
+            SerializableList<Tile>[] hand_lists = new SerializableList<Tile>[4];
+            for (int i = 0; i < 4; i++)
+            {
+                Tile[] hand_array = validator.players[i].hand.to_array();
+                hand_lists[i] = new SerializableList<Tile>(hand_array);
+            }
+            SerializableList<SerializableList<Tile>> initial_hands = new SerializableList<SerializableList<Tile>>(hand_lists);
+            initial_hands_dealt(initial_hands);
+            hands_collected = true;
+        }
+
         protected override void processing()
         {
-            // Collect initial hands after first dealing is done
-            if (!hands_collected)
-            {
-                ServerRoundStateValidator validator = round.get_validator();
-                if (validator != null && validator.players.length > 0)
-                {
-                    // Check if hands have been dealt (first player has tiles)
-                    if (validator.players[0].hand.size > 0)
-                    {
-                        SerializableList<Tile>[] hand_lists = new SerializableList<Tile>[4];
-                        for (int i = 0; i < 4; i++)
-                        {
-                            Tile[] hand_array = validator.players[i].hand.to_array();
-                            hand_lists[i] = new SerializableList<Tile>(hand_array);
-                        }
-                        SerializableList<SerializableList<Tile>> initial_hands = new SerializableList<SerializableList<Tile>>(hand_lists);
-                        initial_hands_dealt(initial_hands);
-                        hands_collected = true;
-                    }
-                }
-            }
-
             parser.execute_all();
         }
 
@@ -431,16 +434,6 @@ namespace GameServer
             init();
 
             assign_spectators(spectators);
-        }
-
-        public void set_paused(bool paused, float time)
-        {
-            ((LogServerRoundState)round).set_paused(paused, time);
-        }
-
-        public void set_speed(float multiplier)
-        {
-            ((LogServerRoundState)round).set_speed(multiplier);
         }
 
         protected override void round_starting()

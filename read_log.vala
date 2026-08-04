@@ -68,19 +68,23 @@ void main(string[] args)
               round.transfer_p0, round.transfer_p1, round.transfer_p2, round.transfer_p3);
 
         // Print initial hands with tile types
-        print("\n  Initial Hands:\n");
+        print("\n  Initial Hands:\n"); 
         SerializableList<Tile>[] hands = round.initial_hands.to_array();
         for (int p = 0; p < hands.length; p++)
         {
             Tile[] player_tiles = hands[p].to_array();
             print("    Player %d (%d tiles): ", p, player_tiles.length);
+           
+            StringBuilder sb_hand_tiles = new StringBuilder();
             for (int t = 0; t < player_tiles.length; t++)
             {
-                if (t > 0) print(", ");
-                print("%s", TILE_TYPE_TO_STRING(player_tiles[t].tile_type));
+                if (t > 0) sb_hand_tiles.append(", ");
+                //  sb_hand_tiles.append(TILE_TYPE_TO_STRING(player_tiles[t].tile_type));
+                sb_hand_tiles.append(player_tiles[t].to_string());
             }
-            print("\n");
+            print(sb_hand_tiles.str);
         }
+        
 
         print("\n  Actions (Detailed):\n");
         GameLogLine[] lines = round.lines.to_array();
