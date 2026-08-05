@@ -4,7 +4,7 @@ using Engine;
 namespace GameServer
 {
     // Dedicated controller for bot simulation - no UI, no replay, no menu
-    class BotController : Object
+    public class BotController : Object
     {
         private RegularServer server;
         private ArrayList<ServerPlayer> players;

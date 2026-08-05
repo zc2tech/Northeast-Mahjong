@@ -567,6 +567,7 @@ class JulianBot : Bot
             return false;
         }
 
+
         //  int pairCnt = stats.pair_count;
         //  int tripletCnt = stats.triplet_count;
         //  int singleCnt = stats.singles.size;
@@ -582,28 +583,45 @@ class JulianBot : Bot
         //  int kamicha_index = (round_state.self.index + 3) % 4;
 
         // 杠掉试试
-      
-       
         ArrayList<Tile> newHand = new ArrayList<Tile>();
         ArrayList<RoundStateCall> newCalls = new ArrayList<RoundStateCall>();
         newCalls.add_all(calls);
-        ArrayList<Tile> kan = new ArrayList<Tile>();
-        kan.add(tile);
+        ArrayList<Tile> kan_tiles = new ArrayList<Tile>();
+        kan_tiles.add(tile);
 
         foreach (Tile t in sortedhand)
         {
             if (t.tile_type == tile.tile_type)
             {
-                kan.add(t);
+                kan_tiles.add(t);
             }
             else
             {
                 newHand.add(t);
             }
         }
+        RoundStateCall new_call = new RoundStateCall(RoundStateCall.CallType.OPEN_KAN, kan_tiles, tile, discarding_player.index);
+        newCalls.add(new_call);
 
         // Even we already tenpai, it should be a chance to improve our hand tiles
+        // But we need to make sure we still tenpai after kan
+        int newBenefit = 0;
         if(beforeBenefit > 0) {
+            HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
+            populate_needed_tiles(needed_tiles, newHand, newCalls);
+            foreach (TileType type_needed in needed_tiles.keys) {
+                int available_count = count_available_tiles(type_needed,round_state.self.index,false);
+                newBenefit += available_count;
+            }
+            Environment.log(LogType.DEBUG, "JulianBot",
+                @"should_call_kan, NewBenefit: $(newBenefit)");
+
+            // usually, it will disrupt our tenpai
+            if(newBenefit <= 0) {
+                return false;
+            }
+
+            // even newBenefit still exist, it has no reason better the beforeBenefit.
             if( beforeBenefit <=2 ) {
                  return true;
             } else if (beforeBenefit <= 4 ) {
@@ -911,8 +929,6 @@ class JulianBot : Bot
         }
     
         // 既然到了这里,说明你没有办法和牌或者听牌 
-
-        
         if (round_state.can_late_kan()) // 后杠
         {
 
