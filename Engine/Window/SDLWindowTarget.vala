@@ -116,6 +116,8 @@ namespace Engine
             case CursorType.CARET:
                 Cursor.set(caret_cursor);
                 break;
+            default:
+                break;
             }
 
             current_cursor = type;

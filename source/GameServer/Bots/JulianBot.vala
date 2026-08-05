@@ -1064,7 +1064,7 @@ class JulianBot : Bot
         HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
         populate_needed_tiles(needed_tiles,sortedhand,calls);
         foreach (TileType type_needed in needed_tiles.keys) {
-            int available_count = count_available_tiles(type_needed);
+            int available_count = count_available_tiles(type_needed,round_state.self.index,false);
             beforeBenefit += available_count;
 
             Tile for_log = new Tile(-1,type_needed);
@@ -1409,7 +1409,7 @@ class JulianBot : Bot
             int total_benefit = 0;
 
             foreach (TileType type_needed in needed_tiles.keys) {
-                int available_count = count_available_tiles(type_needed);
+                int available_count = count_available_tiles(type_needed,round_state.self.index,false);
                 total_benefit += available_count;
             }
 
@@ -1420,7 +1420,7 @@ class JulianBot : Bot
     }
 
     // Count how many tiles of a given type are still available (not visible)
-    private int count_available_tiles(TileType tile_type)
+    private int count_available_tiles(TileType tile_type, int me_index, bool cheating)
     {
         int available = 4;  // Start with max count
 
@@ -1433,6 +1433,17 @@ class JulianBot : Bot
         // Subtract tiles visible in all players' ponds and calls
         for (int i = 0; i < 4; i++) {
             RoundStatePlayer player = round_state.get_player(i);
+            // Usually, we can only see ourselves hand tiles unless you cheat
+            // we don't count the tile which assumed discarding as otherwise we call tsumo
+            // we assume that every player will keep the tiles we needed, although that may not be the truth
+            if(cheating || me_index == i) {
+                // Check hand
+                foreach (Tile hand_tile in player.hand) {
+                   if (hand_tile.tile_type == tile_type) {
+                    available--;
+                } 
+                }
+            }
 
             // Check pond
             foreach (Tile pond_tile in player.pond) {
