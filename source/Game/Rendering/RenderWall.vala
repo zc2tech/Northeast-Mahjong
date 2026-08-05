@@ -142,7 +142,6 @@ public class RenderWall : WorldObject
         private int removed_tiles;
 
         private int tiles_added;
-        private int dead_drawn;
         private ArrayList<RenderTile> doras = new ArrayList<RenderTile>();
         private ArrayList<RenderTile> ura_doras = new ArrayList<RenderTile>();
 

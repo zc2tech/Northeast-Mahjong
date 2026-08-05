@@ -17,7 +17,6 @@ class ReplayController : Object
 
     private Options options;
     private bool game_finished = false;
-    private bool is_disconnected = false;
     private bool is_paused = false;
     private float speed_multiplier = 1.0f;
 

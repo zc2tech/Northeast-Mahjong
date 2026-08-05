@@ -233,9 +233,6 @@ namespace GameServer
             else if (action is ClientServerAction)
             {
                 ClientServerAction csa = action as ClientServerAction;
-                ClientAction ca = csa.action;
-                string action_type = ca.get_type().name();
-
                 handle_client_action(csa);
             }
         }

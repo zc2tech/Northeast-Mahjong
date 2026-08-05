@@ -22,7 +22,8 @@ namespace GameServer
             // Create server
             server = new RegularServer(players, new ArrayList<ServerPlayer>(), rnd, info, settings);
         }
-
+        // Called from main.vala line 264
+        // ignore the warning!!!
         public void run()
         {
             Timer timer = new Timer();

@@ -302,10 +302,8 @@ namespace GameServer
             var call = new AnimationTime(0, 0.5f, 0);
             var hand_reveal = new AnimationTime(0, 0.15f, 0.8f);
             var split_wall = new AnimationTime(0, 0.5f, 0);
-            var dora_flip = new AnimationTime(0, 0.2f, 0);
             var dead_wall_mark_flip = new AnimationTime(0, 0.2f, 0);
             var win = new AnimationTime(0, 0.5f, 0.5f);
-            var riichi = new AnimationTime(0, 0.3f, 0.5f);
 
             var hand_order = new AnimationTime(0, 0.15f, 0);
             var hand_angle = new AnimationTime(0, 0.2f, 0);

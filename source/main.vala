@@ -253,9 +253,6 @@ private static void run_bot_simulation(int num_hands)
         1       // hanchan_count - number of hanchans in the game
     );
 
-    // Create empty spectators list
-    ArrayList<GameServer.ServerPlayer> spectators = new ArrayList<GameServer.ServerPlayer>();
-
     // Create random number generator
     Engine.RandomClass rnd = new Engine.RandomClass();
 

@@ -626,7 +626,7 @@ public class RoundStatePlayer
 
     public void rob_tile(Tile tile)
     {
-        //pond.remove(tile); // Don't need to do this
+        pond.remove(tile);
         tiles_called_on = true;
     }
 
@@ -1106,16 +1106,6 @@ class RoundStateWall
 
         int idx = 0;
         Tile tile = dead_wall_tiles.remove_at(idx);
-
-        return tile;
-    }
-
-    private Tile dead_tile_add()
-    {
-        // Remove from the HEAD (index 0) of the draw wall when adding to dead wall
-        Tile tile = wall_tiles.remove_at(0);
-        // Add to the end of dead_wall_tiles
-        dead_wall_tiles.insert(dead_wall_tiles.size, tile);
 
         return tile;
     }

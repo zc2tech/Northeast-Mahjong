@@ -244,45 +244,39 @@ namespace GameServer
             if (game_log == null)
                 return;
 
-            try
+        
+            // Extract score transfers from the score state
+            int[] transfers = new int[4];
+
+            if (score == null || score.players == null)
             {
-                // Extract score transfers from the score state
-                int[] transfers = new int[4];
-
-                if (score == null || score.players == null)
-                {
-                    Environment.log(LogType.ERROR, "RegularServer", "round_finished: score or score.players is null");
-                    return;
-                }
-
-                for (int i = 0; i < 4 && i < score.players.length; i++)
-                {
-                    if (score.players[i] != null)
-                        transfers[i] = score.players[i].transfer;
-                    else
-                        transfers[i] = 0;
-                }
-
-                // Determine result type
-                RoundResultType result_type = RoundResultType.NONE;
-                if (score.result != null)
-                {
-                    if (score.result.result == RoundFinishResult.RoundResultEnum.RON)
-                        result_type = RoundResultType.RON;
-                    else if (score.result.result == RoundFinishResult.RoundResultEnum.TSUMO)
-                        result_type = RoundResultType.TSUMO;
-                    else if (score.result.result == RoundFinishResult.RoundResultEnum.DRAW)
-                        result_type = RoundResultType.DRAW;
-                }
-
-
-                game_log.set_round_result(transfers, result_type);
-
+                Environment.log(LogType.ERROR, "RegularServer", "round_finished: score or score.players is null");
+                return;
             }
-            catch (Error e)
+
+            for (int i = 0; i < 4 && i < score.players.length; i++)
             {
-                Environment.log(LogType.ERROR, "RegularServer", @"Error saving round result: $(e.message)");
+                if (score.players[i] != null)
+                    transfers[i] = score.players[i].transfer;
+                else
+                    transfers[i] = 0;
             }
+
+            // Determine result type
+            RoundResultType result_type = RoundResultType.NONE;
+            if (score.result != null)
+            {
+                if (score.result.result == RoundFinishResult.RoundResultEnum.RON)
+                    result_type = RoundResultType.RON;
+                else if (score.result.result == RoundFinishResult.RoundResultEnum.TSUMO)
+                    result_type = RoundResultType.TSUMO;
+                else if (score.result.result == RoundFinishResult.RoundResultEnum.DRAW)
+                    result_type = RoundResultType.DRAW;
+            }
+
+            game_log.set_round_result(transfers, result_type);
+
+         
         }
     }
 

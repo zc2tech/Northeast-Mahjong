@@ -54,17 +54,6 @@ private class RenderHand : WorldObject
         order_hand(true);
     }
 
-    public ArrayList<RenderTile> get_tiles_type(TileType type)
-    {
-        ArrayList<RenderTile> tiles = new ArrayList<RenderTile>();
-
-        foreach (RenderTile tile in this.tiles)
-            if (tile.tile_type.tile_type == type)
-                tiles.add(tile);
-
-        return tiles;
-    }
-
     public void sort_hand()
     {
         tiles = RenderTile.sort_tiles(tiles);

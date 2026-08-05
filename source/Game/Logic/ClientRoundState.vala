@@ -393,7 +393,8 @@ public class ClientRoundState : Object
         decision_finished();
 
         ServerMessageTileDraw draw_msg = (ServerMessageTileDraw)message;
-        Tile tile = state.tile_draw();
+        //  Tile tile = state.tile_draw();
+        state.tile_draw();
 
         //      @"server_tile_draw: player=$(state.current_player.index), msg.tile_ID=$(draw_msg.tile_ID), state.tile.ID=$(tile.ID), state.tile.type=$(tile.tile_type.to_string())");
 

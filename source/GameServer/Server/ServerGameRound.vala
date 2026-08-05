@@ -283,19 +283,6 @@ namespace GameServer
         protected virtual void processing() {}
         public virtual void message_received(ServerPlayer player, ClientMessage message) {}
 
-        public Tile[] get_player_hand(int player_index)
-        {
-            // Get the player's hand from the round state
-            if (round != null && player_index >= 0 && player_index < 4)
-            {
-                ServerRoundStateValidator validator = round.get_validator();
-                if (validator != null && validator.players.length > player_index)
-                {
-                    return validator.players[player_index].hand.to_array();
-                }
-            }
-            return new Tile[0];
-        }
     }
 
     class RegularServerGameRound : ServerGameRound

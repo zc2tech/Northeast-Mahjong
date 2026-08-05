@@ -9,7 +9,6 @@ private class RenderPond : WorldObject
     private WorldObject wrap;
     private ArrayList<RenderTile> tiles = new ArrayList<RenderTile>();
     private RenderTile? riichi_tile = null;
-    private bool do_riichi = false;
 
     public RenderPond(GameRenderContext context)
     {
@@ -28,11 +27,11 @@ private class RenderPond : WorldObject
     {
         convert_object(tile);
 
-        if (do_riichi)
-        {
-            riichi_tile = tile;
-            do_riichi = false;
-        }
+        //  if (do_riichi)
+        //  {
+        //      riichi_tile = tile;
+        //      do_riichi = false;
+        //  }
 
         tiles.add(tile);
         arrange_pond();
@@ -42,22 +41,18 @@ private class RenderPond : WorldObject
     {
 
         // Check if tile is in the list
-        for (int i = 0; i < tiles.size; i++)
-        {
-        }
+        //  for (int i = 0; i < tiles.size; i++)
+        //  {
+        //  }
 
-        bool found = tiles.remove(tile);
+        //  bool found = tiles.remove(tile);
+        tiles.remove(tile);
 
         // Always arrange pond to ensure proper positioning
         arrange_pond();
 
-        if (tile == riichi_tile)
-            do_riichi = true;
-    }
-
-    public void riichi()
-    {
-        do_riichi = true;
+        //  if (tile == riichi_tile)
+        //      do_riichi = true;
     }
 
     private void arrange_pond()

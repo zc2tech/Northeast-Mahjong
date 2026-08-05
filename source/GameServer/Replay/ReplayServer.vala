@@ -26,17 +26,6 @@ namespace GameServer
             // Create replay timings (normal human-viewable speeds)
             timings = create_replay_timings();
 
-
-            // Debug: inspect initial_hands in the log
-            for (int r = 0; r < game_log.rounds.items.length; r++)
-            {
-                GameLogRound round = game_log.rounds.items[r];
-                for (int p = 0; p < round.initial_hands.items.length && p < 4; p++)
-                {
-                    SerializableList<Tile> hand = round.initial_hands.items[p];
-                }
-            }
-
             // Send game start to spectators with replay timings (not log's zero timings)
             GameStartInfo replay_start_info = new GameStartInfo(
                 game_log.start_info.get_players(),
@@ -137,16 +126,6 @@ namespace GameServer
             // Check if round finished
             if (current_round.is_finished)
             {
-                // Get the score transfers from the game log
-                GameLogRound log_round = game_log.rounds.items[round_index - 1];
-
-                // Log the result for debugging
-                int[] transfers = {
-                    log_round.transfer_p0,
-                    log_round.transfer_p1,
-                    log_round.transfer_p2,
-                    log_round.transfer_p3
-                };
 
                 // TODO: Send a replay scoring message to spectators
                 // Clean up and wait for user to click "Next Hand"

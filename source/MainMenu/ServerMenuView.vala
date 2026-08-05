@@ -258,8 +258,6 @@ class ServerMenuView : MenuSubView
         settings = message.settings;
         settings_button.enabled = true;
 
-        string log_status = (log != null) ? "not null" : "null";
-
         // Auto-add JulianBots to empty slots after settings are received (server is ready)
         // But NOT in replay mode - replay doesn't need real bots
         if (host && !bots_added && log == null)

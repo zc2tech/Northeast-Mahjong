@@ -37,11 +37,6 @@ namespace GameServer
             return validator;
         }
 
-        public Tile[] get_rotated_tiles()
-        {
-            return validator.get_rotated_tiles();
-        }
-
         private int dealer;
         private int wall_index;
         protected ServerSettings settings;  // Store settings to check bot_simulation flag
@@ -682,11 +677,6 @@ namespace GameServer
 
         }
 
-        public Tile? get_tile(int tile_ID)
-        {
-            return tile_map.get(tile_ID);
-        }
-
         public Tile draw_tile()
         {
             if (wall_tiles.size == 0)
@@ -697,22 +687,12 @@ namespace GameServer
             return wall_tiles.remove_at(0);
         }
 
-        public Tile draw_dead_tile()
-        {
-            if (dead_wall_tiles.size == 0)
-            {
-                Environment.log(LogType.ERROR, "ReplayWall", "Attempted to draw from empty dead wall!");
-                return new Tile(0, TileType.MAN1);
-            }
-            return dead_wall_tiles.remove_at(0);
-        }
     }
 
     class LogServerRoundState : ServerRoundState
     {
         private ArrayList<GameLogLine> lines;
         private bool is_paused = false;
-        private float pause_start_time = 0;
         private float speed_multiplier = 1.0f;
         private bool replay_complete = false;
         private ReplayWall replay_wall;
@@ -722,28 +702,6 @@ namespace GameServer
             base(settings, round_wind, dealer, round.start_info.wall_index, rnd,timings, round.tiles.to_array());
             lines = new ArrayList<GameLogLine>.wrap(round.lines.to_array());
             replay_wall = new ReplayWall(round.tiles.to_array());
-        }
-
-        public void set_paused(bool paused, float time)
-        {
-            if (paused && !is_paused)
-            {
-                // Entering pause
-                pause_start_time = time;
-                is_paused = true;
-            }
-            else if (!paused && is_paused)
-            {
-                // Exiting pause - shift move_start_time forward by the pause duration
-                float pause_duration = time - pause_start_time;
-                move_start_time += pause_duration;
-                is_paused = false;
-            }
-        }
-
-        public void set_speed(float multiplier)
-        {
-            speed_multiplier = multiplier;
         }
 
         protected override void next_player_action(float time)

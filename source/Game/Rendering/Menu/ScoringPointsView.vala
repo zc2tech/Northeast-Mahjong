@@ -16,7 +16,6 @@ class ScoringPointsView : View2D
     private int score_index;
 
     private bool animate;
-    private int padding = 20;
     private int switches;
     private float total_time;
 
@@ -322,17 +321,6 @@ class ScoringPointsView : View2D
             scoring_control.size = Size2(size.width, size.height - score_label.size.height - 2);
     }
 
-    public void stop_sounds()
-    {
-        // Stop fade sound in main view
-        if (fade_sound != null)
-            fade_sound.stop();
-
-        // Stop sounds in scoring control
-        if (scoring_control != null)
-            scoring_control.stop_sounds();
-    }
-
     private class ScoringScoreControl : Control
     {
         private ScoringHandView? hand;
@@ -342,7 +330,6 @@ class ScoringPointsView : View2D
         private bool dual_payer;
         private bool _animate;
 
-        private int animation_han_index;
         private LabelControl points_label;
         private ArrayList<YakuLine> lines = new ArrayList<YakuLine>();
         private Sound score_sound;
@@ -465,11 +452,6 @@ class ScoringPointsView : View2D
             animation_score_fade_start();
         }
 
-        private void animation_han_animate_start()
-        {
-            fade_sound.play();
-        }
-
         private void animation_score_fade_start()
         {
             var animation = new Animation(context.server_times.score_counting_fade);
@@ -534,15 +516,6 @@ class ScoringPointsView : View2D
         public void animate()
         {
             animate_items_start();
-        }
-
-        public void stop_sounds()
-        {
-            // Stop score counting and fade sounds
-            if (score_sound != null)
-                score_sound.stop();
-            if (fade_sound != null)
-                fade_sound.stop();
         }
 
         // TODO: need to adjust for Northeast

@@ -240,6 +240,8 @@ public class GameRenderView : View3D, IGameRenderer
         case RoundFinishResult.RoundResultEnum.TSUMO:
             tsumo(results.winner_indices[0]);
             break;
+        default:
+            break;
         }
     }
 
@@ -304,8 +306,7 @@ public class GameRenderView : View3D, IGameRenderer
     private void tile_draw(int player_index, int tile_ID)
     {
         RenderPlayer player = players[player_index];
-        RenderTile tile = tiles[tile_ID];
-
+        //  RenderTile tile = tiles[tile_ID];
         //      @"tile_draw: player=$player_index, tile_ID=$tile_ID, tile_type=$(tile.tile_type.tile_type.to_string())");
 
         buffer_action(new RenderActionDraw(context.server_times.tile_draw, player));

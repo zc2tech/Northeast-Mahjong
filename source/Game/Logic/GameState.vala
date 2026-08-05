@@ -103,9 +103,9 @@ public class GameState : Object
                 for (int i = 0; i < result.winner_indices.length; i++)
                 {
                     int winner_index = result.winner_indices[i];
-                    string winner_name = players[winner_index].name;
-                    Wind winner_wind = players[winner_index].wind;
-                    string result_type = ron ? "Ron" : "Tsumo";
+                    //  string winner_name = players[winner_index].name;
+                    //  Wind winner_wind = players[winner_index].wind;
+                    //  string result_type = ron ? "Ron" : "Tsumo";
 
                     // Check if dealer won
                     if (winner_index == dealer_index)
@@ -186,7 +186,7 @@ public class GameState : Object
         }
         else if (tsumo)  // 自摸
         {
-            Scoring score = result.scores[0];
+            //  Scoring score = result.scores[0];
             int winner_index = result.winner_indices[0];
 
             if (dealer_index == winner_index) // 庄家自摸

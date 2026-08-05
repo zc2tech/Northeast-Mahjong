@@ -440,7 +440,7 @@ public class TileRules
     // 杠上开花 判断不了， 所以有Readings还是会返回的
     public static ArrayList<HandReading> hand_readings(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls, bool tenpai_only, bool early_return)
     {
-        int64 start_time = get_monotonic_time();
+        //  int64 start_time = get_monotonic_time();
 
         // 东北麻将的话，已经没机会和了，不能剩 一张或者两张牌的
         if(hand.size <= 2) {

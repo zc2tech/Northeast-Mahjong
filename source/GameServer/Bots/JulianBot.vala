@@ -388,48 +388,6 @@ class JulianBot : Bot
         return stats;
     }
 
-    // 只分析幺九牌状态,其他的不想看
-    private HandStatistics analyze_only_terminal_honor(ArrayList<Tile> hand, ArrayList<RoundStateCall> calls)
-    {
-        HandStatistics stats = HandStatistics();
-
-        stats.terminal_count = 0;
-        stats.dragon_count = 0;
-        stats.singles = new ArrayList<TileType>();
-        stats.pair_count = 0;
-        stats.triplet_count = 0;
-
-        // Count tiles by suit
-        foreach (Tile t in hand)
-        {
-            if (t.is_terminal_tile())
-            {
-                stats.terminal_count++;
-            }
-
-            if (t.is_dragon_tile())
-            {
-                stats.dragon_count++;
-            }
-        }
-
-        foreach (RoundStateCall c in calls)
-        {
-            foreach(Tile t in c.tiles) {
-                if (t.is_terminal_tile())
-                {
-                    stats.terminal_count++;
-                }
-                if (t.is_dragon_tile())
-                {
-                    stats.dragon_count++;
-                }
-            }
-        }
-
-        return stats;
-    }
-
     // Evaluate whether to call pon (碰) on a tile
     // Returns true if should call pon, false otherwise
     private bool should_call_pon(Tile tile,
@@ -526,7 +484,6 @@ class JulianBot : Bot
         newCalls.add(new RoundStateCall(RoundStateCall.CallType.PON, pon, tile, 1));
 
         // 找一下该打什么牌
-        Tile bestDiscard = null;
         HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
         HashSet<TileType> checked = new HashSet<TileType>();
         foreach (Tile t in newHand)
@@ -598,7 +555,7 @@ class JulianBot : Bot
     private bool should_call_kan(Tile tile,
                                   ArrayList<Tile> sortedhand,
                                   ArrayList<RoundStateCall> calls,
-                                  ArrayList<HandReading> beforeCallReading,
+                                  int beforeBenefit,
                                   HandStatistics stats,
                                   RoundStatePlayer discarding_player)
     {
@@ -624,9 +581,9 @@ class JulianBot : Bot
         //  // Get (上家 - kamicha)
         //  int kamicha_index = (round_state.self.index + 3) % 4;
 
-        int discarder_index = discarding_player.index;
-
         // 杠掉试试
+      
+       
         ArrayList<Tile> newHand = new ArrayList<Tile>();
         ArrayList<RoundStateCall> newCalls = new ArrayList<RoundStateCall>();
         newCalls.add_all(calls);
@@ -642,6 +599,17 @@ class JulianBot : Bot
             else
             {
                 newHand.add(t);
+            }
+        }
+
+        // Even we already tenpai, it should be a chance to improve our hand tiles
+        if(beforeBenefit > 0) {
+            if( beforeBenefit <=2 ) {
+                 return true;
+            } else if (beforeBenefit <= 4 ) {
+                return Random.boolean();
+            } else {
+                return false;
             }
         }
 
@@ -1058,7 +1026,6 @@ class JulianBot : Bot
         // Analyze hand statistics
         HashMap<TileType, int> hOP = other_player_tiles();
         HandStatistics stats = analyze_hand(tile, sortedhand, calls, hOP);
-        ArrayList<HandReading> beforeCallReading = TileRules.hand_readings(sortedhand, calls, true, false);
 
         int beforeBenefit = 0;
         HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
@@ -1069,7 +1036,7 @@ class JulianBot : Bot
 
             Tile for_log = new Tile(-1,type_needed);
             Environment.log(LogType.DEBUG, "JulianBot",
-                @"do_call_decision Beofre_Need_Tile: $(for_log.to_string()) : $(available_count) ");
+                @"do_call_decision Before_Need_Tile: $(for_log.to_string()) : $(available_count) ");
         }
         if (beforeBenefit > 0) {
             Environment.log(LogType.DEBUG, "JulianBot",
@@ -1093,7 +1060,7 @@ class JulianBot : Bot
         }
 
          // Evaluate kan decision
-        if (should_call_kan(tile, sortedhand, calls, beforeCallReading, stats, discarding_player))
+        if (should_call_kan(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
         {
             call_open_kan();
             return;
@@ -1439,9 +1406,9 @@ class JulianBot : Bot
             if(cheating || me_index == i) {
                 // Check hand
                 foreach (Tile hand_tile in player.hand) {
-                   if (hand_tile.tile_type == tile_type) {
-                    available--;
-                } 
+                    if (hand_tile.tile_type == tile_type) {
+                        available--;
+                    } 
                 }
             }
 
@@ -1464,12 +1431,6 @@ class JulianBot : Bot
          
         }
 
-        // hand tiles of myself
-        foreach(Tile my_hand_tile in round_state.self.hand) {
-            if(my_hand_tile.tile_type == tile_type) {
-                available--;
-            }
-        }
         return available;
     }
 
