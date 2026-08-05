@@ -576,11 +576,21 @@ class JulianBot : Bot
         //   // Get s (下家 - shimocha)
         //  int shimocha_index = (round_state.self.index + 1) % 4;
 
-        //  // Get cross/opposite player (对面 - toimen)
-        //  int toimen_index = (round_state.self.index + 2) % 4;
+        // Get cross/opposite player (对面 - toimen)
+        int toimen_index = (round_state.self.index + 2) % 4;
 
-        //  // Get (上家 - kamicha)
-        //  int kamicha_index = (round_state.self.index + 3) % 4;
+        // Get (上家 - kamicha)
+        int kamicha_index = (round_state.self.index + 3) % 4;
+
+        if(kamicha_index == discarding_player.index) {
+            // no reason the hand tiles can get better with kan, although it's possible with pon which checked before
+            return false;
+        }
+        if(beforeBenefit > 0 && toimen_index == discarding_player.index ) {
+            return false;
+        }
+
+        // start from here, it's must from shimocha
 
         // 杠掉试试
         ArrayList<Tile> newHand = new ArrayList<Tile>();
@@ -911,7 +921,7 @@ class JulianBot : Bot
                 if (TileRules.in_tenpai(copy_for_tenpai, round_state.self.calls)) {
                     discard_for_tenpai = tile;
                     // 到时候会算舍去这张牌能听多少 <类型,张数>
-                     Environment.log(LogType.DEBUG, "JulianBot", @"Found tenpai discard ($(round_state.self.wind.to_string())): $(tile.tile_type.to_string())");
+                     Environment.log(LogType.DEBUG, "JulianBot", @"!!! Found tenpai discard ($(round_state.self.wind.to_string())): $(tile.tile_type.to_string())");
                     hDiscardForTenpai.set(discard_for_tenpai, new HashMap<TileType, int>());
                 }
                 copy_for_tenpai.clear();

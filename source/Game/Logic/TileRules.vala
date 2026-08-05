@@ -598,6 +598,14 @@ public class TileRules
             // -------- /Chii-toi 七対--------
         }
 
+         // Last option is to find a pair, and see if we are waiting for our last combination (this can only be if we have 4 tiles left in the hand, and are tenpai only)
+         // we don't need to handle size == 5 condition specially as it can be handled properly in the subsequent loop 
+         // and finally becomes size == 2 condition
+        if (hand.size == 4)
+        {
+            return handle_four_tile_tenpai(hand, melds, readings);
+        }
+
         for (int i = 0; i < hand.size; i++)
         {
             if (i != 0 && hand[i].tile_type == hand[i-1].tile_type)
@@ -618,7 +626,7 @@ public class TileRules
                     copy.add(t);
             }
 
-            // 凑够了刻子
+            // 针对这个i , 凑够了刻子
             if (meld.size == 3)
             {
                 TileMeld m = new TileMeld(meld[0], meld[1], meld[2], true);
@@ -633,7 +641,7 @@ public class TileRules
                 //      return readings;
             }
 
-            // 顺子
+            //  针对这个i , 凑够了顺子
             if (tile.is_suit_tile() && tile.get_number_index() <= 6)
             {
                 // See if we can make a row with our tile being the lowest number (only lowest, in order to skip redundant row permutations)
@@ -668,118 +676,7 @@ public class TileRules
                 }
             }
 
-            // Last option is to find a pair, and see if we are waiting for our last combination (this can only be if we have 4 tiles left in the hand, and are tenpai only)
-            if (hand.size == 4)
-            {
-                int s = hand.size;
-                Tile? t = null;
-                Tile? n1 = null, n2 = null;
-                // remember max i in loop will be 3
-                // and we have ruled out 'i != 0 && hand[i].tile_type == hand[i-1].tile_type'
-                if (hand[(i+1)%s].tile_type == hand[(i+2)%s].tile_type)
-                {
-                    n1 = hand[(i+1)%s];
-                    n2 = hand[(i+2)%s];
-                     t = hand[(i+3)%s];
-                }
-                else if (hand[(i+1)%s].tile_type == hand[(i+3)%s].tile_type)
-                {
-                    n1 = hand[(i+1)%s];
-                     t = hand[(i+2)%s];
-                    n2 = hand[(i+3)%s];
-                }
-                else if (hand[(i+2)%s].tile_type == hand[(i+3)%s].tile_type)
-                {
-                     t = hand[(i+1)%s];
-                    n1 = hand[(i+2)%s];
-                    n2 = hand[(i+3)%s];
-                }
-
-                if (t != null)
-                {
-                    if (tile.tile_type == t.tile_type) // We have two remaining pairs
-                    {
-                        TilePair pair = new TilePair(tile, t);
-                        ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
-                        new_melds.add_all(melds);
-                        new_melds.add(new TileMeld(n1, n2, new Tile(-1, n1.tile_type), true));
-
-                        HandReading reading = new HandReading(new_melds, pair);
-                        if (reading.valid_keishiki)
-                            append_reading(readings, reading);
-
-                        pair = new TilePair(n1, n2);
-                        new_melds.clear();
-                        new_melds.add_all(melds);
-                        new_melds.add(new TileMeld(tile, t, new Tile(-1, tile.tile_type), true));
-
-                        reading = new HandReading(new_melds, pair);
-                        if (reading.valid_keishiki)
-                            append_reading(readings, reading);
-
-                        return readings;
-                    }
-                    else if (tile.is_neighbour(t) || tile.is_second_neighbour(t)) // We have a pair and are waiting on the final sequence
-                    {
-                        TilePair pair = new TilePair(n1, n2);
-
-                        int v1 = (int)t.tile_type;
-                        int v2 = (int)tile.tile_type;
-
-                        Tile t1, t2;
-                        if (v1 < v2)
-                        {
-                            t1 = t;
-                            t2 = tile;
-                        }
-                        else
-                        {
-                            t1 = tile;
-                            t2 = t;
-                        }
-
-                        v1 = (int)t1.tile_type;
-                        v2 = (int)t2.tile_type;
-
-                        ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
-                        new_melds.add_all(melds);
-
-                        if (tile.is_second_neighbour(t))
-                        {
-                            int middle = (v1 + v2) / 2; // Need a new tile in the middle
-                            new_melds.add(new TileMeld(t1, new Tile(-1, (TileType)middle), t2, true));
-
-                            HandReading reading = new HandReading(new_melds, pair);
-                            if (reading.valid_keishiki)
-                                append_reading(readings, reading);
-                        }
-                        else
-                        {
-                            if (!t1.is_terminal_tile())
-                            {
-                                new_melds.add(new TileMeld(new Tile(-1, (TileType)(v1 - 1)), t1, t2, true));
-
-                                HandReading reading = new HandReading(new_melds, pair);
-                                if (reading.valid_keishiki)
-                                    append_reading(readings, reading);
-                            }
-
-                            if (!t2.is_terminal_tile())
-                            {
-                                new_melds.clear();
-                                new_melds.add_all(melds);
-                                new_melds.add(new TileMeld(t1, t2, new Tile(-1, (TileType)(v2 + 1)), true));
-
-                                HandReading reading = new HandReading(new_melds, pair);
-                                if (reading.valid_keishiki)
-                                    append_reading(readings, reading);
-                            }
-                        }
-
-                        return readings;
-                    } // end if neighbouring
-                } // end if t!= null
-            }
+           
         } // end for loop 'hand'
 
         return readings;
@@ -805,6 +702,129 @@ public class TileRules
             if (!tile.is_honor_tile() && !tile.is_terminal_tile())
                 return false;
         return true;
+    }
+
+    private static ArrayList<HandReading> handle_four_tile_tenpai(ArrayList<Tile> hand, ArrayList<TileMeld> melds, ArrayList<HandReading> readings)
+    {
+        for (int i = 0; i < hand.size; i++)
+        {
+            if (i != 0 && hand[i].tile_type == hand[i-1].tile_type)
+                continue;
+
+            // See if we can make a triplet with our tile
+            Tile tile = hand[i];
+
+            int s = hand.size;
+            Tile? t = null;
+            Tile? n1 = null, n2 = null;
+            // remember max i in loop will be 3
+            // and we have ruled out 'i != 0 && hand[i].tile_type == hand[i-1].tile_type'
+            if (hand[(i+1)%s].tile_type == hand[(i+2)%s].tile_type)
+            {
+                n1 = hand[(i+1)%s];
+                n2 = hand[(i+2)%s];
+                t = hand[(i+3)%s];
+            }
+            else if (hand[(i+1)%s].tile_type == hand[(i+3)%s].tile_type)
+            {
+                n1 = hand[(i+1)%s];
+                t = hand[(i+2)%s];
+                n2 = hand[(i+3)%s];
+            }
+            else if (hand[(i+2)%s].tile_type == hand[(i+3)%s].tile_type)
+            {
+                t = hand[(i+1)%s];
+                n1 = hand[(i+2)%s];
+                n2 = hand[(i+3)%s];
+            }
+
+            if (t != null)
+            {
+                if (tile.tile_type == t.tile_type) // We have two remaining pairs
+                {
+                    TilePair pair = new TilePair(tile, t);
+                    ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
+                    new_melds.add_all(melds);
+                    new_melds.add(new TileMeld(n1, n2, new Tile(-1, n1.tile_type), true));
+
+                    HandReading reading = new HandReading(new_melds, pair);
+                    if (reading.valid_keishiki)
+                        append_reading(readings, reading);
+
+                    pair = new TilePair(n1, n2);
+                    new_melds.clear();
+                    new_melds.add_all(melds);
+                    new_melds.add(new TileMeld(tile, t, new Tile(-1, tile.tile_type), true));
+
+                    reading = new HandReading(new_melds, pair);
+                    if (reading.valid_keishiki)
+                        append_reading(readings, reading);
+
+                    return readings;
+                }
+                else if (tile.is_neighbour(t) || tile.is_second_neighbour(t)) // We have a pair and are waiting on the final sequence
+                {
+                    TilePair pair = new TilePair(n1, n2);
+
+                    int v1 = (int)t.tile_type;
+                    int v2 = (int)tile.tile_type;
+
+                    Tile t1, t2;
+                    if (v1 < v2)
+                    {
+                        t1 = t;
+                        t2 = tile;
+                    }
+                    else
+                    {
+                        t1 = tile;
+                        t2 = t;
+                    }
+
+                    v1 = (int)t1.tile_type;
+                    v2 = (int)t2.tile_type;
+
+                    ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
+                    new_melds.add_all(melds);
+
+                    if (tile.is_second_neighbour(t))
+                    {
+                        int middle = (v1 + v2) / 2; // Need a new tile in the middle
+                        new_melds.add(new TileMeld(t1, new Tile(-1, (TileType)middle), t2, true));
+
+                        HandReading reading = new HandReading(new_melds, pair);
+                        if (reading.valid_keishiki)
+                            append_reading(readings, reading);
+                    }
+                    else
+                    {
+                        if (!t1.is_terminal_tile())
+                        {
+                            new_melds.add(new TileMeld(new Tile(-1, (TileType)(v1 - 1)), t1, t2, true));
+
+                            HandReading reading = new HandReading(new_melds, pair);
+                            if (reading.valid_keishiki)
+                                append_reading(readings, reading);
+                        }
+
+                        if (!t2.is_terminal_tile())
+                        {
+                            new_melds.clear();
+                            new_melds.add_all(melds);
+                            new_melds.add(new TileMeld(t1, t2, new Tile(-1, (TileType)(v2 + 1)), true));
+
+                            HandReading reading = new HandReading(new_melds, pair);
+                            if (reading.valid_keishiki)
+                                append_reading(readings, reading);
+                        }
+                    }
+
+                    return readings;
+                } // end if neighbouring
+            } // end if t!= null
+        }
+
+        return readings;
     }
 
     public static bool can_closed_chankan(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls)
