@@ -91,7 +91,7 @@ public class MainWindow : RenderWindow
         if (settings.is_replay_mode)
         {
             // Create ReplayController for replay mode
-            replay_controller = new ReplayController(game_view, info, settings, connection, new Options.from_disk());
+            replay_controller = new ReplayController(game_view, info, settings, connection, player_index, new Options.from_disk());
             replay_controller.game_loaded.connect(game_loaded);
             replay_controller.finished.connect(game_finished);
             game_running = true;

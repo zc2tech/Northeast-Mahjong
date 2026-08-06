@@ -23,13 +23,13 @@ class ReplayController : Object
     public signal void game_loaded();
     public signal void finished();
 
-    public ReplayController(Container parent_view, GameStartInfo start_info, ServerSettings settings, IGameConnection connection, Options options)
+    public ReplayController(Container parent_view, GameStartInfo start_info, ServerSettings settings, IGameConnection connection, int player_index, Options options)
     {
         this.parent_view = parent_view;
         this.start_info = start_info;
         this.settings = settings;
         this.connection = connection;
-        this.observer_index = 0;  // Start observing player 0
+        this.observer_index = (player_index >= 0 && player_index < 4) ? player_index : 0;  // Use player_index from replay server
         this.options = options;
 
         // Create standard replay timings (ignore zero timings from bot simulation logs)

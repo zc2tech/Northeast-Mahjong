@@ -45,6 +45,9 @@ namespace GameServer
         private int pending_turn_decision = -1;
         private bool pending_call_decisions;
 
+        // Store call actions temporarily until check_calls_done determines the winner
+        private HashMap<int, ClientServerAction> pending_call_actions = new HashMap<int, ClientServerAction>();
+
         private DelayTimer animation_timer = new DelayTimer();
 
         protected abstract void next_player_action(float time);
@@ -227,7 +230,8 @@ namespace GameServer
                 return false;
             }
 
-            log_action(action);
+            // Store action - will be logged only if this call wins
+            pending_call_actions[player_index] = action;
             check_calls_done();
             return true;
         }
@@ -330,7 +334,8 @@ namespace GameServer
                 return false;
             }
 
-            log_action(action);
+            // Store action - will be logged only if this call wins
+            pending_call_actions[player_index] = action;
             check_calls_done();
 
             return true;
@@ -352,7 +357,8 @@ namespace GameServer
                 return false;
             }
 
-            log_action(action);
+            // Store action - will be logged only if this call wins
+            pending_call_actions[player_index] = action;
             check_calls_done();
 
             return true;
@@ -378,7 +384,8 @@ namespace GameServer
                 return false;
             }
 
-            log_action(action);
+            // Store action - will be logged only if this call wins
+            pending_call_actions[player_index] = action;
             check_calls_done();
 
             return true;
@@ -395,13 +402,17 @@ namespace GameServer
 
         private void check_calls_done()
         {
+            // 看看4个人是不是都下回信了，“不call” 也算回信
             if (!validator.calls_finished)
                 return;
 
+            // 看看最终谁的决定胜出
             CallResult? result = validator.get_call();
 
             if (result == null)
             {
+                // No calls won - clear pending actions
+                pending_call_actions.clear();
                 game_calls_finished();
                 next_turn();
                 return;
@@ -410,6 +421,15 @@ namespace GameServer
             ServerRoundStatePlayer discarder = result.discarder;
             ServerRoundStatePlayer caller = result.callers[0];
             Tile discard_tile = result.discard_tile;
+
+            // Log the winning call action
+            if (pending_call_actions.has_key(caller.index))
+            {
+                log_action(pending_call_actions[caller.index]);
+            }
+
+            // Clear all pending call actions
+            pending_call_actions.clear();
 
             if (result.call_type == CallDecisionType.CHII)
             {

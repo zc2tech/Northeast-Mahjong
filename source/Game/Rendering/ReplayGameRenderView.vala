@@ -5,12 +5,8 @@ public class ReplayGameRenderView : GameRenderView
 {
     public ReplayGameRenderView(int observer_index, int dealer_index, GameStartInfo game_start, RoundStartInfo info, Options options, RoundScoreState score)
     {
-        // Always initialize as observer (-1) for replay, but store the preferred observer index
-        base(-1, dealer_index, game_start, info, options, score);
-
-        // Override observer_index with the actual one for replay
-        this.observer_index = (observer_index >= 0 && observer_index < 4) ? observer_index : 0;
-
+        // Pass the actual observer_index to the base class
+        base(observer_index, dealer_index, game_start, info, options, score);
     }
 
     public void set_animation_speed(float multiplier)
