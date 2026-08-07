@@ -9,6 +9,9 @@ public class TileRules
     private static int cache_hits = 0;
     private static int cache_misses = 0;
 
+    // Mutex to protect cache operations from concurrent access (bot simulation)
+    private static Mutex cache_mutex = Mutex();
+
     // Generate cache key from hand and calls
     private static string generate_cache_key(ArrayList<Tile> hand, ArrayList<RoundStateCall>? calls, bool tenpai_only, bool early_return)
     {
@@ -48,12 +51,14 @@ public class TileRules
     // Clear the cache (should be called at the start of each new round)
     public static void clear_hand_readings_cache()
     {
+        cache_mutex.lock();
         if (readings_cache != null) {
             //  int size = readings_cache.size;
             readings_cache.clear();
             cache_hits = 0;
             cache_misses = 0;
         }
+        cache_mutex.unlock();
     }
 
     public static Scoring get_score(PlayerStateContext player, RoundStateContext round)
@@ -447,29 +452,38 @@ public class TileRules
            return new ArrayList<HandReading>();
         }
 
+        // Generate cache key (including early_return flag)
+        string cache_key = generate_cache_key(hand, calls, tenpai_only, early_return);
+
+        // Lock for cache check and initialization
+        cache_mutex.lock();
+
         // Initialize cache if needed
         if (readings_cache == null) {
             readings_cache = new HashMap<string, ArrayList<HandReading>>();
         }
 
-        // Generate cache key (including early_return flag)
-        string cache_key = generate_cache_key(hand, calls, tenpai_only, early_return);
-
         // Check cache FIRST - if hit, skip all validation
         if (readings_cache.has_key(cache_key)) {
             ArrayList<HandReading> cached_result = readings_cache.get(cache_key);
             cache_hits++;
+            cache_mutex.unlock();
             //  int64 elapsed = get_monotonic_time() - start_time;
             return cached_result;
         }
 
         cache_misses++;
+        cache_mutex.unlock();
 
-        // Cache miss - do the quick validation check
+        // Cache miss - do the quick validation check (outside lock)
         if(!win_necessary_condition(hand,calls,tenpai_only)) {
              // Cache empty result too!
              ArrayList<HandReading> empty_result = new ArrayList<HandReading>();
+
+             cache_mutex.lock();
              readings_cache.set(cache_key, empty_result);
+             cache_mutex.unlock();
+
             //   int64 elapsed = get_monotonic_time() - start_time;
              return empty_result;
         }
@@ -537,7 +551,9 @@ public class TileRules
                 northeastReadings.add(r);
                 if(early_return) {
                     // Cache the result before returning
+                    cache_mutex.lock();
                     readings_cache.set(cache_key, northeastReadings);
+                    cache_mutex.unlock();
                     //  int64 elapsed = get_monotonic_time() - start_time;
                     return northeastReadings;
                 }
@@ -545,7 +561,9 @@ public class TileRules
         }
 
         // Always cache the result (even if empty)
+        cache_mutex.lock();
         readings_cache.set(cache_key, northeastReadings);
+        cache_mutex.unlock();
 
         //  int64 elapsed = get_monotonic_time() - start_time;
         return northeastReadings;
@@ -706,6 +724,41 @@ public class TileRules
 
     private static ArrayList<HandReading> handle_four_tile_tenpai(ArrayList<Tile> hand, ArrayList<TileMeld> melds, ArrayList<HandReading> readings)
     {
+        // try to win without pair, so the win tile should be sequence + MADE pair
+        if( true ) { // just to separate variable namespace
+            ArrayList<Tile> temp = new ArrayList<Tile>();
+            temp.add_all(hand);
+            ArrayList<Tile> sorted_temp= Tile.sort_tiles_type(hand); // sort it for safe
+            Tile t0 = sorted_temp[0];
+            Tile t1= sorted_temp[1];
+            Tile t2 = sorted_temp[2];
+            Tile t3 = sorted_temp[3];
+            if(t0.is_same_sort(t1) && t1.is_same_sort(t2) 
+                && t2.tile_type == t1.tile_type+1 && t1.tile_type == t0.tile_type + 1) {
+                TilePair pair = new TilePair(t3, new Tile(-1, t3.tile_type));
+                ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
+                new_melds.add_all(melds);
+                new_melds.add(new TileMeld(t0, t1, t2, true));
+
+                HandReading reading = new HandReading(melds, pair);
+                if (reading.valid_keishiki)
+                    append_reading(readings, reading); 
+            }
+            if( t0.tile_type != t1.tile_type && 
+                t1.is_same_sort(t2) && t2.is_same_sort(t3) 
+                && t3.tile_type == t2.tile_type+1 && t2.tile_type == t1.tile_type + 1) {
+                TilePair pair = new TilePair(t0, new Tile(-1, t0.tile_type));
+                ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
+                new_melds.add_all(melds);
+                new_melds.add(new TileMeld(t1, t2, t3, true));
+
+                HandReading reading = new HandReading(melds, pair);
+                if (reading.valid_keishiki)
+                    append_reading(readings, reading); 
+            }
+        }
+        
+        // Normal way as we should find pair first, then maybe pair + sequence or pair + triplet
         for (int i = 0; i < hand.size; i++)
         {
             if (i != 0 && hand[i].tile_type == hand[i-1].tile_type)
@@ -740,7 +793,18 @@ public class TileRules
 
             if (t != null)
             {
-                if (tile.tile_type == t.tile_type) // We have two remaining pairs
+                if(t.tile_type == n1.tile_type) {
+                    // triplet
+                    TilePair pair = new TilePair(tile, new Tile(-1, t.tile_type));
+                    ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
+                    new_melds.add_all(melds);
+                    new_melds.add(new TileMeld(n1, n2, t, true));
+
+                    HandReading reading = new HandReading(melds, pair);
+                    if (reading.valid_keishiki)
+                        append_reading(readings, reading);
+                }
+                else if (tile.tile_type == t.tile_type) // We have two remaining pairs
                 {
                     TilePair pair = new TilePair(tile, t);
                     ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
@@ -819,10 +883,9 @@ public class TileRules
                         }
                     }
 
-                    return readings;
                 } // end if neighbouring
-            } // end if t!= null
-        }
+            }
+        } // for loop for every tiles in hand ( hand,size == 4)
 
         return readings;
     }

@@ -1,6 +1,6 @@
 using Gee;
 
-class JulianBot : Bot
+class OracleBot : Bot
 {
     private Engine.RandomClass rnd = new Engine.RandomClass();
 
@@ -484,7 +484,7 @@ class JulianBot : Bot
             BestDiscardResult result = find_best_discard(discard_benefit);
 
             if (result.tile != null && result.benefit > beforeBenefit) {
-                 Environment.log(LogType.DEBUG, "JulianBot",
+                 Environment.log(LogType.DEBUG, "OracleBot",
                     @"should_call_pon ($(round_state.self.wind.to_string())) discard $(result.tile.to_string()) for $(result.benefit) win tiles");
                 // 既然值得碰,那就碰吧.
                 return true;
@@ -599,7 +599,7 @@ class JulianBot : Bot
                 int available_count = count_available_tiles(type_needed,round_state.self.index,false);
                 newBenefit += available_count;
             }
-            Environment.log(LogType.DEBUG, "JulianBot",
+            Environment.log(LogType.DEBUG, "OracleBot",
                 @"should_call_kan, NewBenefit: $(newBenefit)");
 
             // usually, it will disrupt our tenpai
@@ -776,7 +776,7 @@ class JulianBot : Bot
                     bestChiiResut.tile = result.tile;
                     bestGroup = g;
                     // 有起色就立即　continue 看下一个 group 是不是更出色, 不需要plan_b 了
-                    Environment.log(LogType.DEBUG, "JulianBot",
+                    Environment.log(LogType.DEBUG, "OracleBot",
                     @"should_call_chii ($(round_state.self.wind.to_string())) chii $(tile.to_string()) discard $(result.tile.to_string()) for $(result.benefit) win tiles");
                     continue;
                 }
@@ -890,14 +890,14 @@ class JulianBot : Bot
                 } else {
                     checked.add(tile.tile_type);
                 }
-                //  Environment.log(LogType.DEBUG, "JulianBot", @"Checking if discarding $(tile.tile_type.to_string()) leads to tenpai...");
+                //  Environment.log(LogType.DEBUG, "OracleBot", @"Checking if discarding $(tile.tile_type.to_string()) leads to tenpai...");
                 copy_for_tenpai.add_all(round_state.self.hand);
                 copy_for_tenpai.remove(tile);
                 // 能听牌当然就打你了
                 if (TileRules.in_tenpai(copy_for_tenpai, round_state.self.calls)) {
                     discard_for_tenpai = tile;
                     // 到时候会算舍去这张牌能听多少 <类型,张数>
-                     Environment.log(LogType.DEBUG, "JulianBot", @"!!! Found tenpai discard ($(round_state.self.wind.to_string())): $(tile.tile_type.to_string())");
+                     Environment.log(LogType.DEBUG, "OracleBot", @"!!! Found tenpai discard ($(round_state.self.wind.to_string())): $(tile.tile_type.to_string())");
                     hDiscardForTenpai.set(discard_for_tenpai, new HashMap<TileType, int>());
                 }
                 copy_for_tenpai.clear();
@@ -1037,11 +1037,11 @@ class JulianBot : Bot
             beforeBenefit += available_count;
 
             Tile for_log = new Tile(-1,type_needed);
-            Environment.log(LogType.DEBUG, "JulianBot",
+            Environment.log(LogType.DEBUG, "OracleBot",
                 @"do_call_decision Before_Need_Tile: $(for_log.to_string()) : $(available_count) ");
         }
         if (beforeBenefit > 0) {
-            Environment.log(LogType.DEBUG, "JulianBot",
+            Environment.log(LogType.DEBUG, "OracleBot",
                 @"do_call_decision BeforeBenefit: $(beforeBenefit) ");
         }
 
@@ -1197,7 +1197,7 @@ class JulianBot : Bot
         }
         if (tiles.size == 0)
             return RandomTileSmart(stats,backup);
-        
+
         // 干净的幺九顺子必须留啊
         backup.clear();
         backup.add_all(tiles);
@@ -1236,9 +1236,9 @@ class JulianBot : Bot
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
-
         backup.clear();
         backup.add_all(tiles);
+
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
@@ -1361,7 +1361,7 @@ class JulianBot : Bot
         ArrayList<Tile> keys = new ArrayList<Tile>();
         keys.add_all(discard_map.keys);
 
-        //  Environment.log(LogType.DEBUG, "JulianBot", @"populate_needed_tiles_for_discards: processing $(keys.size) discards");
+        //  Environment.log(LogType.DEBUG, "OracleBot", @"populate_needed_tiles_for_discards: processing $(keys.size) discards");
         HashSet<TileType> checked = new HashSet<TileType>();
         foreach (Tile tDiscard in keys) {
             if(checked.contains(tDiscard.tile_type)) {
@@ -1381,11 +1381,11 @@ class JulianBot : Bot
             foreach(TileType t in needed_tiles.keys) {
                 sb_for_log.append(new Tile(-1,t).to_string() + " ");
             }
-            Environment.log(LogType.DEBUG, "JulianBot", @"assume discard: $(tDiscard.to_string()), tenpai: $(sb_for_log.str)");
+            Environment.log(LogType.DEBUG, "OracleBot", @"assume discard: $(tDiscard.to_string()), tenpai: $(sb_for_log.str)");
         }
 
         //  int64 elapsed = get_monotonic_time() - start_time;
-        //  Environment.log(LogType.DEBUG, "JulianBot", @"populate_needed_tiles_for_discards completed in $(elapsed) microseconds");
+        //  Environment.log(LogType.DEBUG, "OracleBot", @"populate_needed_tiles_for_discards completed in $(elapsed) microseconds");
     }
 
     private void populate_needed_tiles(HashMap<TileType, int> needed_tiles,
@@ -1483,7 +1483,7 @@ class JulianBot : Bot
 
         foreach (Tile tDiscard in discard_benefit.keys) {
             int benefit = discard_benefit.get(tDiscard);
-            Environment.log(LogType.DEBUG, "JulianBot",
+            Environment.log(LogType.DEBUG, "OracleBot",
                         @"find_best_discard $(tDiscard) for $(benefit)"); 
             if (benefit > result.benefit) {
                 result.benefit = benefit;
@@ -1518,6 +1518,7 @@ class JulianBot : Bot
                 count++;
         return count;
     }
+
     private ArrayList<Tile>  filter_tile_type(TileType tp)
     {
         ArrayList<Tile> list = new ArrayList<Tile>();
@@ -1526,7 +1527,7 @@ class JulianBot : Bot
                 list.add(t);
         return list;
     }
-
+    
     private bool has_neighbours(Tile tile)
     {
         if (!tile.is_suit_tile())
@@ -1561,5 +1562,5 @@ class JulianBot : Bot
         return false;
     }
 
-    public override string name { get { return "JulianBot"; } }
+    public override string name { get { return "OracleBot"; } }
 }
