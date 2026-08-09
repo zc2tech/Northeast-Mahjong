@@ -12,8 +12,7 @@ class ScoringInnerView : View2D
     private ScoringPlayerElement right;
     private ScoringPlayerElement top;
     private ScoringPlayerElement left;
-    private ScoringStickNumberView riichi_view;
-    private ScoringStickNumberView renchan_view;
+    // Removed: riichi_view and renchan_view sticks
     private LabelControl wind_indicator;
     private LabelControl round_indicator;
     private int padding = 10;
@@ -61,26 +60,8 @@ class ScoringInnerView : View2D
         left.inner_anchor = Vec2(0, 0.5f);
         left.outer_anchor = Vec2(0, 0.5f);
         left.animation_finished.connect(player_element_animation_finished);
-        
-        riichi_view = new ScoringStickNumberView(RenderStick.StickType.STICK_1000, true);
-        add_child(riichi_view);
-        riichi_view.resize_style = ResizeStyle.ABSOLUTE;
-        riichi_view.size = Size2(200, 20);
-        riichi_view.inner_anchor = Vec2(0, 0);
-        riichi_view.outer_anchor = Vec2(0, 0);
-        riichi_view.position = Vec2(left.size.width + left.position.x, bottom.size.height + bottom.position.y);
-        riichi_view.number = score.riichi_count;
-        riichi_view.alpha = animate ? 0 : 1;
 
-        renchan_view = new ScoringStickNumberView(RenderStick.StickType.STICK_100, false);
-        add_child(renchan_view);
-        renchan_view.resize_style = ResizeStyle.ABSOLUTE;
-        renchan_view.size = riichi_view.size;
-        renchan_view.inner_anchor = Vec2(1, 0);
-        renchan_view.outer_anchor = Vec2(1, 0);
-        renchan_view.position = Vec2(-right.size.width + right.position.x, bottom.size.height + bottom.position.y);
-        renchan_view.number = score.renchan;
-        renchan_view.alpha = animate ? 0 : 1;
+        // Removed: riichi_view and renchan_view stick displays
 
         wind_indicator = new LabelControl();
         add_child(wind_indicator);
@@ -122,8 +103,7 @@ class ScoringInnerView : View2D
 
     private void animation_items_animate(float time)
     {
-        riichi_view.alpha = time;
-        renchan_view.alpha = time;
+        // Removed: riichi_view and renchan_view animations
         wind_indicator.alpha = time;
         round_indicator.alpha = time;
     }
@@ -154,8 +134,9 @@ class ScoringInnerView : View2D
     {
         if (view != null)
         {
-            view.size = Size2(right.rect.x - (left.rect.x + left.size.width) - padding * 2, top.rect.y - (bottom.rect.y + bottom.rect.height) - riichi_view.size.height - padding * 2);
-            view.position = Vec2(0, riichi_view.size.height / 2);
+            // Adjusted layout without riichi_view height offset
+            view.size = Size2(right.rect.x - (left.rect.x + left.size.width) - padding * 2, top.rect.y - (bottom.rect.y + bottom.rect.height) - padding * 2);
+            view.position = Vec2(0, 0);
         }
     }
 

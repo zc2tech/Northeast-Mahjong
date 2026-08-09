@@ -330,7 +330,7 @@ class ScoringPointsView : View2D
         private bool dual_payer;
         private bool _animate;
 
-        private LabelControl points_label;
+        // Removed: points_label display
         private ArrayList<YakuLine> lines = new ArrayList<YakuLine>();
         private Sound score_sound;
         private Sound fade_sound;
@@ -416,13 +416,7 @@ class ScoringPointsView : View2D
                 lines.add(new YakuLine(name, num));
             }
 
-            points_label = new LabelControl();
-            add_child(points_label);
-            points_label.font_size = 40;
-            points_label.inner_anchor = Vec2(0.5f, 0);
-            points_label.outer_anchor = Vec2(0.5f, 0);
-            points_label.alpha = _animate ? 0 : 1;
-            set_points_text(_animate ? 0 : 1);
+            // Removed: points_label initialization
 
             score_sound = store.audio_player.load_sound("score_count");
             fade_sound = store.audio_player.load_sound("fade_in");
@@ -468,7 +462,7 @@ class ScoringPointsView : View2D
 
         private void animation_score_fade_animate(float time)
         {
-            points_label.alpha = time;
+            // Removed: points_label.alpha animation
         }
 
         private void animation_score_fade_finish()
@@ -578,7 +572,7 @@ class ScoringPointsView : View2D
                 name += " - ";
             }
 
-            points_label.text = name + points + " points";
+            // Removed: points_label.text = name + points + " points";
         }
 
         private string yaku_to_string(Yaku yaku)
