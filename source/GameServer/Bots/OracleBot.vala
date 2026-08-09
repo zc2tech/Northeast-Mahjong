@@ -71,6 +71,7 @@ class OracleBot : Bot
         }
     }
 
+    // help you to find neighbours(two) that has no hope to formulate sequence
     private void count_singles_ish(HashMap<TileType, int> suit_map,
                                      int start_tile,
                                      int end_tile,
@@ -280,6 +281,7 @@ class OracleBot : Bot
         count_suit_patterns(map_sou, TileType.SOU1, TileType.SOU9,
                            ref stats.singles, ref stats.pair_count, ref stats.triplet_count);
 
+         // help you to find out neighbours(two) that has no hope to formulate sequence
         count_singles_ish(map_man, TileType.MAN1, TileType.MAN9, ref stats.singles_ish, hOP);  
         count_singles_ish(map_man, TileType.PIN1, TileType.PIN9, ref stats.singles_ish, hOP);  
         count_singles_ish(map_man, TileType.SOU1, TileType.SOU9, ref stats.singles_ish, hOP);  
@@ -479,9 +481,20 @@ class OracleBot : Bot
             }
         }
         if(hDiscardForTenpai.keys.size > 0 ) {
+            // 计算一下打这个牌的点炮风险
+            HashSet<TileType> warn_win = new HashSet<TileType>();
+            for (int i =0; i< 4; i++ ) {
+                if(i == round_state.self.index) {
+                    continue;
+                }
+                round_state.get_player(i).cal_win_candi();
+                warn_win.add_all(round_state.get_player(i).win_candi);
+            }
+
+
             populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
             HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-            BestDiscardResult result = find_best_discard(discard_benefit);
+            BestDiscardResult result = find_best_discard(discard_benefit,warn_win);
 
             if (result.tile != null && result.benefit > beforeBenefit) {
                  Environment.log(LogType.DEBUG, "OracleBot",
@@ -694,6 +707,16 @@ class OracleBot : Bot
         
         ArrayList<Tile> bestGroup = null;
         ArrayList<Tile> plan_b = null;
+        
+        // 计算一下点炮风险
+        HashSet<TileType> warn_win = new HashSet<TileType>();
+        for (int i =0; i< 4; i++ ) {
+            if(i == round_state.self.index) {
+                continue;
+            }
+            round_state.get_player(i).cal_win_candi();
+            warn_win.add_all(round_state.get_player(i).win_candi);
+        }
         foreach (ArrayList<Tile> g in groups)
         {
             // 吃掉试试
@@ -766,10 +789,10 @@ class OracleBot : Bot
                 }
             }
 
-            if( hDiscardForTenpai.keys.size > 0 ) {
+            if( hDiscardForTenpai.keys.size > 0 ) {         
                 populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
                 HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-                BestDiscardResult result = find_best_discard(discard_benefit);
+                BestDiscardResult result = find_best_discard(discard_benefit,warn_win);
 
                 if (result.tile != null && result.benefit >  bestChiiResut.benefit) {
                     bestChiiResut.benefit = result.benefit;
@@ -871,6 +894,20 @@ class OracleBot : Bot
         HashMap<TileType, int> hOP = other_player_tiles();
         HandStatistics stats = analyze_hand(null, sorted_hand, calls,hOP);
 
+        //  HashSet<Tile> discard_candi = new HashSet<Tile>();
+        int me_index = round_state.self.index;
+        int shimocha_index = (me_index + 1) % 4;
+
+        // 先只计算 win_candi
+        HashSet<TileType> warn_win = new HashSet<TileType>();
+        for (int i =0; i< 4; i++ ) {
+            if(i == round_state.self.index) {
+                continue;
+            }
+            round_state.get_player(i).cal_win_candi();
+            warn_win.add_all(round_state.get_player(i).win_candi);
+        }
+
         // win_necessary_condition 就当听牌, 所以条件不是特别严格
         // 已经尽力了
         if( TileRules.win_necessary_condition(sorted_hand, calls, true)
@@ -902,10 +939,12 @@ class OracleBot : Bot
                 }
                 copy_for_tenpai.clear();
             }
+
+            // 能听牌的话，只要别人不和牌，我就要打掉去听牌
             if (hDiscardForTenpai.keys.size > 0) {
                 populate_needed_tiles_for_discards(hDiscardForTenpai, sorted_hand, calls);
                 HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-                BestDiscardResult result = find_best_discard(discard_benefit);
+                BestDiscardResult result = find_best_discard(discard_benefit,warn_win);
 
                 if (result.tile != null) {
                     do_discard(result.tile);
@@ -973,8 +1012,22 @@ class OracleBot : Bot
             }
         }
 
-        // 没杠 没听 没胡
-        Tile  tile = get_discard_tile(stats);
+        // 没杠 没听 没胡 , 但是别的玩家可未必
+        HashSet<TileType> warn_pon= new HashSet<TileType>();
+        HashSet<TileType> warn_chii= new HashSet<TileType>();
+        for (int i =0; i< 4; i++ ) {
+            if(i == round_state.self.index) {
+                continue;
+            }
+            round_state.get_player(i).cal_map(); 
+            round_state.get_player(i).cal_pon_candi();
+            warn_pon.add_all(round_state.get_player(i).pon_candi);
+        }
+        // 下家到这里已经 cal_map, 单纯计算会不会被chii
+        round_state.get_player(shimocha_index).cal_chii_candi();
+        warn_chii.add_all(round_state.get_player(shimocha_index).chii_candi);
+
+        Tile  tile = get_discard_tile(stats,warn_win,warn_pon, warn_chii);
         do_discard(tile);
     }
 
@@ -1072,21 +1125,32 @@ class OracleBot : Bot
     }
 
     // 找出需要舍弃的牌 能听牌的我都不进这里
-    private Tile get_discard_tile( HandStatistics stats )
+    private Tile get_discard_tile( HandStatistics stats, HashSet<TileType> warn_win, HashSet<TileType> warn_pon, HashSet<TileType> warn_chii)
     {
         ArrayList<Tile> tiles = round_state.self.get_discard_tiles(); // basically hand tiles
         assert(tiles.size > 0);
 
+
         ArrayList<Tile> backup = new ArrayList<Tile>();
         backup.add_all(tiles);
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if(warn_win.contains(tile.tile_type)) {
+                tiles.remove_at(i--);
+            }
+        }
+        if (tiles.size == 0) // 有可能都是炮牌？
+            return RandomTileSmart(stats,backup);
 
+        backup = new ArrayList<Tile>();
+        backup.add_all(tiles);
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
             if (count(tile) >= 3)
                 tiles.remove_at(i--);
         }
-
         if (tiles.size == 0)
             return RandomTileSmart(stats,backup);
 
@@ -1293,30 +1357,39 @@ class OracleBot : Bot
         }
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
-
+        
         backup.clear();
         backup.add_all(tiles);
-
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
             if (has_second_neighbours(tile) && !stats.singles_ish.contains(tile.tile_type))
                 tiles.remove_at(i--);
         }
+        if (tiles.size == 0)
+            return RandomTileSmart(stats, backup);
 
+        // 两面顺子和单边和单嵌都已经留了，这时候如果会给人碰吃的话，就不大乐意了
+        backup.clear();
+        backup.add_all(tiles);
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];  
+            if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
+               tiles.remove_at(i--); 
+            }          
+        }
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
         backup.clear();
         backup.add_all(tiles);
-
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
             if (!stats.singles_ish.contains(tile.tile_type)) // 不是垃圾牌，保护一下
                 tiles.remove_at(i--);
         }
-
         if (tiles.size == 0)
             return RandomTileSmart(stats,backup);
 
@@ -1475,13 +1548,18 @@ class OracleBot : Bot
     }
 
     // Find the discard with the highest benefit
-    private BestDiscardResult find_best_discard(HashMap<Tile, int> discard_benefit)
+    private BestDiscardResult find_best_discard(HashMap<Tile, int> discard_benefit, HashSet<TileType>? warn_win)
     {
         BestDiscardResult result = BestDiscardResult();
         result.tile = null;
         result.benefit = 0;
 
         foreach (Tile tDiscard in discard_benefit.keys) {
+            if(warn_win!= null & warn_win.contains(tDiscard.tile_type)) {
+                Environment.log(LogType.DEBUG, "OracleBot",
+                    @"-find_best_discard remove deal-in tile: $(tDiscard)"); 
+                continue;
+            }
             int benefit = discard_benefit.get(tDiscard);
             Environment.log(LogType.DEBUG, "OracleBot",
                         @"find_best_discard $(tDiscard) for $(benefit)"); 

@@ -214,7 +214,6 @@ class JulianBot : Bot
             {
                 stats.terminal_count++;
             }
-            // Fixed bug: was using mapMan for all suits
             if (t.tile_type >= TileType.MAN1 && t.tile_type <= TileType.MAN9)
             {
                 map_man.set(t.tile_type, map_man.get(t.tile_type) + 1);

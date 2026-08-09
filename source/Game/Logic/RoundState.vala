@@ -576,7 +576,6 @@ public class RoundStatePlayer
 
     private int sekinin_rinshan_index = -1;
     private int sekinin_index = -1;
-
     public RoundStatePlayer(int index, bool dealer, Wind wind,bool revealed)
     {
         this.index = index;
@@ -587,6 +586,9 @@ public class RoundStatePlayer
         hand = new ArrayList<Tile>();
         pond = new ArrayList<Tile>();
         calls = new ArrayList<RoundStateCall>();
+        chii_candi = new HashSet<TileType>();
+        pon_candi = new HashSet<TileType>();
+        win_candi = new HashSet<TileType>();
         first_turn = true;
     }
 
@@ -962,11 +964,173 @@ public class RoundStatePlayer
         );
     }
 
+    // The tile that the play wants to chii
+    // cal_map should already be called outside 
+    public void cal_chii_candi()
+    {
+       chii_candi.clear();
+       add_chii_candi(0);
+       add_chii_candi(1);
+       add_chii_candi(2);
+    }
+
+    // cal_map should already be called outside  
+    public void cal_pon_candi()
+    {
+       pon_candi.clear();
+       add_pon_candi(0);
+       add_pon_candi(1);
+       add_pon_candi(2);
+       if(dragon_cnt >= 2 && dragon_cnt != 4) {
+            pon_candi.add(TileType.CHUN);
+            pon_candi.add(TileType.HATSU);
+            pon_candi.add(TileType.HAKU);
+       }
+    }
+    public void cal_win_candi()
+    {
+        win_candi.clear();
+        // Find all tiles that would complete this hand (tenpai)
+        ArrayList<HandReading> readings = TileRules.hand_readings(hand, calls, true, false);
+        foreach (HandReading hr in readings) {
+            foreach (Tile tHR in hr.tiles) {
+                if (tHR.ID == -1) {  // ID == -1 means this is the needed tile
+                    win_candi.add(tHR.tile_type);
+                }
+            }
+        }
+    }
+   
+    // type_category: 0: MAN 1:PIN 2:SOU 
+    private void add_chii_candi(int type_category) {
+        TileType start_tile;
+        TileType end_tile;
+        HashMap<TileType, int> the_map;
+
+        switch (type_category) {
+            case 0:
+                start_tile = TileType.MAN1;
+                end_tile = TileType.MAN7;
+                the_map = map_man;
+                break;
+            case 1:
+                start_tile = TileType.PIN1;
+                end_tile = TileType.PIN7;
+                the_map = map_pin;
+                break;
+            case 2:
+                start_tile = TileType.SOU1;
+                end_tile = TileType.SOU7;
+                the_map = map_sou;
+                break;
+            default:
+                return;
+        }
+
+        for(int i = start_tile ; i <= end_tile ; i++ ) {
+            int i_cnt = the_map.get( (TileType) i);
+            int p1_cnt = the_map.get( (TileType) (i + 1));
+            int p2_cnt = the_map.get( (TileType) (i + 2));
+            int smallest = int.min(i_cnt, int.min(p1_cnt, p2_cnt));
+            i_cnt -= smallest;
+            p1_cnt -= smallest;
+            p2_cnt -= smallest;
+            if(i_cnt > 1 && p1_cnt > 1) {
+                chii_candi.add(i + 2);
+            } else if(i_cnt > 1 && p2_cnt > 1) {
+                chii_candi.add(i + 1); 
+            } else if(p1_cnt > 1 && p2_cnt > 1) {
+                chii_candi.add(i); 
+            }
+        } 
+    }
+
+    // Even when you have 3 of TileType, it's still possible that you want to pon to optimize your hand
+    private void add_pon_candi(int type_category) {
+        TileType start_tile;
+        TileType end_tile;
+        HashMap<TileType, int> the_map;
+
+        switch (type_category) {
+            case 0:
+                start_tile = TileType.MAN1;
+                end_tile = TileType.MAN7;
+                the_map = map_man;
+                break;
+            case 1:
+                start_tile = TileType.PIN1;
+                end_tile = TileType.PIN7;
+                the_map = map_pin;
+                break;
+            case 2:
+                start_tile = TileType.SOU1;
+                end_tile = TileType.SOU7;
+                the_map = map_sou;
+                break;
+            default:
+                return;
+        }
+
+        for(int i = start_tile ; i <= end_tile ; i++ ) {
+            int i_cnt = the_map.get( (TileType) i);
+            if(i_cnt >= 2 && i_cnt != 4) {
+                pon_candi.add(i);
+            }
+        } 
+    }
+
+    public void cal_map() {
+        map_man = create_suit_map(TileType.MAN1, TileType.MAN9);
+        map_pin = create_suit_map(TileType.PIN1, TileType.PIN9);
+        map_sou = create_suit_map(TileType.SOU1, TileType.SOU9);
+        dragon_cnt = 0;
+
+        foreach (Tile t in this.hand)
+        {
+            if (t.tile_type >= TileType.MAN1 && t.tile_type <= TileType.MAN9)
+            {
+                map_man.set(t.tile_type, map_man.get(t.tile_type) + 1);
+            }
+            else if (t.tile_type >= TileType.PIN1 && t.tile_type <= TileType.PIN9)
+            {
+                map_pin.set(t.tile_type, map_pin.get(t.tile_type) + 1);
+            }
+            else if (t.tile_type >= TileType.SOU1 && t.tile_type <= TileType.SOU9)
+            {
+                map_sou.set(t.tile_type, map_sou.get(t.tile_type) + 1);
+            }
+
+            if (t.is_dragon_tile())
+            {
+                dragon_cnt++;
+            }
+        }
+    }
+
+    private static HashMap<TileType, int> create_suit_map(int start_tile, int end_tile)
+    {
+        HashMap<TileType, int> map = new HashMap<TileType, int>();
+        for (int i = start_tile; i <= end_tile; i++)
+        {
+            map.set((TileType)i, 0);
+        }
+        return map;
+    }
     public int index { get; private set; }
     public Wind wind { get; private set; }
     public ArrayList<Tile> hand { get; private set; }
     public ArrayList<Tile> pond { get; private set; }
     public ArrayList<RoundStateCall> calls { get; private set; }
+
+    // reserved to use for OracleBot who can always see through other players hand tiles 
+    public HashSet<TileType> chii_candi { get; private set; }
+    public HashSet<TileType> pon_candi { get; private set; }
+    public HashSet<TileType> win_candi { get; private set; }
+    public HashMap<TileType, int> map_man { get; private set; }
+    public HashMap<TileType, int> map_pin { get; private set; }
+    public HashMap<TileType, int> map_sou { get; private set; }
+    public int dragon_cnt { get; private set; }
+
     public bool open { get; private set; } // Open riichi
     public bool first_turn { get; private set; }
     public Tile newest_tile { owned get { return hand[hand.size - 1]; } }

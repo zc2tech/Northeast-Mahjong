@@ -263,13 +263,11 @@ class ServerMenuView : MenuSubView
         if (host && !bots_added && log == null)
         {
             bots_added = true;
-            for (int i = 1; i <= 3; i++)
+            for (int i = 1; i <= 2; i++)
             {
                 add_bot("JulianBot", i);
             }
-        }
-        else
-        {
+            add_bot("OracleBot", 3);
         }
     }
 
