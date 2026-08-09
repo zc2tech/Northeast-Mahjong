@@ -278,87 +278,8 @@ namespace GameServer
             //  int uma_higher = 20;
             //  int uma_lower = 10;
 
-
-            float winning_draw_animation_time = 0.5f;
-            float hand_reveal_animation_time = 0.5f;
-            float round_over_delay = 1.0f;
-
-            // Add a second so the indicator counts down from the specific second to 0
-            float round_end_delay = 3 + 1;
-            float hanchan_end_delay = 30 + 1;
-            float game_end_delay = 60 + 1;
-            int decision_time = settings.decision_time + 1;
-
-            var finish_label_fade = new AnimationTime(1, 0.5f, 0);
-            var menu_items_fade = new AnimationTime(1, 0.5f, 1);
-            var han_fade = new AnimationTime(0.5f, 0.5f, 0);
-            var score_counting_fade = new AnimationTime(1, 0.5f, 0);
-            var score_counting = new AnimationTime(1, 3, 2);
-            var players_points_counting = new AnimationTime(0, 3, 2);
-            var players_score_fade = new AnimationTime(0, 0.5f, 0);
-            var players_score_counting = new AnimationTime(1, 3, 2);
-
-            var initial_draw = new AnimationTime(0, 0.15f, 0);
-            var tile_draw = new AnimationTime(0, 0.15f, 0.2f);
-            var tile_discard = new AnimationTime(0, 0.15f, 0.3f);
-            var call = new AnimationTime(0, 0.5f, 0);
-            var hand_reveal = new AnimationTime(0, 0.15f, 0.8f);
-            var split_wall = new AnimationTime(0, 0.5f, 0);
-            var dead_wall_mark_flip = new AnimationTime(0, 0.2f, 0);
-            var win = new AnimationTime(0, 0.5f, 0.5f);
-
-            var hand_order = new AnimationTime(0, 0.15f, 0);
-            var hand_angle = new AnimationTime(0, 0.2f, 0);
-
-            /*var finish_label_fade = new AnimationTime.zero();
-            var menu_items_fade = new AnimationTime.zero();
-            var han_fade = new AnimationTime.zero();
-            var score_counting_fade = new AnimationTime.zero();
-            var score_counting = new AnimationTime.zero();
-            var players_points_counting = new AnimationTime.zero();
-            var players_score_fade = new AnimationTime.zero();
-            var players_score_counting = new AnimationTime.zero();
-            var initial_draw = new AnimationTime.zero();
-            var tile_draw = new AnimationTime.zero();
-            var tile_discard = new AnimationTime.zero();
-            var call = new AnimationTime.zero();
-            var hand_reveal = new AnimationTime.zero();
-            var split_wall = new AnimationTime.zero();
-            var dora_flip = new AnimationTime.zero();
-            var win = new AnimationTime.zero();
-            var riichi = new AnimationTime.zero();
-            var hand_order = new AnimationTime.zero();
-            var hand_angle = new AnimationTime.zero();*/
-
-            AnimationTimings timings = new AnimationTimings
-            (
-                winning_draw_animation_time,
-                hand_reveal_animation_time,
-                round_over_delay,
-                round_end_delay,
-                hanchan_end_delay,
-                game_end_delay,
-                decision_time,
-                finish_label_fade,
-                menu_items_fade,
-                han_fade,
-                score_counting_fade,
-                score_counting,
-                players_points_counting,
-                players_score_fade,
-                players_score_counting,
-
-                initial_draw,
-                tile_draw,
-                tile_discard,
-                call,
-                hand_reveal,
-                split_wall,
-                dead_wall_mark_flip,
-                win,
-                hand_order,
-                hand_angle
-            );
+            // Use default animation timings
+            AnimationTimings timings = AnimationTimings.create_default(settings.decision_time);
 
             GameStartInfo info = new GameStartInfo
             (

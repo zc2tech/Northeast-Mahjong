@@ -2,6 +2,66 @@ using Engine;
 
 public class AnimationTimings : Serializable
 {
+	// Create default animation timings for normal gameplay
+	public static AnimationTimings create_default(int decision_time)
+	{
+		float winning_draw_animation_time = 0.5f;
+		float hand_reveal_animation_time = 0.5f;
+		float round_over_delay = 0.2f;
+		float round_end_delay = 1f;  // Add 1 second for countdown
+		float hanchan_end_delay = 30 + 1;
+		float game_end_delay = 60 + 1;
+		float decision_time_with_buffer = decision_time + 1;
+
+		var finish_label_fade = new AnimationTime(0.2f, 0.1f, 0);
+		var menu_items_fade = new AnimationTime(1, 0.5f, 1);
+		var han_fade = new AnimationTime(0.5f, 0.5f, 0);
+		var score_counting_fade = new AnimationTime(1, 0.5f, 0);
+		var score_counting = new AnimationTime(0.1f, 0.3f, 0.2f);
+		var players_points_counting = new AnimationTime(0, 0.3f, 0.2f);
+		var players_score_fade = new AnimationTime(0, 0.5f, 0);
+		var players_score_counting = new AnimationTime(0.1f, 0.3f, 0.2f);
+
+		var initial_draw = new AnimationTime(0, 0.15f, 0);
+		var tile_draw = new AnimationTime(0, 0.15f, 0.2f);
+		var tile_discard = new AnimationTime(0, 0.15f, 0.3f);
+		var call = new AnimationTime(0, 0.5f, 0);
+		var hand_reveal = new AnimationTime(0, 0.15f, 0.8f);
+		var split_wall = new AnimationTime(0, 0.5f, 0);
+		var dead_wall_mark_flip = new AnimationTime(0, 0.2f, 0);
+		var win = new AnimationTime(0, 0.5f, 0.5f);
+		var hand_order = new AnimationTime(0, 0.15f, 0);
+		var hand_angle = new AnimationTime(0, 0.2f, 0);
+
+		return new AnimationTimings(
+			winning_draw_animation_time,
+			hand_reveal_animation_time,
+			round_over_delay,
+			round_end_delay,
+			hanchan_end_delay,
+			game_end_delay,
+			decision_time_with_buffer,
+			finish_label_fade,
+			menu_items_fade,
+			han_fade,
+			score_counting_fade,
+			score_counting,
+			players_points_counting,
+			players_score_fade,
+			players_score_counting,
+			initial_draw,
+			tile_draw,
+			tile_discard,
+			call,
+			hand_reveal,
+			split_wall,
+			dead_wall_mark_flip,
+			win,
+			hand_order,
+			hand_angle
+		);
+	}
+
 	public AnimationTimings
 	(
         float winning_draw_animation_time,
@@ -67,32 +127,32 @@ public class AnimationTimings : Serializable
 	    time += round_over_delay;
         time += finish_label_fade.total() + menu_items_fade.total();
 
-	    if (round.result.result != RoundFinishResult.RoundResultEnum.DRAW &&
-            round.result.result != RoundFinishResult.RoundResultEnum.NONE)
-        {
-            foreach (Scoring score in round.result.scores)
-            {
-                time += score_counting_fade.total() + score_counting.total();
+	    //  if (round.result.result != RoundFinishResult.RoundResultEnum.DRAW &&
+        //      round.result.result != RoundFinishResult.RoundResultEnum.NONE)
+        //  {
+        //      foreach (Scoring score in round.result.scores)
+        //      {
+        //          time += score_counting_fade.total() + score_counting.total();
 
-                foreach (Yaku y in score.yaku)
-                    if (score.yakuman == 0 || y.yakuman > 0)
-                        time += han_fade.total();
-            }
-        }
+        //          foreach (Yaku y in score.yaku)
+        //              if (score.yakuman == 0 || y.yakuman > 0)
+        //                  time += han_fade.total();
+        //      }
+        //  }
 
-        if (round.game_is_finished)
-            time += game_end_delay + players_score_fade.total() + players_score_counting.total();
-        else if (round.hanchan_is_finished)
-            time += hanchan_end_delay + players_score_fade.total() + players_score_counting.total();
-        else
-            time += round_end_delay;
+        //  if (round.game_is_finished)
+        //      time += game_end_delay + players_score_fade.total() + players_score_counting.total();
+        //  else if (round.hanchan_is_finished)
+        //      time += hanchan_end_delay + players_score_fade.total() + players_score_counting.total();
+        //  else
+        //      time += round_end_delay;
 
-        foreach (var player in round.players)
-            if (player.transfer != 0)
-            {
-                time += players_points_counting.total();
-                break;
-            }
+        //  foreach (var player in round.players)
+        //      if (player.transfer != 0)
+        //      {
+        //          time += players_points_counting.total();
+        //          break;
+        //      }
 
         return time;
 	}

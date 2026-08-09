@@ -323,63 +323,9 @@ namespace GameServer
 
         private static AnimationTimings create_replay_timings()
         {
-            // Create normal human-viewable timings for replay
-            // These are the same as normal game timings from ServerMenu.vala
-            float winning_draw_animation_time = 0.5f;
-            float hand_reveal_animation_time = 0.5f;
-            float round_over_delay = 1.0f;
-            float round_end_delay = 3 + 1;
-            float hanchan_end_delay = 30 + 1;
-            float game_end_delay = 60 + 1;
-            //  int decision_time = (settings != null ? settings.decision_time : 10) + 1;
-            int decision_time =  360000; // should not be used during replay
-
-            var finish_label_fade = new AnimationTime(1.0f, 0.5f, 0.0f);
-            var menu_items_fade = new AnimationTime(1.0f, 0.5f, 1.0f);
-            var han_fade = new AnimationTime(0.5f, 0.5f, 0.0f);
-            var score_counting_fade = new AnimationTime(0.2f, 0.1f, 0.0f);
-            var score_counting = new AnimationTime(0.2f, 0.6f, 0.4f);
-            var players_points_counting = new AnimationTime(0.0f, 3.0f, 2.0f);
-            var players_score_fade = new AnimationTime(0.0f, 0.1f, 0.0f);
-            var players_score_counting = new AnimationTime(0.2f, 0.6f, 0.4f);
-
-            var initial_draw = new AnimationTime(0.0f, 0.15f, 0.0f);
-            var tile_draw = new AnimationTime(0.0f, 0.15f, 0.2f);
-            var tile_discard = new AnimationTime(0.0f, 0.15f, 0.3f);
-            var call = new AnimationTime(0.0f, 0.5f, 0.0f);
-            var hand_reveal = new AnimationTime(0.0f, 0.15f, 0.8f);
-            var split_wall = new AnimationTime(0.0f, 0.5f, 0.0f);
-            var dead_wall_mark_flip = new AnimationTime(0.0f, 0.2f, 0.0f);
-            var win = new AnimationTime(0.0f, 0.5f, 0.5f);
-            var hand_order = new AnimationTime(0.0f, 0.15f, 0.0f);
-            var hand_angle = new AnimationTime(0.0f, 0.2f, 0.0f);
-            return new AnimationTimings(
-                winning_draw_animation_time,
-                hand_reveal_animation_time,
-                round_over_delay,
-                round_end_delay,
-                hanchan_end_delay,
-                game_end_delay,
-                decision_time,
-                finish_label_fade,
-                menu_items_fade,
-                han_fade,
-                score_counting_fade,
-                score_counting,
-                players_points_counting,
-                players_score_fade,
-                players_score_counting,
-                initial_draw,
-                tile_draw,
-                tile_discard,
-                call,
-                hand_reveal,
-                split_wall,
-                dead_wall_mark_flip,
-                win,
-                hand_order,
-                hand_angle
-            );
+            // Use default animation timings for replay
+            // decision_time should not be used during replay
+            return AnimationTimings.create_default(360000);
         }
 
         protected override RoundStartInfo get_round_start_info()

@@ -504,6 +504,11 @@ public class TileRules
             }
         }
 
+        if(hand.size == 4) {
+            // do thing, just for adding breakpoints
+            int a = 0;
+            a++;
+        }
 
         ArrayList<HandReading> normalReadings = hand_reading_recursion(hand, call_melds, tenpai_only);
         ArrayList<HandReading> northeastReadings = new ArrayList<HandReading>();
