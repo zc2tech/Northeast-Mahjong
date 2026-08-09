@@ -53,6 +53,9 @@ class ServerSettingsView : MenuSubView
         case 120:
             decision_time_selected = 6;
             break;
+        case 360:
+            decision_time_selected = 7;
+            break;
         }
         
         decision_time_option = new OptionItemControl(can_control, "Decision time (seconds)", decision_time_choices, decision_time_selected);
@@ -112,6 +115,27 @@ class ServerSettingsView : MenuSubView
     public override void render(RenderState state, RenderScene2D scene)
     {
         state.back_color = Color.black();
+    }
+
+    protected override void key_press(KeyArgs key)
+    {
+        if (key.handled)
+            return;
+
+        if (key.down && !key.repeat)
+        {
+            // Keyboard shortcuts for Server Settings buttons
+            if ((key.scancode == ScanCode.RETURN || key.scancode == ScanCode.A) && can_control)
+            {
+                apply();
+                key.handled = true;
+            }
+            else if (key.scancode == ScanCode.ESCAPE || key.scancode == ScanCode.B)
+            {
+                do_back();
+                key.handled = true;
+            }
+        }
     }
 
     private void apply()
