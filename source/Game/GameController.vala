@@ -147,7 +147,7 @@ class GameController : Object
         game.start_round(info);
 
         // Create normal game views
-        renderer = new GameRenderView(player_index, game.dealer_index, start_info, info, options, game.score);
+        renderer = new GameRenderView(player_index, game.dealer_index, start_info, info, options, game.score, settings);
         renderer.game_loaded.connect(on_game_loaded);
         parent_view.add_child(renderer);
 

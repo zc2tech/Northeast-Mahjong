@@ -107,7 +107,7 @@ class ReplayController : Object
         round = new ClientRoundState(info, settings, observer_index, game.round_wind, game.dealer_index);
 
         // Create replay-specific renderer
-        renderer = new ReplayGameRenderView(observer_index, game.dealer_index, start_info, info, options, game.score);
+        renderer = new ReplayGameRenderView(observer_index, game.dealer_index, start_info, info, options, game.score, settings);
         renderer.game_loaded.connect(do_game_loaded);
 
         // Connect round signals to renderer

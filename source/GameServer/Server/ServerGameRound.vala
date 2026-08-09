@@ -81,7 +81,7 @@ namespace GameServer
                 {
                     ServerMessageTileAssignment assignment = new ServerMessageTileAssignment(tile);
 
-                    if (settings.reveal_all_tiles == OnOffEnum.ON || p == player || p.server_player.state != ServerPlayer.State.PLAYER)
+                    if (settings.reveal_all_tiles == OnOffEnum.ON || p == player || p.server_player.state != ServerPlayer.State.PLAYER || p.server_player.bot )
                         p.server_player.send_message(assignment);
                 }
             }

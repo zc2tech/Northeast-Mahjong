@@ -25,6 +25,7 @@ public class Options
         window_y = -1;
         camera_height = 20.5f;
         target_height = -2.0f;
+
     }
 
     public Options.from_disk()
@@ -161,6 +162,7 @@ public class Options
     public int window_y { get; set; }
     public float camera_height { get; set; }
     public float target_height { get; set; }
+    public bool reveal_all_tiles { get; set; }
 }
 
 public static ScreenTypeEnum parse_screen_type_enum(string value)

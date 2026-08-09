@@ -7,7 +7,7 @@ public class GameRenderContext
     private AnimationTimings original_server_times;
     private AnimationTimings scaled_server_times;
 
-    public GameRenderContext(AnimationTimings server_times, float tile_scale, Vec3 tile_size, int observer_index, int dealer, int wall_split)
+    public GameRenderContext(AnimationTimings server_times, float tile_scale, Vec3 tile_size, int observer_index, int dealer, int wall_split, bool reveal_all_tiles)
     {
         this.original_server_times = server_times;
         this.scaled_server_times = server_times;
@@ -16,6 +16,7 @@ public class GameRenderContext
         this.observer_index = observer_index;
         this.dealer = dealer;
         this.wall_split = wall_split;
+        this.reveal_all_tiles = reveal_all_tiles;
     }
 
     public void set_decision_time_multiplier(float multiplier)
@@ -52,6 +53,7 @@ public class GameRenderContext
     public int observer_index { get; private set; }
     public int dealer { get; private set; }
     public int wall_split { get; private set; }
+    public bool reveal_all_tiles { get; private set; }
 
     public AnimationTimings server_times { get { return scaled_server_times; } }
     /*public AnimationTime hand_angle { get; private set; }

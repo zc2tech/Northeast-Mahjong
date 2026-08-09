@@ -3,10 +3,10 @@ using Gee;
 
 public class ReplayGameRenderView : GameRenderView
 {
-    public ReplayGameRenderView(int observer_index, int dealer_index, GameStartInfo game_start, RoundStartInfo info, Options options, RoundScoreState score)
+    public ReplayGameRenderView(int observer_index, int dealer_index, GameStartInfo game_start, RoundStartInfo info, Options options, RoundScoreState score, ServerSettings settings)
     {
         // Pass the actual observer_index to the base class
-        base(observer_index, dealer_index, game_start, info, options, score);
+        base(observer_index, dealer_index, game_start, info, options, score, settings);
     }
 
     public void set_animation_speed(float multiplier)

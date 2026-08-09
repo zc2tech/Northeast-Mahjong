@@ -337,11 +337,11 @@ namespace GameServer
             var finish_label_fade = new AnimationTime(1.0f, 0.5f, 0.0f);
             var menu_items_fade = new AnimationTime(1.0f, 0.5f, 1.0f);
             var han_fade = new AnimationTime(0.5f, 0.5f, 0.0f);
-            var score_counting_fade = new AnimationTime(1.0f, 0.5f, 0.0f);
-            var score_counting = new AnimationTime(1.0f, 3.0f, 2.0f);
+            var score_counting_fade = new AnimationTime(0.2f, 0.1f, 0.0f);
+            var score_counting = new AnimationTime(0.2f, 0.6f, 0.4f);
             var players_points_counting = new AnimationTime(0.0f, 3.0f, 2.0f);
-            var players_score_fade = new AnimationTime(0.0f, 0.5f, 0.0f);
-            var players_score_counting = new AnimationTime(1.0f, 3.0f, 2.0f);
+            var players_score_fade = new AnimationTime(0.0f, 0.1f, 0.0f);
+            var players_score_counting = new AnimationTime(0.2f, 0.6f, 0.4f);
 
             var initial_draw = new AnimationTime(0.0f, 0.15f, 0.0f);
             var tile_draw = new AnimationTime(0.0f, 0.15f, 0.2f);
