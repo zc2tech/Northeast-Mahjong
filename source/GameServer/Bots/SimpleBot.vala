@@ -191,39 +191,5 @@ class SimpleBot : Bot
         return count;
     }
 
-    private bool has_neighbours(Tile tile)
-    {
-        if (!tile.is_suit_tile())
-            return false;
-
-        foreach (Tile t in round_state.self.hand)
-        {
-            if (tile == t)
-                continue;
-
-            if (tile.is_neighbour(t))
-                return true;
-        }
-
-        return false;
-    }
-
-    private bool has_second_neighbours(Tile tile)
-    {
-        if (!tile.is_suit_tile())
-            return false;
-
-        foreach (Tile t in round_state.self.hand)
-        {
-            if (tile == t)
-                continue;
-
-            if (tile.is_second_neighbour(t))
-                return true;
-        }
-
-        return false;
-    }
-
     public override string name { get { return "SimpleBot"; } }
 }

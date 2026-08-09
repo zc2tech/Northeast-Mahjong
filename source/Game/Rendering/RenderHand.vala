@@ -78,6 +78,8 @@ private class RenderHand : WorldObject
     public void open_hand()
     {
         open = true;
+        sort_hand();
+        order_hand(false);  // Don't animate repositioning, just the flip
         animate_open();
     }
 

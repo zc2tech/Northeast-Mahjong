@@ -20,6 +20,7 @@ public class GameRenderView : View3D, IGameRenderer
     private Options options;
     private RoundScoreState score;
     private ServerSettings settings;
+    private bool is_replay;
 
     private WorldCamera camera;
     private WorldObject target;
@@ -33,7 +34,7 @@ public class GameRenderView : View3D, IGameRenderer
 
     private bool is_paused = false;
 
-    public GameRenderView(int observer_index, int dealer_index, GameStartInfo game_start, RoundStartInfo info, Options options, RoundScoreState score, ServerSettings settings)
+    public GameRenderView(int observer_index, int dealer_index, GameStartInfo game_start, RoundStartInfo info, Options options, RoundScoreState score, ServerSettings settings, bool is_replay = false)
     {
         this.observer_index = observer_index;
         this.dealer_index = dealer_index;
@@ -42,6 +43,7 @@ public class GameRenderView : View3D, IGameRenderer
         this.options = options;
         this.score = score;
         this.settings = settings;
+        this.is_replay = is_replay;
     }
 
     public override void added()
@@ -53,7 +55,7 @@ public class GameRenderView : View3D, IGameRenderer
         Vec3 tile_size = t.obb.mul_scalar(tile_scale);
         world.remove_object(t);
 
-        context = new GameRenderContext(game_start.timings, tile_scale, tile_size, observer_index, dealer_index, info.wall_index, settings.reveal_all_tiles == OnOffEnum.ON); // wall_index is wall_split
+        context = new GameRenderContext(game_start.timings, tile_scale, tile_size, observer_index, dealer_index, info.wall_index, settings.reveal_all_tiles == OnOffEnum.ON, is_replay);
         observer_index = observer_index != -1 ? observer_index : 0;
 
         scene = new GameScene(context, observer_index, options, store.audio_player, score);

@@ -163,6 +163,99 @@ public abstract class Bot : Object
         RoundFinishResult result = new RoundFinishResult.draw(tenpai_indices, round_state.get_nagashi_indices(), round_state.game_draw_type);
         game_state.round_finished(result);
     }
+    protected bool has_neighbours(Tile tile)
+    {
+        if (!tile.is_suit_tile())
+            return false;
+
+        foreach (Tile t in round_state.self.hand)
+        {
+            if (tile == t)
+                continue;
+
+            if (tile.is_neighbour(t))
+                return true;
+        }
+
+        return false;
+    }
+    protected bool has_non_terminal_neighbours(Tile tile)
+    {
+        if (!tile.is_suit_tile())
+            return false;
+
+        foreach (Tile t in round_state.self.hand)
+        {
+            if (tile == t)
+                continue;
+
+            if (!t.is_terminal_tile() &&  t.is_neighbour(tile))
+                return true;
+        }
+
+        return false;
+    }
+
+    public bool has_second_neighbours(Tile tile)
+    {
+        if (!tile.is_suit_tile())
+            return false;
+
+        foreach (Tile t in round_state.self.hand)
+        {
+            if (tile == t)
+                continue;
+
+            if (tile.is_second_neighbour(t))
+                return true;
+        }
+
+        return false;
+    }
+
+    public void count_singles_ish(HashMap<TileType, int> suit_map,
+                                     int start_tile,
+                                     int end_tile,
+                                     ref ArrayList<TileType> singles_ish,
+                                     HashMap<TileType,int>? hOP)
+    {
+        if(hOP == null) {
+            return;
+        }
+        for (int i = start_tile; i <= end_tile; i++) {
+            int i_count = suit_map.get((TileType)i);
+            int m1 = i - 1 >= start_tile ? suit_map.get((TileType)(i - 1)) : 0;
+            int mo1 = i - 1 >= start_tile ? hOP.get((TileType)(i - 1)) : 0;
+            int m2 = i - 2 >= start_tile ? suit_map.get((TileType)(i - 2)) : 0;
+            int mo2 = i - 2 >= start_tile ? hOP.get((TileType)(i - 2)) : 0; // in other player
+            int p1 = i + 1 <= end_tile ? suit_map.get((TileType)(i + 1)) : 0;
+            int po1 = i + 1 <= end_tile ? hOP.get((TileType)(i + 1)) : 0;
+            int p2 = i + 2 <= end_tile ? suit_map.get((TileType)(i + 2)) : 0;
+            int po2 = i + 2 <= end_tile ? hOP.get((TileType)(i + 2)) : 0;
+            if( i_count == 1) { 
+                // 98 no 7 
+                if(i== end_tile && m1 == 1 && m2 == 0 && mo2 >= 3) {
+                    singles_ish.add(i);
+                    singles_ish.add(i-1);
+                }
+                // 97 no 8
+                if(i== end_tile && m2 == 1 && m1 == 0 && mo1 >= 3) {
+                    singles_ish.add(i);
+                }
+                // 12 no 3
+                if(i== start_tile && p1 == 1 && p2 == 0 && po2 >= 3) {
+                    singles_ish.add(i);
+                    singles_ish.add(i+1);
+                }
+                // 13 no 2
+                if(i== start_tile && p2 == 1 && p1 == 0 && po1 >= 3) {
+                    singles_ish.add(i);
+                } 
+
+            }
+           
+        }
+    }
 
     ////////////
 

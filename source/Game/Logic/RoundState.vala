@@ -992,12 +992,20 @@ public class RoundStatePlayer
         win_candi.clear();
         // Find all tiles that would complete this hand (tenpai)
         ArrayList<HandReading> readings = TileRules.hand_readings(hand, calls, true, false);
+        Environment.log(LogType.DEBUG, "RoundState", @"Player $(index): hand_readings returned $(readings.size) readings (hand size: $(hand.size), calls: $(calls.size))");
         foreach (HandReading hr in readings) {
             foreach (Tile tHR in hr.tiles) {
                 if (tHR.ID == -1) {  // ID == -1 means this is the needed tile
                     win_candi.add(tHR.tile_type);
                 }
             }
+        }
+        if (win_candi.size > 0) {
+            StringBuilder sb = new StringBuilder();
+            foreach (TileType tt in win_candi) {
+                sb.append(new Tile(-1, tt).to_string() + " ");
+            }
+            Environment.log(LogType.DEBUG, "RoundState", @"Player $(index) calculated win_candi: $(sb.str)");
         }
     }
    

@@ -5,8 +5,8 @@ public class ReplayGameRenderView : GameRenderView
 {
     public ReplayGameRenderView(int observer_index, int dealer_index, GameStartInfo game_start, RoundStartInfo info, Options options, RoundScoreState score, ServerSettings settings)
     {
-        // Pass the actual observer_index to the base class
-        base(observer_index, dealer_index, game_start, info, options, score, settings);
+        // Pass true for is_replay parameter
+        base(observer_index, dealer_index, game_start, info, options, score, settings, true);
     }
 
     public void set_animation_speed(float multiplier)

@@ -39,7 +39,7 @@ public class RenderPlayer : WorldObject
             // Calculate relative position from observer's perspective
             int relative_seat = (seat - context.observer_index + 4) % 4;
 
-            if(context.reveal_all_tiles) {
+            if(context.reveal_all_tiles || context.is_replay) {
                 if (relative_seat == 2)  // Cross-player (toimen, opposite)
                     angle = CROSS_PLAYER_VIEW_ANGLE;
                 else if (relative_seat == 1)  // Right player (shimocha)

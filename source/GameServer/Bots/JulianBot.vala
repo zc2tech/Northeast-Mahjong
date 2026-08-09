@@ -71,47 +71,7 @@ class JulianBot : Bot
         }
     }
 
-    private void count_singles_ish(HashMap<TileType, int> suit_map,
-                                     int start_tile,
-                                     int end_tile,
-                                     ref ArrayList<TileType> singles_ish,
-                                     HashMap<TileType,int>? hOP)
-    {
-        if(hOP == null) {
-            return;
-        }
-        for (int i = start_tile; i <= end_tile; i++) {
-            int i_count = suit_map.get((TileType)i);
-            int m1 = i - 1 >= start_tile ? suit_map.get((TileType)(i - 1)) : 0;
-            int mo1 = i - 1 >= start_tile ? hOP.get((TileType)(i - 1)) : 0;
-            int m2 = i - 2 >= start_tile ? suit_map.get((TileType)(i - 2)) : 0;
-            int mo2 = i - 2 >= start_tile ? hOP.get((TileType)(i - 2)) : 0; // in other player
-            int p1 = i + 1 <= end_tile ? suit_map.get((TileType)(i + 1)) : 0;
-            int po1 = i + 1 <= end_tile ? hOP.get((TileType)(i + 1)) : 0;
-            int p2 = i + 2 <= end_tile ? suit_map.get((TileType)(i + 2)) : 0;
-            int po2 = i + 2 <= end_tile ? hOP.get((TileType)(i + 2)) : 0;
-            if( i_count == 1) { 
-                // 98 no 7 
-                if(i== end_tile && m1 == 1 && m2 == 0 && mo2 >= 3) {
-                    singles_ish.add(i);
-                }
-                // 97 no 8
-                if(i== end_tile && m2 == 1 && m1 == 0 && mo1 >= 3) {
-                    singles_ish.add(i);
-                }
-                // 12 no 3
-                if(i== start_tile && p1 == 1 && p2 == 0 && po2 >= 3) {
-                    singles_ish.add(i);
-                }
-                // 13 no 2
-                if(i== start_tile && p2 == 1 && p1 == 0 && po1 >= 3) {
-                    singles_ish.add(i);
-                } 
-
-            }
-           
-        }
-    }
+    
     // Helper: Count patterns (singles, pairs, triplets) in a suit
     private void count_suit_patterns(HashMap<TileType, int> suit_map,
                                      int start_tile,
@@ -1182,7 +1142,7 @@ class JulianBot : Bot
             } 
         }
         
-
+        bool has_terminal_dragon_pair_seq = false; // just check hand tiles
         backup.clear();
         backup.add_all(tiles);
         for (int i = 0; i < tiles.size; i++)
@@ -1192,7 +1152,10 @@ class JulianBot : Bot
             //      tiles.remove_at(i--);
             // 到这里肯定不是单数了 就留着
             if (tile.is_dragon_tile())
+            {
+                has_terminal_dragon_pair_seq = true;
                 tiles.remove_at(i--);
+            }
         }
         if (tiles.size == 0)
             return RandomTileSmart(stats,backup);
@@ -1214,6 +1177,7 @@ class JulianBot : Bot
                 ArrayList<Tile> p1_list = filter_tile_type(tile_type + 1);
                 ArrayList<Tile> p2_list = filter_tile_type(tile_type + 2);
                 if(me_list.size == 1 && p1_list.size == 1 && p2_list.size == 1) {
+                   has_terminal_dragon_pair_seq = true;
                    tiles.remove(me_list.get(0)); 
                    tiles.remove(p1_list.get(0)); 
                    tiles.remove(p2_list.get(0)); 
@@ -1226,6 +1190,7 @@ class JulianBot : Bot
                 ArrayList<Tile> m1_list = filter_tile_type(tile_type - 1);
                 ArrayList<Tile> m2_list = filter_tile_type(tile_type - 2);
                 if(me_list.size == 1 && m1_list.size == 1 && m2_list.size == 1) {
+                   has_terminal_dragon_pair_seq = true;
                    tiles.remove(me_list.get(0)); 
                    tiles.remove(m1_list.get(0)); 
                    tiles.remove(m2_list.get(0)); 
@@ -1244,7 +1209,12 @@ class JulianBot : Bot
             if (has_neighbours(tile)) {
                 // count if from self.hand, so don't worry the data consistency when removed one tile of pair
                 if(count(tile) == 2) {
-                    tiles.remove_at(i--); // 不但是对子，还有邻居，当然得留一下了
+                    if(tile.is_terminal_tile()) {
+                        has_terminal_dragon_pair_seq = true;
+                    }
+                    if(stats.triplet_count < 1 || tile.is_terminal_tile()) {
+                        tiles.remove_at(i--);
+                    }
                 }
             }             
         }
@@ -1257,6 +1227,8 @@ class JulianBot : Bot
         // 到了这里不可能算刻子了，这些对子肯定是没近邻的
         int pair_cnt = 0;
         HashSet<TileType> pair_tile_type = new HashSet<TileType>();
+        HashSet<TileType> pair_terminal_type = new HashSet<TileType>();
+        
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
@@ -1265,6 +1237,10 @@ class JulianBot : Bot
             {
                 pair_cnt++;
                 pair_tile_type.add(tile.tile_type);
+                if(tile.is_terminal_tile()) {
+                    pair_terminal_type.add(tile.tile_type);
+                    has_terminal_dragon_pair_seq = true;
+                }
             }               
         }
         // 留一下
@@ -1274,20 +1250,41 @@ class JulianBot : Bot
                     tiles.remove_at(i--); // 对子还是很珍贵的，
                 }
              }
+        } else if (!stats.hasTerminalSeq || !stats.hasTerminalTriplet) {
+             // 即使 对 很多， 幺九对仍然要留
+             for (int i = 0; i < tiles.size; i++) {
+                if(pair_terminal_type.contains(tiles[i].tile_type)) {
+                    tiles.remove_at(i--);
+                }
+             } 
         }
-
         // 留完竟然空了，那就从有紧邻的里选吧 都是好牌啊，不知道可不可能
+        if (tiles.size == 0)
+            return RandomTileSmart(stats, backup);
+
+        // 幺九也是很珍贵的
+        backup.clear();
+        backup.add_all(tiles);
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if (!(has_terminal_dragon_pair_seq || stats.hasTerminalSeq || stats.hasTerminalTriplet || stats.dragon_count >=2)  
+                && tile.is_terminal_tile() && (has_neighbours(tile) || has_second_neighbours(tile))
+                && !stats.singles_ish.contains(tile.tile_type) ) {
+                tiles.remove_at(i--); // 含幺九的连
+            }             
+        }
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
         backup.clear();
         backup.add_all(tiles);
-
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (has_neighbours(tile) && !stats.singles_ish.contains(tile.tile_type) ) {
-                tiles.remove_at(i--); // 到这里了，就只是两面顺子了，也可以留一下了
+            if (!tile.is_terminal_tile() && has_non_terminal_neighbours(tile)
+                && !stats.singles_ish.contains(tile.tile_type) ) {
+                tiles.remove_at(i--); // 到这里了，非幺九，基本就是两面顺子了，也可以留一下了
             }             
         }
         if (tiles.size == 0)
@@ -1526,39 +1523,7 @@ class JulianBot : Bot
         return list;
     }
 
-    private bool has_neighbours(Tile tile)
-    {
-        if (!tile.is_suit_tile())
-            return false;
 
-        foreach (Tile t in round_state.self.hand)
-        {
-            if (tile == t)
-                continue;
-
-            if (tile.is_neighbour(t))
-                return true;
-        }
-
-        return false;
-    }
-
-    private bool has_second_neighbours(Tile tile)
-    {
-        if (!tile.is_suit_tile())
-            return false;
-
-        foreach (Tile t in round_state.self.hand)
-        {
-            if (tile == t)
-                continue;
-
-            if (tile.is_second_neighbour(t))
-                return true;
-        }
-
-        return false;
-    }
 
     public override string name { get { return "JulianBot"; } }
 }

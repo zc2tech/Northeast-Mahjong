@@ -733,7 +733,7 @@ public class TileRules
         if( true ) { // just to separate variable namespace
             ArrayList<Tile> temp = new ArrayList<Tile>();
             temp.add_all(hand);
-            ArrayList<Tile> sorted_temp= Tile.sort_tiles_type(hand); // sort it for safe
+            ArrayList<Tile> sorted_temp= Tile.sort_tiles_type(temp); // sort it for safe
             Tile t0 = sorted_temp[0];
             Tile t1= sorted_temp[1];
             Tile t2 = sorted_temp[2];
@@ -800,7 +800,7 @@ public class TileRules
             {
                 if(t.tile_type == n1.tile_type) {
                     // triplet
-                    TilePair pair = new TilePair(tile, new Tile(-1, t.tile_type));
+                    TilePair pair = new TilePair(tile, new Tile(-1, tile.tile_type));
                     ArrayList<TileMeld> new_melds = new ArrayList<TileMeld>();
                     new_melds.add_all(melds);
                     new_melds.add(new TileMeld(n1, n2, t, true));
