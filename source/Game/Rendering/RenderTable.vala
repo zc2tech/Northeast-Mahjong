@@ -203,11 +203,14 @@ private class RenderTablePlayerNameField : WorldObject
     {
         float scale = 0.8f;
 
+        // Use subtle red tint for East wind, default blue for others
+        Color label_color = (wind == Wind.EAST) ? Color(0.8f, 0.25f, 0.6f, 1.0f) : color;
+
         WorldLabel wind_label = new WorldLabel();
         add_object(wind_label);
         wind_label.bold = true;
         wind_label.text = WIND_TO_KANJI(wind);
-        wind_label.color = color;
+        wind_label.color = label_color;
         wind_label.scale = Vec3(scale, scale, scale);
         wind_label.font_size = wind_label.font_size * 8;
 
@@ -221,7 +224,7 @@ private class RenderTablePlayerNameField : WorldObject
         name_label.text = name;
         name_label.scale = wind_label.scale.mul_scalar(0.5f);
         name_label.font_size = wind_label.font_size;
-        name_label.color = color;
+        name_label.color = label_color;
 
         pos = Vec3(offset.x + wind_label.end_size.x + name_label.end_size.x / 2, 0, offset.z + name_label.end_size.z / 2);
         name_label.position = pos;
