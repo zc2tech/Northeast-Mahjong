@@ -1019,12 +1019,13 @@ public class RoundStatePlayer
                 }
             }
         }
+        Environment.log(LogType.DEBUG, "RoundState", @"Player $(index) $(wind.to_string()) handsize: $(hand.size)");
         if (win_candi.size > 0) {
             StringBuilder sb = new StringBuilder();
             foreach (TileType tt in win_candi) {
                 sb.append(new Tile(-1, tt).to_string() + " ");
             }
-            Environment.log(LogType.DEBUG, "RoundState", @"Player $(index) calculated win_candi: $(sb.str)");
+            Environment.log(LogType.DEBUG, "RoundState", @" |- calculated win_candi: $(sb.str)");
         }
     }
    

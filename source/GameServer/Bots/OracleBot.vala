@@ -4,326 +4,6 @@ class OracleBot : Bot
 {
     private Engine.RandomClass rnd = new Engine.RandomClass();
 
-    // Helper: Create and initialize a suit map
-    private HashMap<TileType, int> create_suit_map(int start_tile, int end_tile)
-    {
-        HashMap<TileType, int> map = new HashMap<TileType, int>();
-        for (int i = start_tile; i <= end_tile; i++)
-        {
-            map.set((TileType)i, 0);
-        }
-        return map;
-    }
-
-    // 暂时是为二人抬轿测试服务
-    // 先去掉 顺子 再 刻子吧， 总感觉安全点
-    private void remove_melds(int start_tile, int end_tile, HashMap<TileType, int> map_sort, ref ArrayList<Tile> two_player_carry)
-    {
-        HashMap<TileType, int> copy_map = new HashMap<TileType, int>();
-        copy_map.set_all( map_sort);
-        // 拿掉所有顺子
-        for (int i = start_tile; i <= end_tile - 2 ; i++)
-        {
-            while (copy_map[i] >=1 && copy_map[i+1] >=1 && copy_map[i+1] >=1 ) {
-               bool done_i = false;
-               bool done_p1 = false;
-               bool done_p2 = false;
-               // Iterate backwards to safely remove during iteration
-               for (int idx = two_player_carry.size - 1; idx >= 0; idx--) {
-                    Tile t = two_player_carry[idx];
-                    if(!done_i && t.tile_type == copy_map[i]) {
-                        two_player_carry.remove_at(idx);
-                        done_i = true;
-                        copy_map[i] = copy_map[i] -1;
-                        continue;
-                    }
-                    if(!done_p1 && t.tile_type == copy_map[i+1]) {
-                        two_player_carry.remove_at(idx);
-                        done_p1 = true;
-                        copy_map[i+1] = copy_map[i+1] -1;
-                        continue;
-                    }
-                    if(!done_p2 && t.tile_type == copy_map[i+2]) {
-                        two_player_carry.remove_at(idx);
-                        done_p2 = true;
-                        copy_map[i+2] = copy_map[i+2] -1;
-                        continue;
-                    }
-               }
-            }
-        }
-
-        // 拿掉所有刻子（不包括 dragon)
-        for (int i = start_tile; i <= end_tile ; i++)
-        {
-            if (copy_map[i] >= 3 ) {
-                int counter = 0;
-                // Iterate backwards to safely remove during iteration
-                for (int idx = two_player_carry.size - 1; idx >= 0 && counter < 3; idx--) {
-                    Tile t = two_player_carry[idx];
-                    // 只去掉3个，不许多去
-                    if(t.tile_type == i) {
-                        two_player_carry.remove_at(idx);
-                        counter++;
-                    }
-                }
-            } 
-        }
-    }
-
-    // Helper: Count patterns (singles, pairs, triplets) in a suit
-    private void count_suit_patterns(HashMap<TileType, int> suit_map,
-                                     int start_tile,
-                                     int end_tile,
-                                     ref ArrayList<TileType> singles,
-                                     ref int pair_count,
-                                     ref int triplet_count)
-    {
-        for (int i = start_tile; i <= end_tile; i++)
-        {
-            int i_count = suit_map.get((TileType)i);
-            int m1 = i - 1 >= start_tile ? suit_map.get((TileType)(i - 1)) : 0;
-            int m2 = i - 2 >= start_tile ? suit_map.get((TileType)(i - 2)) : 0;
-            int p1 = i + 1 <= end_tile ? suit_map.get((TileType)(i + 1)) : 0;
-            int p2 = i + 2 <= end_tile ? suit_map.get((TileType)(i + 2)) : 0;
-
-            switch (i_count)
-            {
-                case 1:
-                    if (m1 == 0 && m2 == 0 && p1 == 0 && p2 == 0)
-                    {
-                        singles.add(i);
-                    }
-                    break;
-                case 2:
-                    pair_count++;
-                    break;
-                case 3:
-                case 4:
-                    triplet_count++;
-                    break;
-            }
-        }
-    }
-
-    // Helper: Count half-sequences involving a specific tile
-    // A half-sequence is two tiles that need one more to form a sequence (e.g., 3-5 needs 4, or 4-5 needs 3 or 6)
-    private void count_half_sequences(HashMap<TileType, int> suit_map,
-                                      int target_tile,
-                                      int start_tile,
-                                      int end_tile,
-                                      ref int half_sequence_count)
-    {
-        // Check all tiles in this suit
-        for (int i = start_tile; i <= end_tile; i++)
-        {
-            if (i == target_tile)
-                continue;
-
-            int tile_count = suit_map.get((TileType)i);
-            int target_count = suit_map.get((TileType)target_tile);
-            int distance = (i - target_tile).abs();
-
-            // Check if this tile forms a half-sequence with the target tile
-            // Case 1: i and target are 2 apart (e.g., 3 and 5 need 4)
-            if (distance == 2)
-            {
-                half_sequence_count += int.min(tile_count, target_count);
-            }
-            // Case 2: i and target are 1 apart (e.g., 4 and 5 need 3 or 6)
-            else if (distance == 1)
-            {
-                half_sequence_count += int.min(tile_count, target_count);
-            }
-        }
-    }
-
-    // Analyze hand and return statistics
-    // param tile, 吃碰杠 对象, 可以为 null 表示这是 turn decision
-    // param hOP (Other Player all tiles) 有可能 null, 那时候 singles_ish 之类的可能就不准了 
-    private HandStatistics analyze_hand(Tile? tile, ArrayList<Tile> sorted_hand, ArrayList<RoundStateCall> calls, HashMap<TileType, int>? hOP)
-    {
-        HandStatistics stats = HandStatistics();
-        stats.two_player_carry = new ArrayList<Tile>();
-        stats.two_player_carry.add_all(sorted_hand); // 二人抬轿 只是把刻子，对子移除。后续还要设牌时判断
-        // Create suit maps
-        HashMap<TileType, int> map_man = create_suit_map(TileType.MAN1, TileType.MAN9);
-        HashMap<TileType, int> map_pin = create_suit_map(TileType.PIN1, TileType.PIN9);
-        HashMap<TileType, int> map_sou = create_suit_map(TileType.SOU1, TileType.SOU9);
-
-        remove_melds(TileType.MAN1, TileType.MAN9,map_man, ref stats.two_player_carry);
-        remove_melds(TileType.PIN1, TileType.PIN9,map_pin, ref stats.two_player_carry);
-        remove_melds(TileType.SOU1, TileType.SOU9,map_sou, ref stats.two_player_carry);
-
-
-        stats.terminal_count = 0;
-        stats.dragon_count = 0;
-        stats.singles = new ArrayList<TileType>();
-        stats.singles_ish = new ArrayList<TileType>();
-        stats.pair_count = 0;
-        stats.triplet_count = 0;
-        stats.hasTerminalSeq = false; // 这个指标实在太关键了
-        stats.hasTerminalTriplet= false; // 这个指标实在太关键了
-        stats.rare_dragon_terminal = TileType.BLANK;
-
-        // Count tiles by suit
-        foreach (Tile t in sorted_hand)
-        {
-            if (t.is_terminal_tile())
-            {
-                stats.terminal_count++;
-            }
-            // Fixed bug: was using mapMan for all suits
-            if (t.tile_type >= TileType.MAN1 && t.tile_type <= TileType.MAN9)
-            {
-                map_man.set(t.tile_type, map_man.get(t.tile_type) + 1);
-            }
-            else if (t.tile_type >= TileType.PIN1 && t.tile_type <= TileType.PIN9)
-            {
-                map_pin.set(t.tile_type, map_pin.get(t.tile_type) + 1);
-            }
-            else if (t.tile_type >= TileType.SOU1 && t.tile_type <= TileType.SOU9)
-            {
-                map_sou.set(t.tile_type, map_sou.get(t.tile_type) + 1);
-            }
-
-            if (t.is_dragon_tile())
-            {
-                stats.dragon_count++;
-            }
-        }
-
-        // 这时候还只是算手牌的中发白，二人抬轿预备队里 所以有刻子把它去了
-        if(stats.dragon_count >=3 ) {
-            int counter = 0;
-            for (int i = stats.two_player_carry.size - 1; i >= 0 && counter < 3; i--) {
-                if (stats.two_player_carry[i].is_dragon_tile()) {
-                    stats.two_player_carry.remove_at(i);
-                    counter++;
-                }
-            }
-        }
-
-        // 找到含幺九的顺子就走
-        if( map_man[TileType.MAN1] > 0  && map_man[TileType.MAN2] > 0 && map_man[TileType.MAN3] > 0) {
-            stats.hasTerminalSeq = true;
-        }
-        if( map_man[TileType.MAN9] > 0  && map_man[TileType.MAN8] > 0 && map_man[TileType.MAN7] > 0) {
-            stats.hasTerminalSeq = true;
-        }
-        if( map_pin[TileType.PIN1] > 0  && map_pin[TileType.PIN2] > 0 && map_pin[TileType.PIN3] > 0) {
-            stats.hasTerminalSeq = true;
-        }
-        if( map_pin[TileType.PIN9] > 0 && map_pin[TileType.PIN8] > 0 && map_pin[TileType.PIN7] > 0) {
-            stats.hasTerminalSeq = true;
-        }
-        if( map_sou[TileType.SOU1] > 0 && map_sou[TileType.SOU2] > 0 && map_sou[TileType.SOU3] > 0) {
-            stats.hasTerminalSeq = true;
-        }
-        if( map_sou[TileType.SOU9] > 0 && map_sou[TileType.SOU8] > 0 && map_sou[TileType.SOU7] > 0) {
-            stats.hasTerminalSeq = true;
-        }
-        if( map_man[TileType.MAN1] >= 3 || map_man[TileType.MAN9] >= 3
-             || map_pin[TileType.PIN1] >=3 || map_pin[TileType.PIN9] >= 3
-             || map_sou[TileType.SOU1] >=3 || map_sou[TileType.SOU9] >= 3
-            ) 
-        {
-            stats.hasTerminalTriplet = true;
-        }
-
-        // Analyze patterns for each suit
-        count_suit_patterns(map_man, TileType.MAN1, TileType.MAN9,
-                           ref stats.singles, ref stats.pair_count, ref stats.triplet_count);
-        count_suit_patterns(map_pin, TileType.PIN1, TileType.PIN9,
-                           ref stats.singles, ref stats.pair_count, ref stats.triplet_count);
-        count_suit_patterns(map_sou, TileType.SOU1, TileType.SOU9,
-                           ref stats.singles, ref stats.pair_count, ref stats.triplet_count);
-
-         // help you to find out neighbours(two) that has no hope to formulate sequence
-        count_singles_ish(map_man, TileType.MAN1, TileType.MAN9, ref stats.singles_ish, hOP);  
-        count_singles_ish(map_man, TileType.PIN1, TileType.PIN9, ref stats.singles_ish, hOP);  
-        count_singles_ish(map_man, TileType.SOU1, TileType.SOU9, ref stats.singles_ish, hOP);  
-        // Count half-sequences involving the given tile (for pon/kan decisions)
-        // A half-sequence is two tiles that can form a sequence with one more tile
-        if (tile != null)
-        {
-            if (tile.is_same_sort(new Tile(-1, TileType.MAN1)))
-            {
-                count_half_sequences(map_man, tile.tile_type, TileType.MAN1, TileType.MAN9, ref stats.half_sequence_count_by_tile);
-            }
-            else if (tile.is_same_sort(new Tile(-1, TileType.PIN1)))
-            {
-                count_half_sequences(map_pin, tile.tile_type, TileType.PIN1, TileType.PIN9, ref stats.half_sequence_count_by_tile);
-            }
-            else if (tile.is_same_sort(new Tile(-1, TileType.SOU1)))
-            {
-                count_half_sequences(map_sou, tile.tile_type, TileType.SOU1, TileType.SOU9, ref stats.half_sequence_count_by_tile);
-            }
-        }
-
-        // Handle dragon tiles
-        if (stats.dragon_count == 2)
-        {
-            stats.pair_count++;
-        }
-        if (stats.dragon_count >= 3)
-        {
-            stats.triplet_count++;
-        }
-
-        // 已经碰完的牌了, 也给反映到数据上
-       
-        foreach( RoundStateCall c in calls) {
-           
-            if(c.call_type == RoundStateCall.CallType.CLOSED_KAN 
-                || c.call_type ==  RoundStateCall.CallType.LATE_KAN
-                || c.call_type ==  RoundStateCall.CallType.OPEN_KAN
-                || c.call_type ==  RoundStateCall.CallType.PON
-            ) {
-                stats.triplet_count++;
-                if(c.tiles[0].is_terminal_tile()) {
-                    stats.hasTerminalTriplet = true;
-                    stats.terminal_count += 3;
-                }
-                if(c.tiles[0].is_dragon_tile()) {
-                   stats.dragon_count = c.call_type ==  RoundStateCall.CallType.PON ? 3: 4;
-                }
-            }
-
-            if(c.call_type == RoundStateCall.CallType.CHII) {
-                if(c.tiles[0].is_terminal_tile() || c.tiles[1].is_terminal_tile() || c.tiles[2].is_terminal_tile()) {
-                    stats.hasTerminalSeq = true;
-                    stats.terminal_count++;
-                }
-            }
-            
-        }
-
-        if(stats.terminal_count > 0 || stats.dragon_count > 0) {
-            ArrayList<Tile> copy_for_rare_search = new ArrayList<Tile>();
-            copy_for_rare_search.add_all(sorted_hand);
-            foreach( RoundStateCall c in calls) {
-                copy_for_rare_search.add_all(c.tiles);
-            }
-
-            TileType theOne = TileType.BLANK;
-            int cnt = 0;
-            for (int i=0 ; i < copy_for_rare_search.size && cnt < 2; i++ ) { // 是否有两张是个分水岭
-                if(copy_for_rare_search[i].is_dragon_tile() || copy_for_rare_search[i].is_terminal_tile()) {
-                    cnt++;
-                    theOne = copy_for_rare_search[i].tile_type;
-                }
-            }
-            
-            if(cnt == 1) {
-                // 必须严格等于 1 的时候
-                stats.rare_dragon_terminal = theOne;
-            }
-        }
-
-        return stats;
-    }
-
     // Evaluate whether to call pon (碰) on a tile
     // Returns true if should call pon, false otherwise
     private bool should_call_pon(Tile tile,
@@ -473,18 +153,22 @@ class OracleBot : Bot
             return true;
         }
 
-        if (tripletCnt == 0 && singleCnt <= 3)
-        {
-            // 还是很有用的, 散牌也不算太多
-            return true;
-        }
+        //  if (newStats. tripletCnt == 0 && singleCnt <= 3)
+        //  {
+        //      // 还是很有用的, 散牌也不算太多
+        //      return true;
+        //  }
 
         // 碰了之后什么状态? 刻子肯定是多了的
-        HashMap<TileType, int> hOP = other_player_tiles();
-        HandStatistics newStats = analyze_hand(null, newHand, newCalls, hOP);
+        HashMap<TileType, int> hCalled = called_tiles();
+        hCalled.set(tile.tile_type,3); // 因为假设碰了，所以自己做数据去试一下
+        HandStatistics newStats = analyze_hand(tile, newHand, newCalls, hCalled);
         if (newStats.singles.size - stats.singles.size >= 2)
         {
             // 散牌增多两张以上啊,不值得
+            return false;
+        }
+        if(newStats.singles_ish.size - stats.singles_ish.size >= 2 ) {
             return false;
         }
 
@@ -849,8 +533,8 @@ class OracleBot : Bot
         ArrayList<Tile> sorted_hand = Tile.sort_tiles_type(round_state.self.hand); 
         ArrayList<RoundStateCall> calls = round_state.self.calls;   
 
-        HashMap<TileType, int> hOP = other_player_tiles();
-        HandStatistics stats = analyze_hand(null, sorted_hand, calls,hOP);
+        HashMap<TileType, int> hCalled = called_tiles();
+        HandStatistics stats = analyze_hand(null, sorted_hand, calls,hCalled);
 
         //  HashSet<Tile> discard_candi = new HashSet<Tile>();
         int me_index = round_state.self.index;
@@ -1008,32 +692,33 @@ class OracleBot : Bot
         do_discard(tile);
     }
 
-    // 其他人已经吃碰或者打出的所有 还有墙上翻开的
-    private  HashMap<TileType, int> other_player_tiles() {
-        HashMap<TileType,int> hOP = new HashMap<TileType,int>(); // Other Player: OP
+    // 已经吃碰或者打出的所有 还有墙上翻开的
+    // 自己尝试碰的数据是记不到 round_state里的
+    private  HashMap<TileType, int> called_tiles() {
+        HashMap<TileType,int> hCalled = new HashMap<TileType,int>(); 
         for(int i= TileType.MAN1 ;  i < TileType.CHUN; i++ ) {
-           hOP.set((TileType)i,0); 
+           hCalled.set((TileType)i,0); 
         }
         for(int i = 0 ; i < 4 ; i++ ) {
-            if(i == round_state.self.index) {
-                continue;
-            }
+            //  if(i == round_state.self.index) {
+            //      continue;
+            //  }
             RoundStatePlayer p =  round_state.get_player(i);
             foreach(Tile t in p.pond) {
-                    hOP.set(t.tile_type, hOP.get(t.tile_type) + 1 );
+                    hCalled.set(t.tile_type, hCalled.get(t.tile_type) + 1 );
             }
             foreach( RoundStateCall c in  p.calls ) {
                     foreach(Tile t in c.tiles) {
-                    hOP.set(t.tile_type, hOP.get(t.tile_type) + 1 ); 
+                    hCalled.set(t.tile_type, hCalled.get(t.tile_type) + 1 ); 
                     }
             }
             Tile? mark = round_state.dead_wall_mark;
             if(mark != null) {
                 Tile t = mark;
-                hOP.set(t.tile_type, hOP.get(t.tile_type) + 1 ); 
+                hCalled.set(t.tile_type, hCalled.get(t.tile_type) + 1 ); 
             }
         }
-        return hOP;
+        return hCalled;
 
     } 
     // 别人打牌之后，做个处理决定
@@ -1056,8 +741,8 @@ class OracleBot : Bot
             return;
         }
         // Analyze hand statistics
-        HashMap<TileType, int> hOP = other_player_tiles();
-        HandStatistics stats = analyze_hand(tile, sortedhand, calls, hOP);
+        HashMap<TileType, int> hCalled = called_tiles();
+        HandStatistics stats = analyze_hand(tile, sortedhand, calls, hCalled);
 
         int beforeBenefit = 0;
         HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
@@ -1299,7 +984,7 @@ class OracleBot : Bot
                     if(tile.is_terminal_tile()) {
                         has_terminal_dragon_pair_seq = true;
                     }
-                    if(stats.triplet_count < 1 || tile.is_terminal_tile()) {
+                    if(!stats.hasTerminalSeq && !stats.hasTerminalTriplet && tile.is_terminal_tile()) {
                         tiles.remove_at(i--); 
                     }
                 }
@@ -1308,10 +993,24 @@ class OracleBot : Bot
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
+        // 顺子里的独苗还是要留 1234 怎么办？
         backup.clear();
         backup.add_all(tiles);
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if( (stats.hasTerminalTriplet || stats.dragon_count >= 3)  
+                && stats.hand_in_seq.contains(tile.tile_type)) {
+                    // 已经有刻子了的情况下，顺子才珍贵， 要不随时可以打掉
+                    tiles.remove_at(i--); 
+                }     
+        }
+        if (tiles.size == 0)
+            return RandomTileSmart(stats, backup);
 
         // 到了这里不可能算刻子了，这些对子肯定是没近邻的
+        backup.clear();
+        backup.add_all(tiles);       
         int pair_cnt = 0;
         HashSet<TileType> pair_tile_type = new HashSet<TileType>();
         HashSet<TileType> pair_terminal_type = new HashSet<TileType>();
@@ -1341,9 +1040,20 @@ class OracleBot : Bot
              // 即使 对 很多， 幺九对仍然要留
              for (int i = 0; i < tiles.size; i++) {
                 if(pair_terminal_type.contains(tiles[i].tile_type)) {
-                    tiles.remove_at(i--); // 对子还是很珍贵的，
+                    tiles.remove_at(i--);
                 }
              } 
+        } else {
+            // 对子还是很多，就不珍贵了 中心牌的留一下
+            for (int i = 0; i < tiles.size; i++) {
+                TileType tt = tiles[i].tile_type;
+                if(pair_tile_type.contains(tt)
+                    && (tt >= TileType.MAN3 && tt <= TileType.MAN7
+                        || tt >= TileType.PIN3 && tt <= TileType.PIN7
+                        || tt >= TileType.SOU3 && tt <= TileType.SOU7)) {
+                    tiles.remove_at(i--); // 对子还是很珍贵的，
+                }
+            }           
         }
         // 留完竟然空了，那就从有紧邻的里选吧 都是好牌啊，不知道可不可能
         if (tiles.size == 0)
@@ -1353,14 +1063,23 @@ class OracleBot : Bot
         // 幺九也是很珍贵的
         backup.clear();
         backup.add_all(tiles);
+        ArrayList<Tile> terminal_in_need = new ArrayList<Tile>();
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
             if (!(has_terminal_dragon_pair_seq || stats.hasTerminalSeq || stats.hasTerminalTriplet || stats.dragon_count >=2)  
                 && tile.is_terminal_tile() && (has_neighbours(tile) || has_second_neighbours(tile))
                 && !stats.singles_ish.contains(tile.tile_type) ) {
-                tiles.remove_at(i--); // 含幺九的连
-            }             
+                terminal_in_need.add(tile);             
+            }
+        }
+        for (int i = 0; i < tiles.size; i++)
+        {
+            foreach(Tile t in terminal_in_need) {
+                if(t == tiles[i] || t.is_neighbour(tiles[i]) || t.is_second_neighbour(tiles[i])) {
+                    tiles.remove_at(i--); // 含幺九的连
+                }
+            }
         }
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
@@ -1370,10 +1089,10 @@ class OracleBot : Bot
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
-               tiles.remove_at(i--); 
-               continue;
-            }
+            //  if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
+            //     tiles.remove_at(i--); 
+            //     continue;
+            //  }
             if (!tile.is_terminal_tile() && has_non_terminal_neighbours(tile)
                 && !stats.singles_ish.contains(tile.tile_type) ) {
                 tiles.remove_at(i--); // 到这里了，非幺九，基本就是两面顺子了，也可以留一下了
@@ -1387,10 +1106,10 @@ class OracleBot : Bot
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
-               tiles.remove_at(i--); 
-               continue;
-            }    
+            //  if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
+            //     tiles.remove_at(i--); 
+            //     continue;
+            //  }    
             if (has_second_neighbours(tile) && !stats.singles_ish.contains(tile.tile_type))
                 tiles.remove_at(i--);
         }
