@@ -6,6 +6,7 @@ public class GameEscapeMenuView : View2D
     private OptionsMenuView options_view;
     private MenuTextButton back_button;
     private MenuTextButton options_button;
+    private MenuTextButton load_log_button;
     private MenuTextButton leave_button;
     private MenuTextButton confirm_yes_button;
     private MenuTextButton confirm_no_button;
@@ -14,6 +15,7 @@ public class GameEscapeMenuView : View2D
     public signal void close_menu();
     public signal void apply_options(Options options);
     public signal void leave_game();
+    public signal void load_game_log();
 
     protected override void added()
     {
@@ -26,6 +28,7 @@ public class GameEscapeMenuView : View2D
 
         back_button = new MenuTextButton("MenuButton", "Back");
         options_button = new MenuTextButton("MenuButton", "Options");
+        load_log_button = new MenuTextButton("MenuButton", "Load Log");
         leave_button = new MenuTextButton("MenuButton", "Leave Game");
         confirm_yes_button = new MenuTextButton("MenuButton", "Yes");
         confirm_no_button = new MenuTextButton("MenuButton", "No");
@@ -33,6 +36,7 @@ public class GameEscapeMenuView : View2D
 
         back_button.clicked.connect(press_back);
         options_button.clicked.connect(press_options);
+        load_log_button.clicked.connect(press_load_log);
         leave_button.clicked.connect(press_leave);
 
         confirm_yes_button.clicked.connect(press_yes);
@@ -42,6 +46,7 @@ public class GameEscapeMenuView : View2D
 
         buttons.add(back_button);
         buttons.add(options_button);
+        buttons.add(load_log_button);
         buttons.add(leave_button);
 
         int padding = 30;
@@ -92,6 +97,7 @@ public class GameEscapeMenuView : View2D
     {
         back_button.visible = true;
         options_button.visible = true;
+        load_log_button.visible = true;
         leave_button.visible = true;
         confirm_yes_button.visible = false;
         confirm_no_button.visible = false;
@@ -103,14 +109,21 @@ public class GameEscapeMenuView : View2D
     {
         back_button.visible = false;
         options_button.visible = false;
+        load_log_button.visible = false;
         leave_button.visible = false;
         options_view.visible = true;
+    }
+
+    private void press_load_log()
+    {
+        load_game_log();
     }
 
     private void press_leave()
     {
         back_button.visible = false;
         options_button.visible = false;
+        load_log_button.visible = false;
         leave_button.visible = false;
         confirm_yes_button.visible = true;
         confirm_no_button.visible = true;

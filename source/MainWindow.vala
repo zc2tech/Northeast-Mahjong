@@ -134,6 +134,26 @@ public class MainWindow : RenderWindow
             replay_controller.finished();
     }
 
+    private void load_log_from_game()
+    {
+        // Close escape menu first
+        if (escape_menu != null)
+        {
+            main_view.remove_child(escape_menu);
+            escape_menu = null;
+        }
+
+        // End current game (this will trigger game_finished and make menu visible)
+        leave_game_pressed();
+
+        // Queue the navigation to happen after game_finished completes
+        // Use a short delay to ensure menu is fully restored first
+        Timeout.add(50, () => {
+            menu.show_log_selection();
+            return false; // Don't repeat
+        });
+    }
+
     private void restart()
     {
         do_restart = true;
@@ -174,6 +194,7 @@ public class MainWindow : RenderWindow
                     escape_menu.apply_options.connect(apply_options);
                     escape_menu.close_menu.connect(close_menu);
                     escape_menu.leave_game.connect(leave_game_pressed);
+                    escape_menu.load_game_log.connect(load_log_from_game);
                     main_view.add_child(escape_menu);
                 }
                 else

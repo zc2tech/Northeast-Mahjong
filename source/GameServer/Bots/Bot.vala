@@ -93,7 +93,14 @@ public abstract class Bot : Object
 
     public void tile_discard(int tile_ID)
     {
+        Tile tile = round_state.get_tile(tile_ID);
+        int discard_player_index = round_state.current_player.index;
+        int hand_size_before = round_state.current_player.hand.size;
+
         round_state.tile_discard(tile_ID);
+
+        int hand_size_after = round_state.current_player.hand.size;
+        //  Environment.log(LogType.DEBUG, this.name, @"tile_discard: Player $discard_player_index discarded $(tile.to_string()), hand size $hand_size_before -> $hand_size_after");
     }
 
     public void ron(int[] player_indices)
@@ -115,6 +122,12 @@ public abstract class Bot : Object
 
     public void turn_decision()
     {
+        //  Environment.log(LogType.DEBUG, this.name, @"turn_decision: current_player=$(round_state.current_player.index)");
+        for (int i = 0; i < 4; i++)
+        {
+            RoundStatePlayer p = round_state.get_player(i);
+            //  Environment.log(LogType.DEBUG, this.name, @"  Player $i: hand=$(p.hand.size), pond=$(p.pond.size), calls=$(p.calls.size)");
+        }
         do_turn_decision();
     }
 
@@ -145,7 +158,15 @@ public abstract class Bot : Object
 
     public void chii(int player_index, int tile_1_ID, int tile_2_ID)
     {
+        int discard_player_index = round_state.get_last_discard_player_index();
+        int discard_hand_size_before = round_state.get_player(discard_player_index).hand.size;
+        int discard_pond_size_before = round_state.get_player(discard_player_index).pond.size;
+
         round_state.chii(player_index, tile_1_ID, tile_2_ID);
+
+        int discard_hand_size_after = round_state.get_player(discard_player_index).hand.size;
+        int discard_pond_size_after = round_state.get_player(discard_player_index).pond.size;
+        Environment.log(LogType.DEBUG, this.name, @"chii: Player $player_index chii from discarder $discard_player_index, discarder hand=$discard_hand_size_before->$discard_hand_size_after, pond=$discard_pond_size_before->$discard_pond_size_after");
     }
 
     public void calls_finished()

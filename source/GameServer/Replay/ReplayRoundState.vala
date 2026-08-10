@@ -308,18 +308,21 @@ namespace GameServer
             {
                 GameLogLine next_line = lines[0];
 
-                if (next_line != null && next_line.action != null) 
+                if (next_line != null && next_line.action != null)
                 {
                     if (next_line.action is ClientServerAction)
                     {
                         ClientAction next_action = ((ClientServerAction)next_line.action).action;
 
-                        // tidyActions already filtered ALL NoCallClientAction 
+                        // tidyActions already filtered ALL NoCallClientAction
+                        // Kans send their own CallsFinished, so don't check for them here
                         bool is_call_response =(next_action is PonClientAction) ||
                                                (next_action is ChiiClientAction) ||
-                                               (next_action is OpenKanClientAction);
+                                               (next_action is OpenKanClientAction) ||
+                                               (next_action is LateKanClientAction) ||
+                                               (next_action is ClosedKanClientAction);
 
-                        // If it's a call, let the call action now current player and then do the player advance
+                        // If it's a call, let the call action handle CallsFinished
                         if (!is_call_response)
                         {
                             // Next action is not a call response (e.g., it's a draw or discard)
@@ -356,9 +359,6 @@ namespace GameServer
             tiles.add(tile2);
 
             game_chii(player, tiles);
-
-            // Send CallsFinished after chii to advance turn
-            game_calls_finished();
         }
 
         private void handle_pon(int player)
@@ -379,9 +379,6 @@ namespace GameServer
             tiles.add_all(matching);
 
             game_pon(player, tiles);
-
-            // Send CallsFinished after pon to advance turn
-            game_calls_finished();
         }
 
         private void handle_late_kan(int player, LateKanClientAction action)
@@ -396,7 +393,7 @@ namespace GameServer
             state.add_tile_to_player(player, dead_tile);
             game_draw_dead_tile(player, dead_tile, true);
 
-            // Send CallsFinished after late kan + dead wall draw
+            // Send CallsFinished immediately after dead wall draw (same as normal game)
             game_calls_finished();
         }
 
@@ -415,7 +412,7 @@ namespace GameServer
             state.add_tile_to_player(player, dead_tile);
             game_draw_dead_tile(player, dead_tile, true);
 
-            // Send CallsFinished after closed kan + dead wall draw
+            // Send CallsFinished immediately after dead wall draw (same as normal game)
             game_calls_finished();
         }
 
@@ -442,7 +439,7 @@ namespace GameServer
             state.add_tile_to_player(player, dead_tile);
             game_draw_dead_tile(player, dead_tile, true);
 
-            // After open kan + dead wall draw, send CallsFinished to trigger animation
+            // Send CallsFinished immediately after dead wall draw (same as normal game)
             game_calls_finished();
         }
 

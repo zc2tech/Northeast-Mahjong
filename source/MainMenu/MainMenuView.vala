@@ -7,6 +7,14 @@ class MainMenuView : MenuSubView
     public signal GameController menu_game_start(GameStartInfo info, ServerSettings settings, IGameConnection connection, int player_index);
     public signal void restart();
 
+    public void show_log_selection()
+    {
+        // Navigate directly to log selection without going through singleplayer menu
+        SelectGameLogMenuView log_view = new SelectGameLogMenuView();
+        log_view.finish.connect(load_log);
+        load_sub_view(log_view);
+    }
+
     private void singleplayer()
     {
         SingleplayerMenuView singleplayer_menu_view = new SingleplayerMenuView();
@@ -37,6 +45,25 @@ class MainMenuView : MenuSubView
     private void options_apply()
     {
         restart();
+    }
+
+    private void load_log(MenuSubView view)
+    {
+        SelectGameLogMenuView v = (SelectGameLogMenuView)view;
+
+        // Create ServerMenuView with the log
+        // Auto-start will happen automatically in load_finished() when log != null
+        ServerMenuView s = new ServerMenuView.use_log(v.log);
+        s.start.connect(log_game_start);
+        load_sub_view(s);
+
+        // Hide the lobby UI immediately for replay
+        s.set_visibility(false);
+    }
+
+    private void log_game_start(GameStartInfo info, ServerSettings settings, IGameConnection connection, int player_index)
+    {
+        game_start(info, settings, connection, player_index);
     }
 
     private GameController game_start(GameStartInfo info, ServerSettings settings, IGameConnection connection, int player_index)
@@ -114,6 +141,12 @@ class MainMenuControlView : View2D
     {
         Options options = new Options.from_disk();
         background_view = new MainMenuBackgroundView(options.tile_textures, options.tile_fore_color, options.tile_back_color);
+    }
+
+    public void show_log_selection()
+    {
+        // Navigate to singleplayer menu and then to log selection
+        main_view.show_log_selection();
     }
 
     private GameController menu_game_start(GameStartInfo info, ServerSettings settings, IGameConnection connection, int player_index)

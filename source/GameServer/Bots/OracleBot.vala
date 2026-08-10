@@ -863,9 +863,17 @@ class OracleBot : Bot
                 continue;
             }
             RoundStatePlayer opponent = round_state.get_player(i);
-            Environment.log(LogType.DEBUG, "OracleBot", @"Player $i $(opponent.wind.to_string()) hand size: $(opponent.hand.size)");
+            //  Environment.log(LogType.DEBUG, "OracleBot", @"Player $i $(opponent.wind.to_string()) hand size: $(opponent.hand.size)");
+
+            // Debug: print all tiles in opponent's hand
+            StringBuilder hand_tiles = new StringBuilder();
+            foreach (Tile t in opponent.hand) {
+                hand_tiles.append(t.to_string() + " ");
+            }
+            //  Environment.log(LogType.DEBUG, "OracleBot", @"Player $i hand tiles: $(hand_tiles.str)");
+
             opponent.cal_win_candi();
-            Environment.log(LogType.DEBUG, "OracleBot", @"Player $i $(opponent.wind.to_string()) win_candi size: $(opponent.win_candi.size)");
+            //  Environment.log(LogType.DEBUG, "OracleBot", @"Player $i $(opponent.wind.to_string()) win_candi size: $(opponent.win_candi.size)");
             if (opponent.win_candi.size > 0) {
                 StringBuilder sb = new StringBuilder();
                 foreach (TileType tt in opponent.win_candi) {
@@ -875,7 +883,7 @@ class OracleBot : Bot
             }
             warn_win.add_all(opponent.win_candi);
         }
-        Environment.log(LogType.DEBUG, "OracleBot", @"Total warn_win size: $(warn_win.size)");
+        Environment.log(LogType.DEBUG, "OracleBot", @"---- Total warn_win size: $(warn_win.size) ---- ");
 
         // win_necessary_condition 就当听牌, 所以条件不是特别严格
         // 已经尽力了
@@ -1362,6 +1370,10 @@ class OracleBot : Bot
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
+            if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
+               tiles.remove_at(i--); 
+               continue;
+            }
             if (!tile.is_terminal_tile() && has_non_terminal_neighbours(tile)
                 && !stats.singles_ish.contains(tile.tile_type) ) {
                 tiles.remove_at(i--); // 到这里了，非幺九，基本就是两面顺子了，也可以留一下了
@@ -1375,6 +1387,10 @@ class OracleBot : Bot
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
+            if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
+               tiles.remove_at(i--); 
+               continue;
+            }    
             if (has_second_neighbours(tile) && !stats.singles_ish.contains(tile.tile_type))
                 tiles.remove_at(i--);
         }
