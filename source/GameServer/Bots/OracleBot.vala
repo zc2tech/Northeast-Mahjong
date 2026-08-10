@@ -1075,16 +1075,22 @@ class OracleBot : Bot
                 terminal_in_need.add(tile);             
             }
         }
-        for (int i = 0; i < tiles.size; i++)
+        for (int i = tiles.size - 1; i >= 0; i--)
         {
+            bool should_remove = false;
             foreach(Tile t in terminal_in_need) {
                 if(t == tiles[i] || t.is_neighbour(tiles[i]) || t.is_second_neighbour(tiles[i])) {
-                    tiles.remove_at(i--); // 含幺九的连
-                }
+                    should_remove = true;
+                    break;
+                } 
+            }
+            if (should_remove) {
+                tiles.remove_at(i);
             }
         }
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
+
 
         backup.clear();
         backup.add_all(tiles);

@@ -988,12 +988,19 @@ class JulianBot : Bot
                 terminal_in_need.add(tile);             
             }
         }
-        for (int i = 0; i < tiles.size; i++)
+        // Remove tiles that are terminal or neighbors/second-neighbors of terminal_in_need
+        // Do this in reverse order to avoid index shifting issues
+        for (int i = tiles.size - 1; i >= 0; i--)
         {
+            bool should_remove = false;
             foreach(Tile t in terminal_in_need) {
                 if(t == tiles[i] || t.is_neighbour(tiles[i]) || t.is_second_neighbour(tiles[i])) {
-                    tiles.remove_at(i--); // 含幺九的连
+                    should_remove = true;
+                    break;
                 }
+            }
+            if (should_remove) {
+                tiles.remove_at(i);
             }
         }
         if (tiles.size == 0)
