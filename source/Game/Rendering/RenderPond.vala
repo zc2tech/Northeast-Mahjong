@@ -5,15 +5,17 @@ private class RenderPond : WorldObject
 {
     private GameRenderContext context;
     private Vec3 tile_size;
+    private RenderTable table;
 
     private WorldObject wrap;
     private ArrayList<RenderTile> tiles = new ArrayList<RenderTile>();
     private RenderTile? riichi_tile = null;
 
-    public RenderPond(GameRenderContext context)
+    public RenderPond(GameRenderContext context, RenderTable table)
     {
         this.context = context;
         this.tile_size = context.tile_size;
+        this.table = table;
     }
 
     protected override void added()
@@ -33,6 +35,9 @@ private class RenderPond : WorldObject
         //      do_riichi = false;
         //  }
 
+        // Use global tracking in RenderTable for latest discard
+        table.set_latest_discard(tile);
+
         tiles.add(tile);
         arrange_pond();
     }
@@ -47,6 +52,9 @@ private class RenderPond : WorldObject
 
         //  bool found = tiles.remove(tile);
         tiles.remove(tile);
+
+        // Clear from global tracking if needed
+        table.clear_latest_discard(tile);
 
         // Always arrange pond to ensure proper positioning
         arrange_pond();

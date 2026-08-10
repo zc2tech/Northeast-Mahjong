@@ -14,12 +14,13 @@ public class RenderPlayer : WorldObject
     private float hand_offset;
     private bool observed;
     private Wind wind;
+    private RenderTable table;
 
     private RenderHand hand;
     private RenderPond pond;
     private RenderCalls calls;
 
-    public RenderPlayer(GameRenderContext context, int seat, bool dealer, float hand_offset, bool observed, Wind wind)
+    public RenderPlayer(GameRenderContext context, int seat, bool dealer, float hand_offset, bool observed, Wind wind, RenderTable table)
     {
         this.context = context;
         this.dealer = dealer;
@@ -28,6 +29,7 @@ public class RenderPlayer : WorldObject
         this.tile_size = context.tile_size;
         this.observed = observed;
         this.wind = wind;
+        this.table = table;
     }
 
     protected override void added()
@@ -58,7 +60,7 @@ public class RenderPlayer : WorldObject
         add_object(hand);
         hand.position = Vec3(0, 0, hand_offset);
 
-        pond = new RenderPond(context);
+        pond = new RenderPond(context, table);
         add_object(pond);
         pond.position = Vec3(0, tile_size.y / 2, 3 * tile_size.x);
 

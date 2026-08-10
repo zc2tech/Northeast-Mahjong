@@ -25,7 +25,7 @@ public class RenderTable : WorldObject
         players = new RenderPlayer[4];
         for (int i = 0; i < players.length; i++)
         {
-            players[i] = new RenderPlayer(context, i, i == context.dealer, hand_offset, true, INT_TO_WIND(i - context.dealer));
+            players[i] = new RenderPlayer(context, i, i == context.dealer, hand_offset, true, INT_TO_WIND(i - context.dealer), this);
             add_object(players[i]);
             players[i].rotation = Quat.from_euler(i / 2.0f, 0, 0);
         }
@@ -58,9 +58,31 @@ public class RenderTable : WorldObject
     public RenderPlayer[] players { get; private set; }
     public RenderTile[] tiles { get; private set; }
     public RenderWall wall { get; private set; }
+    private RenderTile? global_latest_discard = null;
     //public Vec3 tile_size { get; private set; }
     //public float player_offset { get; private set; }
     //public float wall_offset { get; private set; }
+
+    public void set_latest_discard(RenderTile tile)
+    {
+        // Reset previous latest discard to normal color
+        if (global_latest_discard != null)
+            global_latest_discard.front_color = Color.white();
+
+        // Set new latest discard with more noticeable highlight color (bright yellow/orange)
+        global_latest_discard = tile;
+        tile.front_color = Color(1.0f, 0.95f, 0.6f, 1.0f);
+    }
+
+    public void clear_latest_discard(RenderTile tile)
+    {
+        // If removing the global latest discard, reset its color and clear tracking
+        if (tile == global_latest_discard)
+        {
+            tile.front_color = Color.white();
+            global_latest_discard = null;
+        }
+    }
 }
 
 public class WorldTableObject : WorldObject
