@@ -95,7 +95,7 @@ namespace GameServer
 
             foreach (GameRoundServerPlayer p in players)
             {
-                if (settings.reveal_all_tiles == OnOffEnum.ON || p == player || p.server_player.state != ServerPlayer.State.PLAYER || open)
+                if (settings.reveal_all_tiles == OnOffEnum.ON || p == player || p.server_player.state != ServerPlayer.State.PLAYER || p.server_player.bot || open)
                     p.server_player.send_message(assignment);
 
                 p.server_player.send_message(draw);
@@ -125,7 +125,7 @@ namespace GameServer
             ServerMessageTileAssignment assignment = new ServerMessageTileAssignment(tile);
             foreach (GameRoundServerPlayer p in players)
             {
-                if (settings.reveal_all_tiles == OnOffEnum.ON || p == player || p.server_player.state != ServerPlayer.State.PLAYER || open)
+                if (settings.reveal_all_tiles == OnOffEnum.ON || p == player || p.server_player.state != ServerPlayer.State.PLAYER || p.server_player.bot || open)
                 {
                     Environment.log(LogType.DEBUG, "ServerGameRound", @"game_draw_dead_tile: sending TileAssignment to player $(p.index)");
                     p.server_player.send_message(assignment);

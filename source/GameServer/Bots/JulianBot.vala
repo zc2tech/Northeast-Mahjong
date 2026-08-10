@@ -513,8 +513,8 @@ class JulianBot : Bot
         ArrayList<Tile> sorted_hand = Tile.sort_tiles_type(round_state.self.hand); 
         ArrayList<RoundStateCall> calls = round_state.self.calls;   
 
-        HashMap<TileType, int> hOP = other_player_tiles();
-        HandStatistics stats = analyze_hand(null, sorted_hand, calls,hOP);
+        HashMap<TileType, int> hcalled = other_player_tiles();
+        HandStatistics stats = analyze_hand(null, sorted_hand, calls,hcalled);
 
         // win_necessary_condition 就当听牌, 所以条件不是特别严格
         // 已经尽力了
@@ -528,6 +528,7 @@ class JulianBot : Bot
 
             Tile discard_for_tenpai = null;
             HashSet<TileType> checked = new HashSet<TileType>();
+             Environment.log(LogType.DEBUG, "JulianBot", @"*-* $(round_state.self.wind.to_string()) passed win necessary, tiles_allowd: $(tiles_allowed.size)");
             foreach (Tile tile in tiles_allowed)
             {
                 if(checked.contains(tile.tile_type)) {
@@ -1017,7 +1018,7 @@ class JulianBot : Bot
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (has_second_neighbours(tile) && !stats.singles_ish.contains(tile.tile_type))
+            if ( (has_neighbours(tile) ||  has_second_neighbours(tile)) && !stats.singles_ish.contains(tile.tile_type))
                 tiles.remove_at(i--);
         }
 

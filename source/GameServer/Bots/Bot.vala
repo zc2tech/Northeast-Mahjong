@@ -166,7 +166,7 @@ public abstract class Bot : Object
 
         int discard_hand_size_after = round_state.get_player(discard_player_index).hand.size;
         int discard_pond_size_after = round_state.get_player(discard_player_index).pond.size;
-        Environment.log(LogType.DEBUG, this.name, @"chii: Player $player_index chii from discarder $discard_player_index, discarder hand=$discard_hand_size_before->$discard_hand_size_after, pond=$discard_pond_size_before->$discard_pond_size_after");
+        //  Environment.log(LogType.DEBUG, this.name, @"chii: Player $player_index chii from discarder $discard_player_index, discarder hand=$discard_hand_size_before->$discard_hand_size_after, pond=$discard_pond_size_before->$discard_pond_size_after");
     }
 
     public void calls_finished()

@@ -579,6 +579,8 @@ class OracleBot : Bot
             ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();
             ArrayList<Tile> tiles_allowed = round_state.self.get_discard_tiles();
 
+            Environment.log(LogType.DEBUG, "OracleBot", @"*-* $(round_state.self.wind.to_string()) passed win necessary, tiles_allowd: $(tiles_allowed.size)");
+
             Tile discard_for_tenpai = null;
             HashSet<TileType> checked = new HashSet<TileType>();
             foreach (Tile tile in tiles_allowed)
@@ -1110,7 +1112,7 @@ class OracleBot : Bot
             //     tiles.remove_at(i--); 
             //     continue;
             //  }    
-            if (has_second_neighbours(tile) && !stats.singles_ish.contains(tile.tile_type))
+            if ( (has_neighbours(tile) ||  has_second_neighbours(tile)) && !stats.singles_ish.contains(tile.tile_type))
                 tiles.remove_at(i--);
         }
         if (tiles.size == 0)

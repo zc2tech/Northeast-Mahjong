@@ -116,6 +116,59 @@ class BotConnection : Object
 
     private void turn_decision(ServerMessage message)
     {
+        // Before processing turn decision, check if there are any state-update messages
+        // (TileDraw, TileAssignment, TileDiscard) in the queue and process them first
+        // to ensure the bot's state is fully up-to-date
+
+        // Try multiple times with short waits to handle race conditions where
+        // the server thread is still adding messages to the queue
+        const int MAX_RETRIES = 3;
+        const int WAIT_MICROSECONDS = 1000; // 1ms
+
+        for (int retry = 0; retry < MAX_RETRIES; retry++)
+        {
+            bool found_state_message = false;
+
+            while (true)
+            {
+                ServerMessage? next = connection.peek_message();
+                if (next == null)
+                    break;
+
+                // Check if it's a state-update message that should be processed before turn decision
+                if (next is ServerMessageTileDraw ||
+                    next is ServerMessageTileAssignment ||
+                    next is ServerMessageTileDiscard)
+                {
+                    // Dequeue and process this message
+                    ServerMessage? msg = connection.dequeue_message();
+                    if (msg != null)
+                    {
+                        parser.execute(msg);
+                        found_state_message = true;
+                    }
+                }
+                else
+                {
+                    // It's not a state-update message, stop peeking
+                    break;
+                }
+            }
+
+            // If we found and processed state messages, check again immediately
+            // in case more arrived while we were processing
+            if (found_state_message)
+                continue;
+
+            // No state messages found. If this isn't the last retry, wait a bit
+            // in case the server thread is still adding messages to the queue
+            if (retry < MAX_RETRIES - 1)
+                Thread.usleep(WAIT_MICROSECONDS);
+            else
+                break;
+        }
+
+        // Now process the turn decision with fully updated state
         bot.turn_decision();
     }
 
