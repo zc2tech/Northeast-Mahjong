@@ -356,6 +356,9 @@ namespace GameServer
             tiles.add(tile2);
 
             game_chii(player, tiles);
+
+            // Send CallsFinished after chii to advance turn
+            game_calls_finished();
         }
 
         private void handle_pon(int player)
@@ -376,6 +379,9 @@ namespace GameServer
             tiles.add_all(matching);
 
             game_pon(player, tiles);
+
+            // Send CallsFinished after pon to advance turn
+            game_calls_finished();
         }
 
         private void handle_late_kan(int player, LateKanClientAction action)
@@ -389,6 +395,9 @@ namespace GameServer
             Tile dead_tile = state.draw_from_dead_wall();
             state.add_tile_to_player(player, dead_tile);
             game_draw_dead_tile(player, dead_tile, true);
+
+            // Send CallsFinished after late kan + dead wall draw
+            game_calls_finished();
         }
 
         private void handle_closed_kan(int player, ClosedKanClientAction action)
@@ -405,6 +414,9 @@ namespace GameServer
             Tile dead_tile = state.draw_from_dead_wall();
             state.add_tile_to_player(player, dead_tile);
             game_draw_dead_tile(player, dead_tile, true);
+
+            // Send CallsFinished after closed kan + dead wall draw
+            game_calls_finished();
         }
 
         private void handle_open_kan(int player)
@@ -429,6 +441,9 @@ namespace GameServer
             Tile dead_tile = state.draw_from_dead_wall();
             state.add_tile_to_player(player, dead_tile);
             game_draw_dead_tile(player, dead_tile, true);
+
+            // After open kan + dead wall draw, send CallsFinished to trigger animation
+            game_calls_finished();
         }
 
         private void handle_ron(int player)

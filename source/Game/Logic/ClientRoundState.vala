@@ -8,6 +8,7 @@ public class ClientRoundState : Object
     private bool self_active;
 
     private ArrayList<TileSelectionGroup> selection_groups = new ArrayList<TileSelectionGroup>();
+    private Tile? last_dead_wall_tile = null;
 
     public signal void do_action(ClientAction action);
 
@@ -381,11 +382,11 @@ public class ClientRoundState : Object
     {
         ServerMessageTileAssignment tile = (ServerMessageTileAssignment)message;
         Tile t = tile.tile;
-
-        // Removed excessive debug logging
-
         state.tile_assign(t);
         game_tile_assignment(t);
+
+        // Track this tile as potential dead wall tile for upcoming kan
+        last_dead_wall_tile = t;
     }
 
     private void server_tile_draw(ServerMessage message)
@@ -513,15 +514,21 @@ public class ClientRoundState : Object
         decision_finished();
 
         bool kan = state.chankan_call != ChankanCall.NONE;
+        // For kan, use the tile from the last TileAssignment (dead wall tile from server)
+        Tile? dead_tile = null;
+        if (kan && last_dead_wall_tile != null)
+        {
+            dead_tile = last_dead_wall_tile;
+        }
+
         state.calls_finished();
 
-
-        if (kan)
+        if (kan && dead_tile != null)
         {
-            // The last tile in the hand is the one drawn from the dead wall
-            Tile dead_tile = state.current_player.hand[state.current_player.hand.size - 1];
             game_dead_tile_draw(state.current_player.index, dead_tile.ID);
         }
+
+        last_dead_wall_tile = null;
     }
 
     public void server_turn_decision(ServerMessage message)

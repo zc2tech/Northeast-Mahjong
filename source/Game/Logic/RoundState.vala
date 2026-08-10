@@ -40,67 +40,87 @@ public class RoundState : Object
 
         if (shuffled)
         {
-            /* For testing purposes
+         //  For testing purposes - Testing open_kan with mostly number tiles + HATSU
+            // Scenario: P1 draws MAN1, discards it → P2 calls open_kan (has 3×MAN1)
             TileType[] p1 = new TileType[]
             {
-                TileType.MAN6,
-                TileType.MAN6,
-                TileType.MAN6,
-                TileType.MAN6,
-                TileType.PIN7,
-                TileType.PIN7,
-                TileType.PIN7,
-                TileType.PIN7,
-                TileType.SOU6,
-                TileType.SOU7,
-                TileType.SOU7,
-                TileType.HATSU,
+                TileType.MAN2,
+                TileType.MAN2,
+                TileType.MAN2,
+                TileType.MAN1,
+                TileType.PIN3,
+                TileType.PIN4,
+                TileType.SOU1,
+                TileType.SOU3,
+                TileType.SOU4,
+                TileType.MAN9,
+                TileType.MAN9,
+                TileType.MAN9,
                 TileType.HATSU,
             };
 
             TileType[] p2 = new TileType[]
             {
+                TileType.MAN1,
+                TileType.MAN1,
+                TileType.MAN1,  // 3 MAN1 - ready for open_kan
+                TileType.MAN5,
+                TileType.MAN6,
+                TileType.PIN5,
+                TileType.PIN5,
+                TileType.PIN5,  // 3 PIN5 - ready for open_kan
+                TileType.SOU5,
+                TileType.SOU6,
+                TileType.SOU7,
+                TileType.PIN6,
+                TileType.MAN9,
             };
 
             TileType[] p3 = new TileType[]
             {
+                TileType.PIN1,
+                TileType.PIN1,
+                TileType.PIN1,  // 3 PIN1 - ready for open_kan
+                TileType.SOU1,
+                TileType.SOU1,
+                TileType.SOU1,  // 3 SOU1 - ready for open_kan
+                TileType.SOU8,
+                TileType.SOU8,
+                TileType.SOU8,
+                TileType.PIN2,
+                TileType.PIN4,
+                TileType.PIN8,
+                TileType.SOU9,
             };
 
             TileType[] p4 = new TileType[]
             {
+                TileType.MAN4,
+                TileType.MAN4,
+                TileType.MAN4,  // 3 MAN4 - ready for open_kan
+                TileType.SOU4,
+                TileType.SOU4,
+                TileType.SOU4,  // 3 SOU4 - ready for open_kan
+                TileType.SOU9,
+                TileType.SOU9,
+                TileType.SOU9,  // 3 SOU9 - ready for open_kan
+                TileType.MAN2,
+                TileType.SOU8,
+                TileType.PIN1,
+                TileType.PIN5,
             };
 
 
             TileType[] draw_wall = new TileType[]
             {
-                TileType.SOU6,
-                TileType.SOU7,
-                TileType.BLANK,
-                TileType.BLANK,
-                TileType.BLANK,
-                TileType.SOU7,
             };
 
 
             TileType[] dead_wall = new TileType[]
             {
-                TileType.PIN1,
-                TileType.PIN2,
-                TileType.PIN3,
-                TileType.PIN4,
-                TileType.PIN5,
-                TileType.PIN6,
-                TileType.PIN8,
-                TileType.PIN9,
-                TileType.PIN9,
-                TileType.PIN9,
-                TileType.PIN1,
-                TileType.PIN8,
-                TileType.SOU6,
-                TileType.SOU6,
             };
 
-            wall = new RoundStateWall.seeded(dealer, wall_index, rnd, p1, p2, p3, p4, draw_wall, dead_wall);
+            wall = new RoundStateWall.seeded(dealer, wall_index,false, rnd, p1, p2, p3, p4, draw_wall, dead_wall);
             /*/
             wall = new RoundStateWall.shuffled(dealer, wall_index, rnd);
             //*/
@@ -164,6 +184,7 @@ public class RoundState : Object
 
     public void calls_finished()
     {
+        Environment.log(LogType.DEBUG, "RoundState", @"calls_finished: START - chankan_call=$(chankan_call)");
         if (chankan_call == ChankanCall.NONE)
         {
             if (wall.empty)
@@ -246,7 +267,9 @@ public class RoundState : Object
 
     public Tile tile_draw_dead_wall()
     {
+        Environment.log(LogType.DEBUG, "RoundState", @"tile_draw_dead_wall: dead_wall size before=$(wall.dead_wall_tiles.size), chankan_call=$(chankan_call)");
         Tile tile = wall.draw_dead_wall();
+        Environment.log(LogType.DEBUG, "RoundState", @"tile_draw_dead_wall: drew tile ID=$(tile.ID), type=$(tile.tile_type), dead_wall size after=$(wall.dead_wall_tiles.size)");
         current_player.draw(tile);
 
         return tile;
@@ -327,6 +350,7 @@ public class RoundState : Object
         player.do_open_kan(discarder.index, tile, tile_1, tile_2, tile_3);
 
         current_index = player_index;
+        chankan_call = ChankanCall.OPEN;
         kan();
 
     }
@@ -1278,6 +1302,7 @@ class RoundStateWall
 
         int idx = 0;
         Tile tile = dead_wall_tiles.remove_at(idx);
+        Environment.log(LogType.DEBUG, "Wall", @"draw_dead_wall: idx=$idx, tile ID=$(tile.ID), type=$(tile.tile_type), remaining=$(dead_wall_tiles.size)");
 
         return tile;
     }
@@ -1441,6 +1466,7 @@ public enum GameDrawType
 public enum ChankanCall
 {
     NONE,
+    OPEN,
     LATE,
     CLOSED
 }

@@ -445,6 +445,7 @@ namespace GameServer
             {
                 game_open_kan(caller.index, result.tiles);
                 kan(caller.index);
+                game_calls_finished();
             }
             else if (result.call_type == CallDecisionType.RON)
             {

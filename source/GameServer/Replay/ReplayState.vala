@@ -43,12 +43,22 @@ namespace GameServer
             }
 
             // Split rotated tiles: 0-103 to wall, 104-111 to dead wall
+            ArrayList<Tile> temp_dead_wall = new ArrayList<Tile>();
             for (int i = 0; i < rotated_tiles.size; i++)
             {
                 if (i < 104)
                     wall_tiles.add(rotated_tiles[i]);
                 else
-                    dead_wall_tiles.add(rotated_tiles[i]);
+                    temp_dead_wall.add(rotated_tiles[i]);
+            }
+
+            // Apply pair-swapping reversal to dead wall (same as RoundState)
+            // This ensures: index 0 = far end (draw from here), index 6-7 = near end (mark here)
+            // Reverse by pairs, keeping upper before lower within each pair
+            for (int i = temp_dead_wall.size - 2; i >= 0; i -= 2)
+            {
+                dead_wall_tiles.add(temp_dead_wall[i]);     // Add upper tile of this stack
+                dead_wall_tiles.add(temp_dead_wall[i + 1]); // Add lower tile of this stack
             }
         }
 

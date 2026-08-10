@@ -115,11 +115,14 @@ namespace GameServer
 
         private void game_draw_dead_tile(int player_index, Tile tile, bool open)
         {
-            // All tiles assigned at start, just send draw
-            ServerMessageTileDraw draw = new ServerMessageTileDraw(tile.ID);
-
+            // For replay: Send TileAssignment so client knows which dead wall tile to animate
+            // The tile type was already revealed at replay start, but we need to tell the client
+            // which specific tile ID to pull from the dead wall for the animation
+            // The animation is triggered by ClientRoundState.server_calls_finished()
+            // when it sees chankan_call != NONE and uses last_dead_wall_tile
+            ServerMessageTileAssignment assignment = new ServerMessageTileAssignment(tile);
             foreach (ServerPlayer player in spectators)
-                player.send_message(draw);
+                player.send_message(assignment);
         }
 
         private void game_discard_tile(Tile tile)
