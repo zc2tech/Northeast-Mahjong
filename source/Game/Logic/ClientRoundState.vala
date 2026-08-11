@@ -107,14 +107,11 @@ public class ClientRoundState : Object
 
     private void do_turn_decision()
     {
-        Environment.log(LogType.DEBUG, "ClientRoundState", "do_turn_decision: Starting turn decision setup");
         action_state = State.TURN;
 
         bool can_kan = state.can_closed_kan() || state.can_late_kan();
         bool can_tsumo = state.can_tsumo();
         bool can_void_hand = state.can_void_hand();
-
-        Environment.log(LogType.DEBUG, "ClientRoundState", @"do_turn_decision: can_kan=$can_kan, can_tsumo=$can_tsumo, can_void_hand=$can_void_hand");
 
         set_chii_state(false);
         set_pon_state(false);
@@ -398,13 +395,9 @@ public class ClientRoundState : Object
         state.tile_assign(t);
         game_tile_assignment(t);
 
-        Environment.log(LogType.DEBUG, "ClientRoundState",
-            @"server_dead_wall_draw: received tile_ID=$(t.ID) ($(t.tile_type.to_string())), triggering dead wall animation");
 
         // Draw the tile into current player's hand
         state.tile_draw_dead_wall();
-        Environment.log(LogType.DEBUG, "ClientRoundState",
-            @"server_dead_wall_draw: tile added to hand, hand size now=$(state.current_player.hand.size)");
 
         game_dead_tile_draw(state.current_player.index, t.ID);
     }
@@ -429,8 +422,6 @@ public class ClientRoundState : Object
         ServerMessageTileDiscard discard = (ServerMessageTileDiscard)message;
         state.tile_discard(discard.tile_ID);
 
-        Environment.log(LogType.DEBUG, "ClientRoundState",
-            @"server_tile_discard: tile_ID=$(discard.tile_ID), current_player.index=$(state.current_player.index)");
         game_tile_discard(state.current_player.index, discard.tile_ID);
     }
 
@@ -537,9 +528,7 @@ public class ClientRoundState : Object
 
     public void server_turn_decision(ServerMessage message)
     {
-        Environment.log(LogType.DEBUG, "ClientRoundState", "server_turn_decision: Received TurnDecision message");
         do_turn_decision();
-        Environment.log(LogType.DEBUG, "ClientRoundState", "server_turn_decision: Completed do_turn_decision()");
     }
 
     public void server_call_decision(ServerMessage message)

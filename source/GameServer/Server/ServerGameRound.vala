@@ -127,7 +127,6 @@ namespace GameServer
             {
                 if (settings.reveal_all_tiles == OnOffEnum.ON || p == player || p.server_player.state != ServerPlayer.State.PLAYER || p.server_player.bot || open)
                 {
-                    Environment.log(LogType.DEBUG, "ServerGameRound", @"game_draw_dead_tile: sending DeadWallDraw to player $(p.index)");
                     p.server_player.send_message(message);
                 }
             }
@@ -135,11 +134,9 @@ namespace GameServer
 
         private void game_get_turn_decision(int player_index)
         {
-            Environment.log(LogType.DEBUG, "ServerGameRound", @"game_get_turn_decision: Sending TurnDecision to player $player_index");
             var player = get_server_player(players, player_index);
             ServerMessageTurnDecision message = new ServerMessageTurnDecision();
             player.server_player.send_message(message);
-            Environment.log(LogType.DEBUG, "ServerGameRound", @"game_get_turn_decision: TurnDecision sent to player $player_index");
         }
 
         private void game_get_call_decision(int player_index)

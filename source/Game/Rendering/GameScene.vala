@@ -163,8 +163,6 @@ public class GameScene : WorldObject
 
     private void action_draw(RenderActionDraw action)
     {
-        Environment.log(LogType.DEBUG, "GameScene",
-            @"action_draw: Player $(action.player.seat) draws from REGULAR WALL");
         draw_sound.play();
 
         action.player.draw_tile(wall.draw_wall());
@@ -176,8 +174,6 @@ public class GameScene : WorldObject
     // 这是在杠牌吧
     private void action_draw_dead_wall(RenderActionDrawDeadWall action)
     {
-        Environment.log(LogType.DEBUG, "GameScene",
-            @"action_draw_dead_wall: Player $(action.player.seat) draws $(action.tile.tile_type.tile_type.to_string()) from DEAD WALL");
         // Don't add replacement tiles in Northeast Mahjong - dead wall just gets exhausted
         // wall.dead_tile_add();
         draw_sound.play();
@@ -189,8 +185,6 @@ public class GameScene : WorldObject
 
     private void action_discard(RenderActionDiscard action)
     {
-        Environment.log(LogType.DEBUG, "GameScene",
-            @"action_discard: Player $(action.player.seat) discards tile_ID=$(action.tile.tile_type.ID) ($(action.tile.tile_type.tile_type.to_string()))");
         discard_sound.play();
         action.player.discard(action.tile);
     }

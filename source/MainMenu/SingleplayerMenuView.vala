@@ -12,12 +12,6 @@ class SingleplayerMenuView : MenuSubView
 
     public signal GameController menu_game_start(GameStartInfo info, ServerSettings settings, IGameConnection connection, int player_index);
 
-    public void show_log_selection()
-    {
-        // Immediately show log selection
-        load_log_clicked();
-    }
-
     private void create_game_clicked()
     {
         CreateServerView view = new CreateServerView();

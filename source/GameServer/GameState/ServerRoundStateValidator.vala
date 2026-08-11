@@ -32,7 +32,6 @@ namespace GameServer
 
         public void ready_for_turn()
         {
-            Environment.log(LogType.DEBUG, "Validator", "ready_for_turn: Setting action_state to WAITING_TURN");
             action_state = ActionState.WAITING_TURN;
         }
 
@@ -83,8 +82,6 @@ namespace GameServer
         public bool is_players_turn(int index)
         {
             bool result = state.current_player.index == index && action_state == ActionState.WAITING_TURN;
-            Environment.log(LogType.DEBUG, "Validator",
-                @"is_players_turn: player=$index, current=$(state.current_player.index), action_state=$action_state, result=$result");
             return result;
         }
 

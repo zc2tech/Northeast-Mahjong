@@ -40,11 +40,11 @@ public class RoundState : Object
 
         if (shuffled)
         {
-            wall = create_test_wall_open_kan(dealer, wall_index, rnd);
+            //  wall = create_test_wall_open_kan(dealer, wall_index, rnd);
             //  wall = create_test_wall_closed_kan(dealer, wall_index, rnd);
             //  wall = create_test_wall_late_kan(dealer, wall_index, rnd);
 
-            //  wall = new RoundStateWall.shuffled(dealer, wall_index, rnd);
+            wall = new RoundStateWall.shuffled(dealer, wall_index, rnd);
         }
         else if (tiles != null)
             wall = new RoundStateWall.custom(dealer, wall_index, tiles);
@@ -505,8 +505,6 @@ public class RoundState : Object
         // and sends DeadWallDraw message. Calling kan() here would duplicate
         // the dead wall draw and corrupt the client/bot state.
 
-        Environment.log(LogType.DEBUG, "RoundState",
-            @"calls_finished: last_kan_type=%d, current_index now = $current_index".printf((int)last_kan_type));
         turn_counter++;
         // Don't reset last_kan_type here - it should persist until the next discard
         // tile_discard() will reset it to NONE after the player discards
@@ -1582,8 +1580,6 @@ class RoundStateWall
 
         int idx = 0;
         Tile tile = dead_wall_tiles.remove_at(idx);
-        Environment.log(LogType.DEBUG, "Wall", @"draw_dead_wall: idx=$idx, tile ID=$(tile.ID), type=$(tile.tile_type), remaining=$(dead_wall_tiles.size)");
-
         return tile;
     }
 
