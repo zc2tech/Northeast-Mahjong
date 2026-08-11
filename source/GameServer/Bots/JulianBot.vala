@@ -2,8 +2,6 @@ using Gee;
 
 class JulianBot : Bot
 {
-    private Engine.RandomClass rnd = new Engine.RandomClass();
-
     // Evaluate whether to call pon (碰) on a tile
     // Returns true if should call pon, false otherwise
     private bool should_call_pon(Tile tile,
@@ -504,6 +502,8 @@ class JulianBot : Bot
             do_tsumo();
             return;
         }
+        //  Environment.log(LogType.DEBUG, "JulianBot", @"*** rinshan: $(round_state.self.wind.to_string()) $(round_state.rinshan)");
+
         // 没有九种九牌 就流局的概念
         //  else if (round_state.can_void_hand())
         //  {

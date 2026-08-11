@@ -12,7 +12,7 @@ public class RoundState : Object
 
     private bool flow_interrupted = false;
     private int turn_counter = 1;
-    private bool rinshan = false;
+    public bool rinshan = false;
     private int last_discard_player_index = -1;
 
     public RoundState(ServerSettings settings, int player_index, Wind round_wind, int dealer, int wall_index)
@@ -537,6 +537,10 @@ public class RoundState : Object
         Tile tile = wall.draw_dead_wall();
         current_player.draw(tile);
 
+        // Set rinshan flag when drawing from dead wall after kan
+        // This prevents tsumo (self-draw win) - player must discard first
+        rinshan = true;
+
         return tile;
     }
 
@@ -698,6 +702,7 @@ public class RoundState : Object
     public bool can_tsumo()
     {
         RoundStatePlayer player = current_player;
+        //  Environment.log(LogType.DEBUG, "RoundState", @"*** rinshan: $(player.wind.to_string()) $(rinshan)");
         return player.can_tsumo(create_context(false, player.newest_tile));
     }
 
@@ -819,7 +824,7 @@ public class RoundState : Object
             ron,
             win_tile,
             last_tile,
-            rinshan && !ron,
+            rinshan,
             chankan,
             flow_interrupted
         );

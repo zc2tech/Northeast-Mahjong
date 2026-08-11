@@ -87,6 +87,13 @@ public abstract class Bot : Object
         round_state.tile_assign(tile);
     }
 
+    public void dead_wall_draw(Tile tile)
+    {
+        round_state.tile_assign(tile);
+        // Set rinshan flag - prevents tsumo on this draw
+        round_state.rinshan = true;
+    }
+
     public void tile_draw()
     {
         round_state.tile_draw();

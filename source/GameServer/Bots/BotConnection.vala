@@ -96,7 +96,7 @@ class BotConnection : Object
     private void dead_wall_draw(ServerMessage message)
     {
         ServerMessageDeadWallDraw msg = (ServerMessageDeadWallDraw)message;
-        bot.tile_assign(msg.tile);
+        bot.dead_wall_draw(msg.tile);
     }
 
     private void tile_draw(ServerMessage message)
