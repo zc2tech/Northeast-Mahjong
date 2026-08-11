@@ -1092,12 +1092,17 @@ public class RoundStatePlayer
         // Kuikae check
         if (do_chii_discard)
         {
-            ArrayList<Tile> open_tiles = new ArrayList<Tile>();
-            open_tiles.add_all(newest_call.tiles);
-            open_tiles.remove(newest_call.call_tile);
+            //  ArrayList<Tile> open_tiles = new ArrayList<Tile>();
+            //  open_tiles.add_all(newest_call.tiles);
+            //  open_tiles.remove(newest_call.call_tile);
 
-            if (TileRules.can_chii(open_tiles, tile))
+            //  if (TileRules.can_chii(open_tiles, tile))
+            //      return false;
+
+            // we only forbid discarding the chii'd tile type
+            if(tile.tile_type == newest_call.call_tile.tile_type) {
                 return false;
+            }
         }
         else if (do_pon_discard)
         {
