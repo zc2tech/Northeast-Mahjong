@@ -131,15 +131,30 @@ read_log_exe = executable('read_log', ['read_log.vala'] + read_log_sources,
     install: false
 )
 
+# Convert to mjai utility - reuse main sources but exclude main.vala
+convert_to_mjai_sources = []
+foreach src : sources
+    if not src.full_path().endswith('main.vala')
+        convert_to_mjai_sources += src
+    endif
+endforeach
+
+convert_to_mjai_exe = executable('convert_to_mjai', ['convert_to_mjai.vala'] + convert_to_mjai_sources,
+    dependencies: dependencies,
+    include_directories: includes,
+    install: false
+)
+
 # Copy compiled binaries to ../bin folder for easy execution
 custom_target('copy-to-bin',
-    input: [exe, read_log_exe],
-    output: ['copy-marker', 'copy-read-log-marker'],
+    input: [exe, read_log_exe, convert_to_mjai_exe],
+    output: ['copy-marker', 'copy-read-log-marker', 'copy-convert-to-mjai-marker'],
     command: [
         'sh', '-c',
         'test "@INPUT0@" = "@SOURCE_ROOT@/bin/Northeast-Mahjong" || cp @INPUT0@ @SOURCE_ROOT@/bin/Northeast-Mahjong; ' +
         'test "@INPUT1@" = "@SOURCE_ROOT@/bin/read_log" || cp @INPUT1@ @SOURCE_ROOT@/bin/read_log; ' +
-        'touch @OUTPUT0@ @OUTPUT1@'
+        'test "@INPUT2@" = "@SOURCE_ROOT@/bin/convert_to_mjai" || cp @INPUT2@ @SOURCE_ROOT@/bin/convert_to_mjai; ' +
+        'touch @OUTPUT0@ @OUTPUT1@ @OUTPUT2@'
     ],
     build_by_default: true,
     build_always_stale: true
