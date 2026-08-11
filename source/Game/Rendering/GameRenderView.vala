@@ -251,12 +251,16 @@ public class GameRenderView : View3D, IGameRenderer
 
     private void ron(int[] winner_indices, int discard_player_index, int tile_ID, bool allow_dora_flip)
     {
+        // Update view angles for all players to reveal hands
+        for (int i = 0; i < players.length; i++)
+            players[i].update_view_angle_for_observer(observer_index);
+
         RenderPlayer? discard_player = null;
         if (discard_player_index != -1)
             discard_player = players[discard_player_index];
 
         RenderPlayer? return_riichi_player = null;
-       
+
 
         RenderTile? tile = null;
 
@@ -275,12 +279,20 @@ public class GameRenderView : View3D, IGameRenderer
 
     private void tsumo(int player_index)
     {
+        // Update view angles for all players to reveal hands
+        for (int i = 0; i < players.length; i++)
+            players[i].update_view_angle_for_observer(observer_index);
+
         RenderPlayer player = players[player_index];
         buffer_action(new RenderActionTsumo(context.server_times.win, player));
     }
 
     private void draw(int[] tenpai_indices, GameDrawType draw_type)
     {
+        // Update view angles for all players to reveal hands
+        for (int i = 0; i < players.length; i++)
+            players[i].update_view_angle_for_observer(observer_index);
+
         if (draw_type == GameDrawType.TRIPLE_RON)
         {
             ron(tenpai_indices, -1, -1, false);

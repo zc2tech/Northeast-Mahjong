@@ -146,11 +146,10 @@ namespace GameServer
             player.server_player.send_message(message);
         }
 
-        private void game_ron(int[] player_indices, ArrayList<Tile>[] hands, int discard_player_index, Tile discard_tile, Scoring[] scores)
+        private void game_ron(int[] player_indices, ArrayList<Tile>[] hands, int discard_player_index, Tile discard_tile, Scoring[] scores, ArrayList<Tile> all_hands)
         {
-            foreach (ArrayList<Tile> hand in hands)
-                foreach (Tile t in hand)
-                    game_reveal_tile(t);
+            foreach (Tile t in all_hands)
+                game_reveal_tile(t);
 
             ServerMessageRon message = new ServerMessageRon(player_indices);
 
@@ -161,10 +160,10 @@ namespace GameServer
             result = new RoundFinishResult.ron(scores, player_indices, discard_player_index, discard_tile.ID);
         }
 
-        private void game_tsumo(int player_index, ArrayList<Tile> hand, Scoring score)
-        
+        private void game_tsumo(int player_index, ArrayList<Tile> hand, Scoring score, ArrayList<Tile> all_hands)
+
         {
-            foreach (Tile t in hand)
+            foreach (Tile t in all_hands)
                 game_reveal_tile(t);
 
             ServerMessageTsumo message = new ServerMessageTsumo();
@@ -244,11 +243,11 @@ namespace GameServer
         }
 
         // 流局
-        public void game_draw(int[] tenpai_indices, int[] nagashi_indices, GameDrawType draw_type, ArrayList<Tile> all_tenpai_tiles)
+        public void game_draw(int[] tenpai_indices, int[] nagashi_indices, GameDrawType draw_type, ArrayList<Tile> all_hands)
         {
             Environment.log(LogType.DEBUG, "ServerGameRound", @"game_draw: Received draw signal, draw_type=$(draw_type), tenpai_count=$(tenpai_indices.length)");
 
-            foreach (Tile t in all_tenpai_tiles)
+            foreach (Tile t in all_hands)
                 game_reveal_tile(t);
 
             ServerMessageDraw message = new ServerMessageDraw(tenpai_indices, draw_type == GameDrawType.VOID_HAND, draw_type == GameDrawType.TRIPLE_RON);

@@ -10,8 +10,8 @@ namespace GameServer
         public signal void game_draw_dead_tile(int player_index, Tile tile, bool open);
         public signal void game_discard_tile(Tile tile);
 
-        public signal void game_ron(int[] player_indices, ArrayList<Tile>[] hand, int discard_player_index, Tile discard_tile, Scoring[] scores);
-        public signal void game_tsumo(int player_index, ArrayList<Tile> hand, Scoring score);
+        public signal void game_ron(int[] player_indices, ArrayList<Tile>[] hand, int discard_player_index, Tile discard_tile, Scoring[] scores, ArrayList<Tile> all_hands);
+        public signal void game_tsumo(int player_index, ArrayList<Tile> hand, Scoring score, ArrayList<Tile> all_hands);
         public signal void game_riichi(int player_index, bool open, ArrayList<Tile> hand);
         public signal void game_late_kan(Tile tile);
         public signal void game_closed_kan(ArrayList<Tile> tiles);
@@ -22,7 +22,7 @@ namespace GameServer
 
         public signal void game_get_call_decision(int receiver);
         public signal void game_get_turn_decision(int player_index);
-        public signal void game_draw(int[] tenpai_indices, int[] nagashi_indices, GameDrawType draw_type, ArrayList<Tile> all_tiles);
+        public signal void game_draw(int[] tenpai_indices, int[] nagashi_indices, GameDrawType draw_type, ArrayList<Tile> all_hands);
 
         public signal void log(GameLogLine line);
 
@@ -255,8 +255,8 @@ namespace GameServer
             ServerRoundStatePlayer player = validator.get_player(player_index);
 
             log_action(action);
-         
-            game_tsumo(player.index, player.hand, validator.get_tsumo_score());
+
+            game_tsumo(player.index, player.hand, validator.get_tsumo_score(), get_all_hands());
             game_over();
             return true;
         }
@@ -474,7 +474,7 @@ namespace GameServer
                     return;
                 }
 
-                game_ron(indices, hands, discarder.index, discard_tile, validator.get_ron_score());
+                game_ron(indices, hands, discarder.index, discard_tile, validator.get_ron_score(), get_all_hands());
                 game_over();
                 return;
             }
@@ -581,7 +581,7 @@ namespace GameServer
             int[] nagashi_indices = validator.get_nagashi_indices();
 
             Environment.log(LogType.DEBUG, "ServerRoundState", @"draw_situation: Triggering game_draw signal, tenpai_count=$(tenpai_players.size)");
-            game_draw(tenpai_indices, nagashi_indices, validator.game_draw_type, tiles);
+            game_draw(tenpai_indices, nagashi_indices, validator.game_draw_type, get_all_hands());
             Environment.log(LogType.DEBUG, "ServerRoundState", "draw_situation: Called game_over()");
             game_over();
         }
@@ -592,8 +592,16 @@ namespace GameServer
             for (int i = 0; i < ron_indices.length; i++)
                 tiles.add_all(validator.get_player(ron_indices[i]).hand);
 
-            game_draw(ron_indices, new int[] {}, GameDrawType.TRIPLE_RON, tiles);
+            game_draw(ron_indices, new int[] {}, GameDrawType.TRIPLE_RON, get_all_hands());
             game_over();
+        }
+
+        private ArrayList<Tile> get_all_hands()
+        {
+            ArrayList<Tile> all_tiles = new ArrayList<Tile>();
+            foreach (ServerRoundStatePlayer player in validator.players)
+                all_tiles.add_all(player.hand);
+            return all_tiles;
         }
 
         private void kan(int player_index)
