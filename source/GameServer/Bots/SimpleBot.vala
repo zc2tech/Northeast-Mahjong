@@ -2,7 +2,6 @@ using Gee;
 
 class SimpleBot : Bot
 {
-    private Engine.RandomClass rnd = new Engine.RandomClass();
 
     protected override void do_turn_decision()
     {

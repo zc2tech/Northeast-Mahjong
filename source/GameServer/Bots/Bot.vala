@@ -7,6 +7,7 @@ public abstract class Bot : Object
     private Mutex mutex = Mutex();
     private int player_index;
     private ServerSettings settings;
+    public Engine.RandomClass rnd = new Engine.RandomClass();
 
     protected GameState game_state;
     protected RoundState? round_state;
@@ -596,6 +597,45 @@ public abstract class Bot : Object
         }
         return map;
     }
+
+    public Tile RandomNonTerminalHonor(ArrayList<Tile> tiles)
+    {
+        ArrayList<Tile> tmpTiles = new ArrayList<Tile>();
+        foreach(Tile t in tiles) {
+            if(!(t.is_terminal_tile() || t.is_honor_tile())) {
+                tmpTiles.add(t);
+            }
+        }
+        if(tmpTiles.size > 0) {
+            return tmpTiles[rnd.int_range(0, tmpTiles.size)];
+        } else {
+            return tiles[rnd.int_range(0, tiles.size)];
+        }
+    }
+    public Tile RandomTerminalHonor(ArrayList<Tile> tiles)
+    {
+        ArrayList<Tile> tmpTiles = new ArrayList<Tile>();
+        foreach(Tile t in tiles) {
+            if((t.is_terminal_tile() || t.is_honor_tile())) {
+                tmpTiles.add(t);
+            }
+        }
+        if(tmpTiles.size > 0) {
+            return tmpTiles[rnd.int_range(0, tmpTiles.size)];
+        } else {
+            return tiles[rnd.int_range(0, tiles.size)];
+        }
+    }
+
+    public Tile RandomTileSmart(HandStatistics stats, ArrayList<Tile> tiles)
+    {
+        if(stats.terminal_count + stats.dragon_count <= 2 && !stats.hasTerminalSeq && !stats.hasTerminalTriplet) {
+            return RandomNonTerminalHonor(tiles);
+        } else {
+            return RandomTerminalHonor(tiles);
+        }
+    }
+
     ////////////
 
     public signal void poll();

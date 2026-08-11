@@ -2,7 +2,7 @@ using Gee;
 
 class OracleBot : Bot
 {
-    private Engine.RandomClass rnd = new Engine.RandomClass();
+    
 
     // Evaluate whether to call pon (碰) on a tile
     // Returns true if should call pon, false otherwise
@@ -702,9 +702,9 @@ class OracleBot : Bot
            hCalled.set((TileType)i,0); 
         }
         for(int i = 0 ; i < 4 ; i++ ) {
-            //  if(i == round_state.self.index) {
-            //      continue;
-            //  }
+            if(i == round_state.self.index) {
+                continue;
+            }
             RoundStatePlayer p =  round_state.get_player(i);
             foreach(Tile t in p.pond) {
                     hCalled.set(t.tile_type, hCalled.get(t.tile_type) + 1 );
@@ -1078,11 +1078,12 @@ class OracleBot : Bot
         for (int i = tiles.size - 1; i >= 0; i--)
         {
             bool should_remove = false;
+            Tile tile = tiles[i];
             foreach(Tile t in terminal_in_need) {
-                if(t == tiles[i] || t.is_neighbour(tiles[i]) || t.is_second_neighbour(tiles[i])) {
+                if(t == tile|| t.is_neighbour(tile) || t.is_second_neighbour(tile)) {
                     should_remove = true;
                     break;
-                } 
+                }
             }
             if (should_remove) {
                 tiles.remove_at(i);
@@ -1162,20 +1163,6 @@ class OracleBot : Bot
             return RandomTileSmart(stats,backup);
 
         return RandomTileSmart(stats, tiles);
-    }
-
-    private Tile RandomTile(ArrayList<Tile> tiles)
-    {
-        return tiles[rnd.int_range(0, tiles.size)];
-    }
-
-    private Tile RandomTileSmart(HandStatistics stats, ArrayList<Tile> tiles)
-    {
-        if(stats.terminal_count + stats.dragon_count <= 2 && !stats.hasTerminalSeq && !stats.hasTerminalTriplet) {
-            return RandomNonTerminalHonor(tiles);
-        } else {
-            return RandomTile(tiles);
-        }
     }
 
     // Populate needed tiles for each potential discard that leads to tenpai
@@ -1325,21 +1312,6 @@ class OracleBot : Bot
         }
 
         return result;
-    }
-
-    private Tile RandomNonTerminalHonor(ArrayList<Tile> tiles)
-    {
-        ArrayList<Tile> tmpTiles = new ArrayList<Tile>();
-        foreach(Tile t in tiles) {
-            if(!(t.is_terminal_tile() || t.is_honor_tile())) {
-                tmpTiles.add(t);
-            }
-        }
-        if(tmpTiles.size > 0) {
-            return tmpTiles[rnd.int_range(0, tmpTiles.size)];
-        } else {
-            return tiles[rnd.int_range(0, tiles.size)];
-        }
     }
 
     // 我手牌里有多少这样的牌

@@ -143,7 +143,7 @@ class JulianBot : Bot
         }
 
         // 碰了之后什么状态? 刻子肯定是多了的
-        HashMap<TileType, int> hCalled = other_player_tiles();
+        HashMap<TileType, int> hCalled = called_tiles();
         hCalled.set(tile.tile_type,3); // 因为假设碰了，所以自己做数据去试一下
         HandStatistics newStats = analyze_hand(tile, newHand, newCalls, hCalled);
         if (newStats.singles.size - stats.singles.size >= 2)
@@ -513,7 +513,7 @@ class JulianBot : Bot
         ArrayList<Tile> sorted_hand = Tile.sort_tiles_type(round_state.self.hand); 
         ArrayList<RoundStateCall> calls = round_state.self.calls;   
 
-        HashMap<TileType, int> hcalled = other_player_tiles();
+        HashMap<TileType, int> hcalled = called_tiles();
         HandStatistics stats = analyze_hand(null, sorted_hand, calls,hcalled);
 
         // win_necessary_condition 就当听牌, 所以条件不是特别严格
@@ -625,10 +625,10 @@ class JulianBot : Bot
     }
 
     // 其他人已经吃碰或者打出的所有 还有墙上翻开的
-    private  HashMap<TileType, int> other_player_tiles() {
-        HashMap<TileType,int> hOP = new HashMap<TileType,int>(); // Other Player: OP
+    private  HashMap<TileType, int> called_tiles() {
+        HashMap<TileType,int> hCalled = new HashMap<TileType,int>(); // Other Player: OP
         for(int i= TileType.MAN1 ;  i < TileType.CHUN; i++ ) {
-           hOP.set((TileType)i,0); 
+           hCalled.set((TileType)i,0); 
         }
         for(int i = 0 ; i < 4 ; i++ ) {
             if(i == round_state.self.index) {
@@ -636,20 +636,20 @@ class JulianBot : Bot
             }
             RoundStatePlayer p =  round_state.get_player(i);
             foreach(Tile t in p.pond) {
-                    hOP.set(t.tile_type, hOP.get(t.tile_type) + 1 );
+                hCalled.set(t.tile_type, hCalled.get(t.tile_type) + 1 );
             }
             foreach( RoundStateCall c in  p.calls ) {
-                    foreach(Tile t in c.tiles) {
-                    hOP.set(t.tile_type, hOP.get(t.tile_type) + 1 ); 
-                    }
+                foreach(Tile t in c.tiles) {
+                hCalled.set(t.tile_type, hCalled.get(t.tile_type) + 1 ); 
+                }
             }
             Tile? mark = round_state.dead_wall_mark;
             if(mark != null) {
                 Tile t = mark;
-                hOP.set(t.tile_type, hOP.get(t.tile_type) + 1 ); 
+                hCalled.set(t.tile_type, hCalled.get(t.tile_type) + 1 ); 
             }
         }
-        return hOP;
+        return hCalled;
 
     } 
     // 别人打牌之后，做个处理决定
@@ -672,7 +672,7 @@ class JulianBot : Bot
             return;
         }
         // Analyze hand statistics
-        HashMap<TileType, int> hOP = other_player_tiles();
+        HashMap<TileType, int> hOP = called_tiles();
         HandStatistics stats = analyze_hand(tile, sortedhand, calls, hOP);
 
         int beforeBenefit = 0;
@@ -993,8 +993,9 @@ class JulianBot : Bot
         for (int i = tiles.size - 1; i >= 0; i--)
         {
             bool should_remove = false;
+            Tile tile = tiles[i];
             foreach(Tile t in terminal_in_need) {
-                if(t == tiles[i] || t.is_neighbour(tiles[i]) || t.is_second_neighbour(tiles[i])) {
+                if(t == tile|| t.is_neighbour(tile) || t.is_second_neighbour(tile)) {
                     should_remove = true;
                     break;
                 }
@@ -1059,20 +1060,6 @@ class JulianBot : Bot
             return RandomTileSmart(stats,backup);
 
         return RandomTileSmart(stats, tiles);
-    }
-
-    private Tile RandomTile(ArrayList<Tile> tiles)
-    {
-        return tiles[rnd.int_range(0, tiles.size)];
-    }
-
-    private Tile RandomTileSmart(HandStatistics stats, ArrayList<Tile> tiles)
-    {
-        if(stats.terminal_count + stats.dragon_count <= 2) {
-            return RandomNonTerminalHonor(tiles);
-        } else {
-            return RandomTile(tiles);
-        }
     }
 
     // Populate needed tiles for each potential discard that leads to tenpai
@@ -1217,21 +1204,6 @@ class JulianBot : Bot
         }
 
         return result;
-    }
-
-    private Tile RandomNonTerminalHonor(ArrayList<Tile> tiles)
-    {
-        ArrayList<Tile> tmpTiles = new ArrayList<Tile>();
-        foreach(Tile t in tiles) {
-            if(!(t.is_terminal_tile() || t.is_honor_tile())) {
-                tmpTiles.add(t);
-            }
-        }
-        if(tmpTiles.size > 0) {
-            return tmpTiles[rnd.int_range(0, tmpTiles.size)];
-        } else {
-            return tiles[rnd.int_range(0, tiles.size)];
-        }
     }
 
     // 我手牌里有多少这样的牌
