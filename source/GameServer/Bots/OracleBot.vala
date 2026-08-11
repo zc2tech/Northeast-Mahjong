@@ -794,10 +794,15 @@ class OracleBot : Bot
         ArrayList<Tile> tiles = round_state.self.get_discard_tiles(); // basically hand tiles
         assert(tiles.size > 0);
 
+        StringBuilder sb_for_log = new StringBuilder();
+        foreach(TileType tt in warn_win) {
+            Tile t = new Tile(-1,tt);
+            sb_for_log.append(t.to_string() + " ");
+        }
+        Environment.log(LogType.DEBUG, "OracleBot", @"$(round_state.self.wind.to_string()) index:$(round_state.self.index)  warn_win: $(sb_for_log.str)");
 
         ArrayList<Tile> backup = new ArrayList<Tile>();
         backup.add_all(tiles);
-
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
@@ -806,16 +811,10 @@ class OracleBot : Bot
             }
         }
         if (tiles.size == 0) // 有可能都是炮牌？
-            return RandomTileSmart(stats,backup);
+            return RandomTileSmart(stats,backup);     
 
         backup = new ArrayList<Tile>();
         backup.add_all(tiles);
-        StringBuilder sb_for_log = new StringBuilder();
-        foreach(TileType tt in warn_win) {
-            Tile t = new Tile(-1,tt);
-            sb_for_log.append(t.to_string() + " ");
-        }
-        Environment.log(LogType.DEBUG, "OracleBot", @"$(round_state.self.wind.to_string()) index:$(round_state.self.index)  warn_win: $(sb_for_log.str)");
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
@@ -927,14 +926,15 @@ class OracleBot : Bot
             //  if (tile.is_dragon_tile() || tile.is_wind(round_state.self.wind) || tile.is_wind(round_state.round_wind))
             //      tiles.remove_at(i--);
             // 到这里肯定不是单数了 就留着
-            if (tile.is_dragon_tile()) {
+            if (tile.is_dragon_tile())
+            {
                 has_terminal_dragon_pair_seq = true;
                 tiles.remove_at(i--);
             }
         }
         if (tiles.size == 0)
             return RandomTileSmart(stats,backup);
-
+        
         // 干净的幺九顺子必须留啊
         backup.clear();
         backup.add_all(tiles);
@@ -989,6 +989,7 @@ class OracleBot : Bot
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
+
         backup.clear();
         backup.add_all(tiles);
         for (int i = 0; i < tiles.size; i++)
@@ -1024,9 +1025,10 @@ class OracleBot : Bot
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
-        // 到了这里不可能算刻子了，这些对子肯定是没近邻的
         backup.clear();
-        backup.add_all(tiles);       
+        backup.add_all(tiles);
+
+        // 到了这里不可能算刻子了，这些对子肯定是没近邻的
         int pair_cnt = 0;
         HashSet<TileType> pair_tile_type = new HashSet<TileType>();
         HashSet<TileType> pair_terminal_type = new HashSet<TileType>();
@@ -1075,7 +1077,6 @@ class OracleBot : Bot
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
-
         // 幺九也是很珍贵的
         backup.clear();
         backup.add_all(tiles);
@@ -1089,6 +1090,8 @@ class OracleBot : Bot
                 terminal_in_need.add(tile);             
             }
         }
+        // Remove tiles that are terminal or neighbors/second-neighbors of terminal_in_need
+        // Do this in reverse order to avoid index shifting issues
         for (int i = tiles.size - 1; i >= 0; i--)
         {
             bool should_remove = false;
@@ -1106,16 +1109,11 @@ class OracleBot : Bot
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
-
         backup.clear();
         backup.add_all(tiles);
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            //  if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
-            //     tiles.remove_at(i--); 
-            //     continue;
-            //  }
             if (!tile.is_terminal_tile() && has_non_terminal_neighbours(tile)
                 && !stats.singles_ish.contains(tile.tile_type) ) {
                 tiles.remove_at(i--); // 到这里了，非幺九，基本就是两面顺子了，也可以留一下了
@@ -1123,58 +1121,55 @@ class OracleBot : Bot
         }
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
-        
+
         backup.clear();
         backup.add_all(tiles);
+
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            //  if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
-            //     tiles.remove_at(i--); 
-            //     continue;
-            //  }    
             if ( (has_neighbours(tile) ||  has_second_neighbours(tile)) && !stats.singles_ish.contains(tile.tile_type))
                 tiles.remove_at(i--);
         }
-        if (tiles.size == 0)
-            return RandomTileSmart(stats, backup);
 
-        // 两面顺子和单边和单嵌都已经留了，这时候如果会给人碰吃的话，就不大乐意了
-        backup.clear();
-        backup.add_all(tiles);
-        for (int i = 0; i < tiles.size; i++)
-        {
-            Tile tile = tiles[i];  
-            if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
-               tiles.remove_at(i--); 
-            }          
-        }
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
         backup.clear();
         backup.add_all(tiles);
+
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
             if (!stats.singles_ish.contains(tile.tile_type)) // 不是垃圾牌，保护一下
                 tiles.remove_at(i--);
         }
+
         if (tiles.size == 0)
             return RandomTileSmart(stats,backup);
 
         backup.clear();
         backup.add_all(tiles);
-
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if (!tile.is_terminal_tile() && stats.terminal_count >= 2) // 幺九牌如果太多也没用， 所以不需要保护 非幺九牌
+            if (!tile.is_terminal_tile() && stats.terminal_count >= 2)
                 tiles.remove_at(i--);
         }
-
         if (tiles.size == 0) // 竟然全是非幺九牌的单张, 所以回退到 backup, backup 还是可能有幺九牌的,所以还是 RandomTileSmart函数 
             return RandomTileSmart(stats,backup);
+
+        backup.clear();
+        backup.add_all(tiles);
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if(warn_pon.contains(tile.tile_type) || warn_chii.contains(tile.tile_type)) {
+                tiles.remove_at(i--);
+            }
+        }
+        if (tiles.size == 0) // 竟然全是非幺九牌的单张, 所以回退到 backup, backup 还是可能有幺九牌的,所以还是 RandomTileSmart函数 
+            return RandomTileSmart(stats,backup);     
 
         return RandomTileSmart(stats, tiles);
     }
