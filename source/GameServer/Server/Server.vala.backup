@@ -280,4 +280,98 @@ namespace GameServer
         }
     }
 
+    class LogServer : Server
+    {
+        private GameLogRound[] rounds;
+        private GameLogRound round;
+        private int round_index = 0;
+        private AnimationTimings replay_timings;
+
+        public LogServer(ArrayList<ServerPlayer> spectators, RandomClass rnd, ServerSettings settings, GameLog log)
+        {
+
+            ArrayList<ServerPlayer> players = new ArrayList<ServerPlayer>();
+            for (int i = 0; i < 4; i++)
+                players.add(new ServerLogPlayer()); // Dummies
+
+
+            // Call base constructor FIRST before anything else
+            base(players, spectators, rnd, log.start_info, settings);
+
+
+            // Create timings AFTER base constructor
+            replay_timings = create_replay_timings();
+
+
+            // Override spectator messages to send correct player_index from log
+            int human_seat = log.human_player_index;
+            for (int i = 0; i < this.spectators.size; i++)
+            {
+                // If this is the first spectator and we have a valid human seat, use it
+                int player_idx = (i == 0 && human_seat >= 0 && human_seat < 4) ? human_seat : -1;
+                ServerMessageGameStart start = new ServerMessageGameStart(log.start_info, settings, player_idx);
+                this.spectators[i].send_message(start);
+
+            }
+
+            rounds = log.rounds.to_array();
+
+
+            start();
+
+        }
+
+        private static AnimationTimings create_replay_timings()
+        {
+            // Use default animation timings for replay
+            // decision_time should not be used during replay
+            return AnimationTimings.create_default(360000);
+        }
+
+        protected override RoundStartInfo get_round_start_info()
+        {
+            if (rounds.length <= round_index)
+            {
+                var info = new RoundStartInfo(rnd.int_range(2, 13), 0);
+                round = new GameLogRound(info, null, null);
+                return info;
+            }
+
+            round = rounds[round_index++];
+            return round.start_info;
+        }
+
+        protected override ServerGameRound create_round(RoundStartInfo info)
+        {
+            // Use our replay_timings instead of start_info.timings (which might be zero from bot simulation)
+            return new LogServerGameRound(settings, players, spectators, state.round_wind, state.dealer_index, rnd, replay_timings, round);
+        }
+
+        public class ServerLogPlayer : ServerPlayer
+        {
+            public ServerLogPlayer()
+            {
+                base("", false);
+
+                ready = true;
+                state = State.PLAYER;
+            }
+
+            public override void send_message(ServerMessage message)
+            {
+                // Do nothing - dummy player for replay doesn't need messages
+            }
+
+            public override void close()
+            {
+                // Nothing
+            }
+
+            public override bool ready
+            {
+                get { return true; }
+                set {}
+            }
+        }
+    }
 }

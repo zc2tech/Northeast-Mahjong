@@ -8,7 +8,6 @@ public class ClientRoundState : Object
     private bool self_active;
 
     private ArrayList<TileSelectionGroup> selection_groups = new ArrayList<TileSelectionGroup>();
-    private Tile? last_dead_wall_tile = null;
 
     public signal void do_action(ClientAction action);
 
@@ -51,6 +50,7 @@ public class ClientRoundState : Object
         parser.connect(server_call_decision, typeof(ServerMessageCallDecision));
 
         parser.connect(server_tile_assignment, typeof(ServerMessageTileAssignment));
+        parser.connect(server_dead_wall_draw, typeof(ServerMessageDeadWallDraw));
         parser.connect(server_tile_draw, typeof(ServerMessageTileDraw));
         parser.connect(server_tile_discard, typeof(ServerMessageTileDiscard));
 
@@ -107,11 +107,14 @@ public class ClientRoundState : Object
 
     private void do_turn_decision()
     {
+        Environment.log(LogType.DEBUG, "ClientRoundState", "do_turn_decision: Starting turn decision setup");
         action_state = State.TURN;
 
         bool can_kan = state.can_closed_kan() || state.can_late_kan();
         bool can_tsumo = state.can_tsumo();
         bool can_void_hand = state.can_void_hand();
+
+        Environment.log(LogType.DEBUG, "ClientRoundState", @"do_turn_decision: can_kan=$can_kan, can_tsumo=$can_tsumo, can_void_hand=$can_void_hand");
 
         set_chii_state(false);
         set_pon_state(false);
@@ -125,6 +128,7 @@ public class ClientRoundState : Object
         selection_groups.clear();
 
         ArrayList<Tile> discard_tiles = state.current_player.get_discard_tiles();
+        Environment.log(LogType.DEBUG, "ClientRoundState", @"do_turn_decision: discard_tiles.size=$(discard_tiles.size)");
         foreach (Tile tile in discard_tiles)
         {
             ArrayList<Tile> t = new ArrayList<Tile>();
@@ -133,6 +137,7 @@ public class ClientRoundState : Object
         }
 
         set_tile_select_groups(selection_groups);
+        Environment.log(LogType.DEBUG, "ClientRoundState", @"do_turn_decision: Set $(selection_groups.size) tile selection groups");
 
         //set_tile_select_state(true);
     }
@@ -384,9 +389,24 @@ public class ClientRoundState : Object
         Tile t = tile.tile;
         state.tile_assign(t);
         game_tile_assignment(t);
+    }
 
-        // Track this tile as potential dead wall tile for upcoming kan
-        last_dead_wall_tile = t;
+    private void server_dead_wall_draw(ServerMessage message)
+    {
+        ServerMessageDeadWallDraw msg = (ServerMessageDeadWallDraw)message;
+        Tile t = msg.tile;
+        state.tile_assign(t);
+        game_tile_assignment(t);
+
+        Environment.log(LogType.DEBUG, "ClientRoundState",
+            @"server_dead_wall_draw: received tile_ID=$(t.ID) ($(t.tile_type.to_string())), triggering dead wall animation");
+
+        // Draw the tile into current player's hand
+        state.tile_draw_dead_wall();
+        Environment.log(LogType.DEBUG, "ClientRoundState",
+            @"server_dead_wall_draw: tile added to hand, hand size now=$(state.current_player.hand.size)");
+
+        game_dead_tile_draw(state.current_player.index, t.ID);
     }
 
     private void server_tile_draw(ServerMessage message)
@@ -409,7 +429,8 @@ public class ClientRoundState : Object
         ServerMessageTileDiscard discard = (ServerMessageTileDiscard)message;
         state.tile_discard(discard.tile_ID);
 
-
+        Environment.log(LogType.DEBUG, "ClientRoundState",
+            @"server_tile_discard: tile_ID=$(discard.tile_ID), current_player.index=$(state.current_player.index)");
         game_tile_discard(state.current_player.index, discard.tile_ID);
     }
 
@@ -510,30 +531,15 @@ public class ClientRoundState : Object
 
     public void server_calls_finished(ServerMessage message)
     {
-
         decision_finished();
-
-        bool kan = state.chankan_call != ChankanCall.NONE;
-        // For kan, use the tile from the last TileAssignment (dead wall tile from server)
-        Tile? dead_tile = null;
-        if (kan && last_dead_wall_tile != null)
-        {
-            dead_tile = last_dead_wall_tile;
-        }
-
         state.calls_finished();
-
-        if (kan && dead_tile != null)
-        {
-            game_dead_tile_draw(state.current_player.index, dead_tile.ID);
-        }
-
-        last_dead_wall_tile = null;
     }
 
     public void server_turn_decision(ServerMessage message)
     {
+        Environment.log(LogType.DEBUG, "ClientRoundState", "server_turn_decision: Received TurnDecision message");
         do_turn_decision();
+        Environment.log(LogType.DEBUG, "ClientRoundState", "server_turn_decision: Completed do_turn_decision()");
     }
 
     public void server_call_decision(ServerMessage message)

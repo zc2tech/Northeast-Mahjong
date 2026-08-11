@@ -249,20 +249,16 @@ namespace GameServer
         // 流局
         public void game_draw(int[] tenpai_indices, int[] nagashi_indices, GameDrawType draw_type, ArrayList<Tile> all_tenpai_tiles)
         {
-            Environment.log(LogType.DEBUG, "ServerGameRound", @"game_draw: Received draw signal, draw_type=$(draw_type), tenpai_count=$(tenpai_indices.length)");
-
             foreach (Tile t in all_tenpai_tiles)
                 game_reveal_tile(t);
 
             ServerMessageDraw message = new ServerMessageDraw(tenpai_indices, draw_type == GameDrawType.VOID_HAND, draw_type == GameDrawType.TRIPLE_RON);
 
-            Environment.log(LogType.DEBUG, "ServerGameRound", @"game_draw: Sending ServerMessageDraw to $(players.size) players");
             foreach (GameRoundServerPlayer pl in players)
                 pl.server_player.send_message(message);
 
             finished = true;
             result = new RoundFinishResult.draw(tenpai_indices, nagashi_indices, draw_type);
-            Environment.log(LogType.DEBUG, "ServerGameRound", "game_draw: Set finished=true and result");
         }
 
         //////////////////////
@@ -409,4 +405,41 @@ namespace GameServer
         public Tile[] tiles { get; private set; }
     }
 
+    class LogServerGameRound : ServerGameRound
+    {
+        GameLogRound log_round;
+
+        public LogServerGameRound(ServerSettings settings, ArrayList<ServerPlayer> players, ArrayList<ServerPlayer> spectators, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings, GameLogRound log_round)
+        {
+            base(log_round.start_info, settings);
+            this.log_round = log_round;
+
+            round = new LogServerRoundState(settings, round_wind, dealer, rnd, timings, log_round);
+
+            for (int i = 0; i < players.size; i++)
+            {
+                ServerGameRound.GameRoundServerPlayer player = new ServerGameRound.GameRoundServerPlayer(players[i], i);
+                this.players.add(player);
+            }
+
+            init();
+
+            assign_spectators(spectators);
+        }
+
+        protected override void round_starting()
+        {
+            Tile[] tiles_array = log_round.tiles.to_array();
+
+            foreach (Tile tile in tiles_array)
+            {
+                game_reveal_tile(tile);
+            }
+
+            if (tiles_array.length == 0)
+            {
+                Environment.log(LogType.ERROR, "LogServerGameRound", "WARNING: No tiles in log_round.tiles - players will see face-down tiles!");
+            }
+        }
+    }
 }

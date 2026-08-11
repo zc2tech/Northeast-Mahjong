@@ -32,13 +32,17 @@ private class RenderHand : WorldObject
 
         if (tiles.size > 1 && drawn >= 14)
         {
+            // For regular draws after initial deal, keep drawn tile separate
+            // Don't add to tiles list yet - just sort and order existing tiles
             sort_hand();
             order_hand(true);
-            order_draw_tile(tile);
+            // Add the drawn tile at the end (not sorted in)
             tiles.add(tile);
+            order_draw_tile(tile);
         }
         else
         {
+            // For initial draws, add and integrate the tile normally
             tiles.add(tile);
             sort_hand();
             order_hand(true);

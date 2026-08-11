@@ -40,88 +40,11 @@ public class RoundState : Object
 
         if (shuffled)
         {
-            //  //  For testing purposes - Testing open_kan with mostly number tiles + HATSU
-            //  // Scenario: P1 draws MAN1, discards it → P2 calls open_kan (has 3×MAN1)
-            //  TileType[] p1 = new TileType[]
-            //  {
-            //      TileType.MAN2,
-            //      TileType.MAN2,
-            //      TileType.MAN2,
-            //      TileType.MAN1,
-            //      TileType.PIN3,
-            //      TileType.PIN4,
-            //      TileType.SOU1,
-            //      TileType.SOU3,
-            //      TileType.SOU4,
-            //      TileType.MAN9,
-            //      TileType.MAN9,
-            //      TileType.MAN9,
-            //      TileType.HATSU,
-            //  };
+            //  wall = create_test_wall_open_kan(dealer, wall_index, rnd);
+            wall = create_test_wall_closed_kan(dealer, wall_index, rnd);
+            //  wall = create_test_wall_late_kan(dealer, wall_index, rnd);
 
-            //  TileType[] p2 = new TileType[]
-            //  {
-            //      TileType.MAN1,
-            //      TileType.MAN1,
-            //      TileType.MAN1,  // 3 MAN1 - ready for open_kan
-            //      TileType.MAN5,
-            //      TileType.MAN6,
-            //      TileType.PIN5,
-            //      TileType.PIN5,
-            //      TileType.PIN5,  // 3 PIN5 - ready for open_kan
-            //      TileType.SOU5,
-            //      TileType.SOU6,
-            //      TileType.SOU7,
-            //      TileType.PIN6,
-            //      TileType.MAN9,
-            //  };
-
-            //  TileType[] p3 = new TileType[]
-            //  {
-            //      TileType.PIN1,
-            //      TileType.PIN1,
-            //      TileType.PIN1,  // 3 PIN1 - ready for open_kan
-            //      TileType.SOU1,
-            //      TileType.SOU1,
-            //      TileType.SOU1,  // 3 SOU1 - ready for open_kan
-            //      TileType.SOU8,
-            //      TileType.SOU8,
-            //      TileType.SOU8,
-            //      TileType.PIN2,
-            //      TileType.PIN4,
-            //      TileType.PIN8,
-            //      TileType.SOU9,
-            //  };
-
-            //  TileType[] p4 = new TileType[]
-            //  {
-            //      TileType.MAN4,
-            //      TileType.MAN4,
-            //      TileType.MAN4,  // 3 MAN4 - ready for open_kan
-            //      TileType.SOU4,
-            //      TileType.SOU4,
-            //      TileType.SOU4,  // 3 SOU4 - ready for open_kan
-            //      TileType.SOU9,
-            //      TileType.SOU9,
-            //      TileType.SOU9,  // 3 SOU9 - ready for open_kan
-            //      TileType.MAN2,
-            //      TileType.SOU8,
-            //      TileType.PIN1,
-            //      TileType.PIN5,
-            //  };
-
-
-            //  TileType[] draw_wall = new TileType[]
-            //  {
-            //  };
-
-
-            //  TileType[] dead_wall = new TileType[]
-            //  {
-            //  };
-
-            //  wall = new RoundStateWall.seeded(dealer, wall_index,false, rnd, p1, p2, p3, p4, draw_wall, dead_wall);
-            wall = new RoundStateWall.shuffled(dealer, wall_index, rnd);
+            //  wall = new RoundStateWall.shuffled(dealer, wall_index, rnd);
         }
         else if (tiles != null)
             wall = new RoundStateWall.custom(dealer, wall_index, tiles);
@@ -136,7 +59,351 @@ public class RoundState : Object
             players[i] = new RoundStatePlayer(i, i == dealer, (Wind)((i - dealer + 4) % 4), i == player_index || revealed);
 
         game_draw_type = GameDrawType.NONE;
-        chankan_call = ChankanCall.NONE;
+        last_kan_type = LastKanType.NONE;
+    }
+
+    private RoundStateWall create_test_wall_open_kan(int dealer, int wall_index, RandomClass? rnd)
+    {
+        //  For testing purposes - Testing open_kan with mostly number tiles + HATSU
+        //  Scenario: P1 draws MAN1, discards it → P2 calls open_kan (has 3×MAN1)
+        TileType[] p1 = new TileType[]
+        {
+            TileType.MAN2,
+            TileType.MAN2,
+            TileType.MAN2,
+            TileType.SOU9,
+            TileType.SOU1,
+            TileType.SOU1,
+            TileType.SOU1,
+            TileType.SOU2,
+            TileType.SOU2,
+            TileType.SOU2,
+            TileType.SOU3,
+            TileType.MAN9,
+            TileType.HATSU,
+        };
+
+        TileType[] p2 = new TileType[]
+        {
+            TileType.MAN1,
+            TileType.MAN1,
+            TileType.MAN1,  // 3 MAN1 - ready for open_kan
+            TileType.MAN1,
+            TileType.SOU4,
+            TileType.SOU4,
+            TileType.SOU4,
+            TileType.SOU5,  // 3 PIN5 - ready for open_kan
+            TileType.SOU5,
+            TileType.SOU5,
+            TileType.SOU7,
+            TileType.PIN6,
+            TileType.MAN9,
+        };
+
+        TileType[] p3 = new TileType[]
+        {
+            TileType.PIN1,
+            TileType.PIN1,
+            TileType.PIN1,  // 3 PIN1 - ready for open_kan
+            TileType.SOU9,
+            TileType.SOU4,
+            TileType.SOU5,  // 3 SOU1 - ready for open_kan
+            TileType.SOU8,
+            TileType.SOU8,
+            TileType.SOU8,
+            TileType.PIN7,
+            TileType.PIN4,
+            TileType.PIN8,
+            TileType.SOU9,
+        };
+
+        TileType[] p4 = new TileType[]
+        {
+            TileType.PIN2,
+            TileType.PIN2,
+            TileType.PIN2,
+            TileType.PIN3,
+            TileType.SOU9,
+            TileType.PIN7,
+            TileType.PIN7,
+            TileType.PIN8,
+            TileType.PIN8,
+            TileType.MAN7,
+            TileType.PIN8,
+            TileType.PIN5,
+            TileType.PIN5,
+        };
+
+        TileType[] draw_wall = new TileType[]
+        {
+            TileType.PIN2,
+            TileType.PIN1,
+            // Removed MAN1 (already have 4 in P2)
+            TileType.SOU8,
+            TileType.SOU1,
+            TileType.PIN7,
+            // Removed SOU9 (already have 4: P1×1, P3×2, P4×1)
+            // Add remaining tiles to complete the wall
+            TileType.MAN2, // P1 has 3, this is the 4th
+            TileType.MAN3, TileType.MAN3, TileType.MAN3, TileType.MAN3,
+            TileType.MAN4, TileType.MAN4, TileType.MAN4, TileType.MAN4,
+            TileType.MAN5, TileType.MAN5, TileType.MAN5, TileType.MAN5,
+            TileType.MAN6, TileType.MAN6, TileType.MAN6, TileType.MAN6,
+            TileType.MAN7, TileType.MAN7, TileType.MAN7, // P4 has 1
+            TileType.MAN8, TileType.MAN8, TileType.MAN8, TileType.MAN8,
+            TileType.MAN9, TileType.MAN9, // P1 and P2 have 1 each
+            TileType.SOU2, // P1 has 3, this completes the set
+            TileType.SOU3, TileType.SOU3, TileType.SOU3, // P1 has 1
+            TileType.SOU6, TileType.SOU6, TileType.SOU6, TileType.SOU6,
+            TileType.SOU7, TileType.SOU7, TileType.SOU7, // P2 has 1
+            TileType.PIN1, TileType.PIN1,  // Add 2 more (removed from dead_wall)
+            TileType.PIN2, TileType.PIN2,  // Add 2 more (removed from dead_wall)
+            TileType.PIN3, TileType.PIN3, TileType.PIN3, // P4 has 1
+            TileType.PIN4, TileType.PIN4, TileType.PIN4, // P3 has 1
+            TileType.PIN5, TileType.PIN5, TileType.PIN5, TileType.PIN5,  // Add 2 more (removed from dead_wall), P4 has 2
+            TileType.PIN6, TileType.PIN6, TileType.PIN6, TileType.PIN6,  // Add 1 more (removed from dead_wall), P2 has 1
+            TileType.PIN8, // P3 and P4 have 3 total
+            TileType.PIN9, TileType.PIN9, TileType.PIN9, TileType.PIN9,
+            TileType.HATSU, TileType.HATSU, TileType.HATSU, // P1 has 1
+        };
+
+        TileType[] dead_wall = new TileType[]
+        {
+            // 8 tiles for dead wall (kan replacements)
+            TileType.MAN1, TileType.MAN2,
+            TileType.MAN3, TileType.MAN4,
+            TileType.SOU1, TileType.SOU2,
+            TileType.SOU3, TileType.SOU4,
+        };
+
+        return new RoundStateWall.seeded(dealer, wall_index, false, rnd, p1, p2, p3, p4, draw_wall, dead_wall);
+        
+    }
+    private RoundStateWall create_test_wall_late_kan(int dealer, int wall_index, RandomClass? rnd)
+    {
+        //  For testing late_kan: Players have 2× tiles that can pon from others,
+        //  then draw the 4th tile from draw_wall to complete late_kan
+        //  Scenario: P1 discards MAN5 → P2 pons (has 2×MAN5) → P2 later draws 4th MAN5 → late_kan
+        TileType[] p1 = new TileType[]
+        {
+            TileType.MAN5,  // Will discard this for P2 to pon
+            TileType.MAN6,
+            TileType.MAN6,  // Can pon if someone discards MAN6
+            TileType.SOU3,
+            TileType.SOU3,  // Can pon if someone discards SOU3
+            TileType.SOU7,
+            TileType.SOU7,  // Can pon if someone discards SOU7
+            TileType.PIN4,
+            TileType.PIN4,  // Can pon if someone discards PIN4
+            TileType.MAN1,
+            TileType.SOU1,
+            TileType.PIN1,
+            TileType.HATSU,
+        };
+
+        TileType[] p2 = new TileType[]
+        {
+            TileType.MAN5,
+            TileType.MAN5,  // 2×MAN5 - ready to pon from P1's discard
+            TileType.SOU4,
+            TileType.SOU4,  // Can pon if someone discards SOU4
+            TileType.PIN2,
+            TileType.PIN2,  // Can pon if someone discards PIN2
+            TileType.PIN9,
+            TileType.PIN9,  // Can pon if someone discards PIN9
+            TileType.MAN3,
+            TileType.SOU2,
+            TileType.MAN8,
+            TileType.SOU5,
+            TileType.PIN5,
+        };
+
+        TileType[] p3 = new TileType[]
+        {
+            TileType.MAN6,  // Only 1 more (not 2) to avoid maxing out
+            TileType.SOU3,  // Only 1 more (not 2) to avoid maxing out
+            TileType.SOU4,  // Available for P2 to pon
+            TileType.PIN2,  // Available for P2 to pon
+            TileType.PIN7,
+            TileType.PIN7,  // Can pon if someone discards PIN7
+            TileType.MAN2,
+            TileType.MAN9,
+            TileType.SOU6,
+            TileType.SOU8,
+            TileType.PIN8,
+            TileType.MAN7,  // Extra filler
+            TileType.SOU9,  // Extra filler
+        };
+
+        TileType[] p4 = new TileType[]
+        {
+            TileType.SOU7,  // Only 1 more (not 2) to avoid maxing out
+            TileType.PIN4,  // Only 1 more (not 2) to avoid maxing out
+            TileType.PIN9,  // Available for P2 to pon
+            TileType.MAN7,
+            TileType.MAN7,  // Can pon if someone discards MAN7
+            TileType.SOU9,
+            TileType.SOU9,  // Can pon if someone discards SOU9
+            TileType.PIN3,
+            TileType.PIN6,
+            TileType.MAN4,
+            TileType.PIN8,
+            TileType.MAN2,  // Extra filler
+            TileType.PIN3,  // Extra filler
+        };
+
+        TileType[] draw_wall = new TileType[]
+        {
+            TileType.MAN1, TileType.MAN1,  // P1 has 1, +1 in dead = 4 total
+            TileType.MAN2, TileType.MAN2,  // P3+P4 have 2, total 4
+            TileType.MAN3, TileType.MAN3,  // P2 has 1, +1 in dead = 4 total
+            TileType.MAN4, TileType.MAN4,  // P4 has 1, +1 in dead = 4 total
+            TileType.MAN8, TileType.MAN8,  // P2 has 1, +1 in dead = 4 total
+            // Critical: 4th tiles for late_kan placed early in draw_wall
+            TileType.MAN6,  // 4th MAN6 for P1/P3 late_kan
+            TileType.MAN5,  // 4th MAN5 for P2's late_kan after ponning
+            TileType.SOU4,  // 4th SOU4 for P2 late_kan
+            TileType.SOU3,  // 4th SOU3 for P1/P3 late_kan
+            TileType.SOU7,  // 4th SOU7 for P1/P4 late_kan
+            TileType.PIN2,  // 4th PIN2 for P2 late_kan
+            TileType.PIN4,  // 4th PIN4 for P1/P4 late_kan
+            TileType.PIN7,  // 4th PIN7 for P3 late_kan
+            TileType.PIN9,  // 4th PIN9 for P2 late_kan
+            TileType.MAN7,  // 4th MAN7 for P4 late_kan
+            TileType.SOU9,  // 4th SOU9 for P4 late_kan
+            TileType.PIN8,  // 4th PIN8
+            // Fill remaining tiles to reach 52 total (112 total - 52 in hands - 8 in dead_wall)
+            TileType.MAN9, TileType.MAN9,  // P3 has 1, +1 in dead = 4 total
+            TileType.SOU1, TileType.SOU1,  // P1 has 1, +1 in dead = 4 total
+            TileType.SOU2, TileType.SOU2,  // P2 has 1, +1 in dead = 4 total
+            TileType.SOU5, TileType.SOU5,  // P2 has 1, +1 in dead = 4 total
+            TileType.SOU6, TileType.SOU6,  // P3 has 1, +1 in dead = 4 total
+            TileType.SOU8, TileType.SOU8,  // P3 has 1, +1 in dead = 4 total
+            TileType.PIN1, TileType.PIN1,  // P1 has 1, +1 in dead = 4 total
+            TileType.PIN3,  // P4 has 2, +1 in dead = 4 total
+            TileType.PIN5, TileType.PIN5,  // P2 has 1, +1 in dead = 4 total
+            TileType.PIN6, TileType.PIN6, TileType.PIN6,  // P4 has 1, total 4
+            TileType.HATSU, TileType.HATSU, TileType.HATSU,  // P1 has 1, total 4
+            // Add 6 more tiles to reach 52 (removed 6 from dead_wall: 14 -> 8)
+            TileType.PIN2, TileType.PIN2, TileType.PIN2, TileType.PIN2,
+            TileType.PIN4, TileType.PIN4,
+        };
+
+        TileType[] dead_wall = new TileType[]
+        {
+            // 8 tiles for dead_wall
+            TileType.MAN1, TileType.MAN3,
+            TileType.MAN4, TileType.MAN8,
+            TileType.MAN9, TileType.SOU1,
+            TileType.SOU2, TileType.SOU5,
+        };
+
+        return new RoundStateWall.seeded(dealer, wall_index, false, rnd, p1, p2, p3, p4, draw_wall, dead_wall);
+    }
+
+    private RoundStateWall create_test_wall_closed_kan(int dealer, int wall_index, RandomClass? rnd)
+    {
+        //  For testing purposes - Testing open_kan with mostly number tiles + HATSU
+        //  Scenario: P1 draws MAN1, discards it → P2 calls open_kan (has 3×MAN1)
+        TileType[] p1 = new TileType[]
+        {
+            TileType.MAN2,
+            TileType.MAN2,
+            TileType.MAN2,
+            TileType.MAN2,
+            TileType.SOU1,
+            TileType.SOU1,
+            TileType.SOU1,
+            TileType.SOU1,
+            TileType.PIN1,
+            TileType.PIN5,
+            TileType.PIN7,
+            TileType.MAN9,
+            TileType.HATSU,
+        };
+
+        TileType[] p2 = new TileType[]
+        {
+            TileType.MAN1,
+            TileType.MAN1,
+            TileType.MAN1,  // 3 MAN1 - ready for open_kan
+            TileType.MAN1,
+            TileType.SOU2,
+            TileType.SOU2,
+            TileType.SOU2,
+            TileType.SOU2,  // 3 PIN5 - ready for open_kan
+            TileType.PIN1,
+            TileType.PIN5,
+            TileType.PIN7,
+            TileType.PIN6,
+            TileType.MAN9,
+        };
+
+        TileType[] p3 = new TileType[]
+        {
+            TileType.MAN4,
+            TileType.MAN4,
+            TileType.MAN4,  // 3 PIN1 - ready for open_kan
+            TileType.MAN4,
+            TileType.MAN5,
+            TileType.MAN5,  // 3 SOU1 - ready for open_kan
+            TileType.MAN5,
+            TileType.MAN5,
+            TileType.PIN1,
+            TileType.PIN7,
+            TileType.PIN5,
+            TileType.PIN8,
+            TileType.SOU9,
+        };
+
+        TileType[] p4 = new TileType[]
+        {
+            TileType.MAN3,
+            TileType.MAN3,
+            TileType.MAN3,
+            TileType.MAN3,
+            TileType.SOU3,
+            TileType.SOU3,
+            TileType.SOU3,
+            TileType.SOU3,
+            TileType.MAN8,
+            TileType.PIN7,
+            TileType.PIN8,
+            TileType.PIN5, 
+            TileType.MAN9,
+        };
+
+        TileType[] draw_wall = new TileType[]
+        {
+            // 52 tiles for draw_wall
+            TileType.MAN6, TileType.MAN6, TileType.MAN6, TileType.MAN6,
+            TileType.MAN7, TileType.MAN7, TileType.MAN7, TileType.MAN7,
+            TileType.MAN8, TileType.MAN8,  // Only 2 here (P4 has 1, dead has 1 = 4 total)
+            TileType.PIN2, TileType.PIN2, TileType.PIN2, TileType.PIN2,
+            TileType.PIN3, TileType.PIN3, TileType.PIN3, TileType.PIN3,
+            TileType.PIN4, TileType.PIN4, TileType.PIN4, TileType.PIN4,
+            TileType.PIN6, TileType.PIN6, TileType.PIN6,
+            TileType.PIN9, TileType.PIN9, TileType.PIN9, TileType.PIN9,
+            TileType.SOU4, TileType.SOU4, TileType.SOU4, TileType.SOU4,
+            TileType.SOU5, TileType.SOU5, TileType.SOU5, TileType.SOU5,
+            TileType.SOU6, TileType.SOU6, TileType.SOU6, TileType.SOU6,
+            TileType.SOU7, TileType.SOU7, TileType.SOU7, TileType.SOU7,
+            TileType.SOU8, TileType.SOU8, TileType.SOU8, TileType.SOU8,
+            TileType.SOU9, TileType.SOU9,  // P3 has 1, dead has 1, draw has 2 = 4 total
+            TileType.HATSU,  // P1 has 1, dead has 2, draw has 1 = 4 total
+        };
+
+        TileType[] dead_wall = new TileType[]
+        {
+            // 8 tiles for dead_wall (4 stacks of 2)
+            TileType.MAN9, TileType.PIN1,
+            TileType.PIN8, TileType.PIN8,
+            TileType.HATSU, TileType.HATSU,  // P1 has 1, dead has 2, draw has 1 = 4 total
+            TileType.MAN8, TileType.SOU9,  // MAN8: P4+dead+draw×2=4, SOU9: P3+dead+draw×2=4
+        };
+
+        return new RoundStateWall.seeded(dealer, wall_index, false, rnd, p1, p2, p3, p4, draw_wall, dead_wall);
+        //  return new RoundStateWall.shuffled(dealer, wall_index, rnd);
     }
 
     public void start()
@@ -182,7 +449,7 @@ public class RoundState : Object
 
     public void calls_finished()
     {
-        if (chankan_call == ChankanCall.NONE)
+        if (last_kan_type == LastKanType.NONE)
         {
             if (wall.empty)
             {
@@ -231,13 +498,20 @@ public class RoundState : Object
                 }
             }
 
-            current_index = (current_index + 1) % players.length;
+            // After a regular call (not kan), move to next player
+            // For kan, the turn stays with the same player
+            if (last_kan_type == LastKanType.NONE)
+                current_index = (current_index + 1) % players.length;
         }
-        else
-            kan();
+        // Note: We don't call kan() here anymore because the server handles it
+        // and sends DeadWallDraw message. Calling kan() here would duplicate
+        // the dead wall draw and corrupt the client/bot state.
 
+        Environment.log(LogType.DEBUG, "RoundState",
+            @"calls_finished: last_kan_type=%d, current_index now = $current_index".printf((int)last_kan_type));
         turn_counter++;
-        chankan_call = ChankanCall.NONE;
+        // Don't reset last_kan_type here - it should persist until the next discard
+        // tile_discard() will reset it to NONE after the player discards
     }
 
     public void void_hand()
@@ -280,7 +554,7 @@ public class RoundState : Object
         discard_tile = tile;
         last_discard_player_index = current_player.index;
         rinshan = false;
-        chankan_call = ChankanCall.NONE;
+        last_kan_type = LastKanType.NONE;
 
         return true;
     }
@@ -302,7 +576,7 @@ public class RoundState : Object
     }
 
     // 杠牌 吃牌之后又摸了一张
-    public ArrayList<Tile>? late_kan(int tile_ID)
+     public ArrayList<Tile>? late_kan(int tile_ID)
     {
         if (!can_late_kan_with(tile_ID))
             return null;
@@ -310,7 +584,7 @@ public class RoundState : Object
         Tile tile = get_tile(tile_ID);
 
         var kan_tiles = current_player.do_late_kan(tile);
-        chankan_call = ChankanCall.LATE;
+        last_kan_type = LastKanType.LATE;
         discard_tile = tile;
 
         return kan_tiles;
@@ -324,7 +598,7 @@ public class RoundState : Object
         var tiles = current_player.do_closed_kan(tile_type);
         assert(tiles.size == 4);
 
-        chankan_call = ChankanCall.CLOSED;
+        last_kan_type = LastKanType.CLOSED;
         discard_tile = tiles[0];
         //interrupt_flow(); // TODO: Find out whether this is correct
 
@@ -345,9 +619,10 @@ public class RoundState : Object
         player.do_open_kan(discarder.index, tile, tile_1, tile_2, tile_3);
 
         current_index = player_index;
-        chankan_call = ChankanCall.OPEN;
-        kan();
-
+        last_kan_type = LastKanType.OPEN;
+        // Note: We don't call kan() here anymore because the server handles it
+        // and sends DeadWallDraw message. Calling kan() here would duplicate
+        // the dead wall draw and corrupt the client/bot state.
     }
 
     public void pon(int player_index, int tile_1_ID, int tile_2_ID)
@@ -456,7 +731,7 @@ public class RoundState : Object
             wall.can_call &&
             wall.can_kan &&
             player != current_player &&
-            chankan_call == ChankanCall.NONE && // 抢杠
+            last_kan_type == LastKanType.NONE && // 抢杠
             TileRules.can_open_kan(player.hand, discard_tile);
     }
 
@@ -465,7 +740,7 @@ public class RoundState : Object
         return
             wall.can_call &&
             player != current_player &&
-            chankan_call == ChankanCall.NONE &&
+            last_kan_type == LastKanType.NONE &&
             TileRules.can_pon(player.hand, discard_tile);
     }
 
@@ -474,7 +749,7 @@ public class RoundState : Object
         return
             wall.can_call &&
             ((current_player.index + 1) % 4 == player.index) &&
-            chankan_call == ChankanCall.NONE &&
+            last_kan_type == LastKanType.NONE &&
             player.can_chii(discard_tile);
     }
 
@@ -539,15 +814,20 @@ public class RoundState : Object
 
     private void kan()
     {
+        Environment.log(LogType.DEBUG, "RoundState",
+            "kan() called: setting rinshan=true, drawing from dead wall");
         rinshan = true;
-        tile_draw_dead_wall();
+        last_dead_wall_draw = tile_draw_dead_wall();
+        Environment.log(LogType.DEBUG, "RoundState",
+            @"kan() drew tile_ID=$(last_dead_wall_draw.ID), type=$(last_dead_wall_draw.tile_type.to_string())");
         interrupt_flow();
+        Environment.log(LogType.DEBUG, "RoundState", "kan() completed");
     }
 
     private RoundStateContext create_context(bool ron, Tile win_tile)
     {
         bool last_tile = wall.empty;
-        bool chankan = chankan_call != ChankanCall.NONE && ron;
+        bool chankan = last_kan_type != LastKanType.NONE && ron;
 
         return new RoundStateContext
         (
@@ -581,7 +861,8 @@ public class RoundState : Object
     public bool tiles_empty { get { return wall.empty; } }
     public Tile? dead_wall_mark { owned get { return wall.dead_wall_mark; } }
     public ArrayList<Tile> dead_wall_tiles { get { return wall.dead_wall_tiles; } }
-    public ChankanCall chankan_call { get; private set; }
+    public LastKanType last_kan_type { get; private set; }
+    public Tile? last_dead_wall_draw { get; private set; }
 }
 
 public class RoundStatePlayer
@@ -686,6 +967,9 @@ public class RoundStatePlayer
 
     public ArrayList<Tile>? do_closed_kan(TileType type)
     {
+        Environment.log(LogType.DEBUG, "RoundStatePlayer",
+            "do_closed_kan called: player=%d, tile_type=%s".printf(index, type.to_string()));
+
         if (!can_closed_kan_with(type))
             return null;
 
@@ -1167,6 +1451,9 @@ public class RoundStatePlayer
 
 class RoundStateWall
 {
+    // Northeast Mahjong tile count: 9*3 (MAN/SOU/PIN) * 4 + 4 (HATSU only) = 112
+    private const int TOTAL_TILES = 112;
+
     private ArrayList<Tile> wall_tiles = new ArrayList<Tile>();
     public ArrayList<Tile> dead_wall_tiles = new ArrayList<Tile>();
     private int owner_player_index = -1;  // -1 = server, 0-3 = bot player index
@@ -1203,7 +1490,7 @@ class RoundStateWall
         if (custom_tiles != null)
             tiles = custom_tiles;
         else
-            tiles = new Tile[112];
+            tiles = new Tile[TOTAL_TILES];
 
 
         //  stdout.printf("shuffled : %d  seeded: %d \n", (int)shuffled, (int)seeded);
@@ -1220,11 +1507,10 @@ class RoundStateWall
                 tiles[iTile++] = new Tile(-1, type);
             }
             // 中 发 白 中 选一个
-            TileType typeDragon = !seeded ? (TileType)(dragon) : TileType.BLANK;
-            tiles[iTile++] = new Tile(-1, typeDragon);
-            tiles[iTile++] = new Tile(-1, typeDragon);
-            tiles[iTile++] = new Tile(-1, typeDragon);
-            tiles[iTile++] = new Tile(-1, typeDragon);
+            tiles[iTile++] = new Tile(-1, dragon);
+            tiles[iTile++] = new Tile(-1, dragon);
+            tiles[iTile++] = new Tile(-1, dragon);
+            tiles[iTile++] = new Tile(-1, dragon);
         }
 
         int start_wall = (4 - dealer) % 4;
@@ -1262,7 +1548,7 @@ class RoundStateWall
         // Now wall_tiles has 104 tiles (0-103), and dead_wall_tiles has 8 tiles (104-111)
 
         // Save rotated tiles BEFORE dead wall reversal - this is what should be saved to game log
-        rotated_tiles = new Tile[112];
+        rotated_tiles = new Tile[TOTAL_TILES];
         int rt_idx = 0;
         foreach (Tile tile in wall_tiles)
             rotated_tiles[rt_idx++] = tile;
@@ -1326,9 +1612,17 @@ class RoundStateWall
 
     private static void seed(int index, RandomClass? rnd, Tile[] tiles, TileType[] p1_tiles, TileType[] p2_tiles, TileType[] p3_tiles, TileType[] p4_tiles, TileType[] draw_tiles, TileType[] dead_wall)
     {
+        assert( tiles.length == TOTAL_TILES );
         ArrayList<TileType> unassigned = new ArrayList<TileType>();
-        for (int i = 0; i < tiles.length; i++)
-            unassigned.add((TileType)((i / 4) + 1));
+        for (int i = 0; i < TOTAL_TILES - 4 ; i++) {
+            unassigned.add((TileType)((i / 4) + 1)); // start from MAN1 to SOU9 
+        }
+        // Northeast Mahjong uses HATSU as the only dragon tile
+        for (int i = 0; i < 4; i++) {
+            //  unassigned.add(TileType.CHUN);
+            //  unassigned.add(TileType.HAKU);
+            unassigned.add(TileType.HATSU);
+        }
 
         int length = tiles.length;
 
@@ -1390,7 +1684,7 @@ class RoundStateWall
             length--;
         }
 
-        index += length - 14;
+        index += length - 8;  // Skip to dead wall position (8 tiles for dead wall)
 
         for (int i = 0; i < dead_wall.length; i++)
             replace(tiles, dead_wall[i], unassigned, index++);
@@ -1459,7 +1753,7 @@ public enum GameDrawType
     TRIPLE_RON
 }
 
-public enum ChankanCall
+public enum LastKanType
 {
     NONE,
     OPEN,

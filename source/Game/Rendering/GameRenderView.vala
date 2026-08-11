@@ -321,6 +321,8 @@ public class GameRenderView : View3D, IGameRenderer
         RenderPlayer player = players[player_index];
         RenderTile tile = tiles[tile_ID];
 
+        Environment.log(LogType.DEBUG, "GameRenderView",
+            @"dead_tile_draw: Player $player_index drawing tile_ID=$tile_ID ($(tile.tile_type.tile_type.to_string())) from dead wall");
         buffer_action(new RenderActionDrawDeadWall(context.server_times.tile_draw, player, tile));
     }
 
@@ -328,6 +330,8 @@ public class GameRenderView : View3D, IGameRenderer
     {
         RenderPlayer player = players[player_index];
         RenderTile tile = tiles[tile_ID];
+        Environment.log(LogType.DEBUG, "GameRenderView",
+            @"tile_discard: player_index=$player_index, tile_ID=$tile_ID ($(tile.tile_type.tile_type.to_string())), player.seat=$(player.seat)");
         buffer_action(new RenderActionDiscard(context.server_times.tile_discard, player, tile));
     }
 

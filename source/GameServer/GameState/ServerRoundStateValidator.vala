@@ -30,20 +30,25 @@ namespace GameServer
             action_state = ActionState.WAITING_TURN;
         }
 
+        public void ready_for_turn()
+        {
+            Environment.log(LogType.DEBUG, "Validator", "ready_for_turn: Setting action_state to WAITING_TURN");
+            action_state = ActionState.WAITING_TURN;
+        }
+
         public Tile draw_wall()
         {
             return state.tile_draw();
         }
 
+        public Tile draw_dead_wall()
+        {
+            return state.tile_draw_dead_wall();
+        }
+
         public bool discard_tile(int tile_ID)
         {
-            if (state.tile_discard(tile_ID))
-            {
-                chankan_call = false;
-                return true;
-            }
-
-            return false;
+            return state.tile_discard(tile_ID);
         }
 
         public int[] get_nagashi_indices()
@@ -77,7 +82,10 @@ namespace GameServer
 
         public bool is_players_turn(int index)
         {
-            return state.current_player.index == index && action_state == ActionState.WAITING_TURN;
+            bool result = state.current_player.index == index && action_state == ActionState.WAITING_TURN;
+            Environment.log(LogType.DEBUG, "Validator",
+                @"is_players_turn: player=$index, current=$(state.current_player.index), action_state=$action_state, result=$result");
+            return result;
         }
 
         public Tile get_tile(int tile_ID)
@@ -196,22 +204,12 @@ namespace GameServer
 
         public ArrayList<Tile>? do_closed_kan(TileType type)
         {
-            ArrayList<Tile>? tiles = state.closed_kan(type);
-            if (tiles != null)
-                chankan_call = true;
-
-            return tiles;
+            return state.closed_kan(type);
         }
 
         public bool do_late_kan(int tile_ID)
         {
-            if (state.late_kan(tile_ID) != null)
-            {
-                chankan_call = true;
-                return true;
-            }
-
-            return false;
+            return state.late_kan(tile_ID) != null;
         }
 
         public bool decide_open_kan(int player_index)
@@ -388,7 +386,7 @@ namespace GameServer
         public bool game_draw { get { return state.game_draw_type != GameDrawType.NONE; } }
         public GameDrawType game_draw_type { get { return state.game_draw_type; } }
         public bool tiles_empty { get { return state.tiles_empty; } }
-        public bool chankan_call { get; private set; }
+        public Tile? last_dead_wall_draw { owned get { return state.last_dead_wall_draw; } }
 
         private enum ActionState
         {

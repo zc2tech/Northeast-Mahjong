@@ -547,7 +547,6 @@ namespace GameServer
             // Game over
             if (validator.game_draw)
             {
-                Environment.log(LogType.DEBUG, "ServerRoundState", @"next_turn: game_draw detected, draw_type=$(validator.game_draw_type)");
                 // 流局
                 draw_situation();
                 return;
@@ -566,7 +565,6 @@ namespace GameServer
 
         private void draw_situation()
         {
-            Environment.log(LogType.DEBUG, "ServerRoundState", "draw_situation: Starting draw handling");
             // 找到听牌的玩家
             ArrayList<ServerRoundStatePlayer> tenpai_players = validator.get_tenpai_players();
             ArrayList<Tile> tiles = new ArrayList<Tile>();
@@ -580,9 +578,7 @@ namespace GameServer
 
             int[] nagashi_indices = validator.get_nagashi_indices();
 
-            Environment.log(LogType.DEBUG, "ServerRoundState", @"draw_situation: Triggering game_draw signal, tenpai_count=$(tenpai_players.size)");
             game_draw(tenpai_indices, nagashi_indices, validator.game_draw_type, tiles);
-            Environment.log(LogType.DEBUG, "ServerRoundState", "draw_situation: Called game_over()");
             game_over();
         }
 
@@ -686,6 +682,172 @@ namespace GameServer
         protected override void fire_initial_hands_ready()
         {
             initial_hands_ready();
+        }
+    }
+
+    // Lightweight state tracker for replay - no validation, just tile tracking
+    class ReplayWall
+    {
+        private ArrayList<Tile> wall_tiles;
+        private ArrayList<Tile> dead_wall_tiles;
+        private HashMap<int, Tile> tile_map;
+
+        public ReplayWall(Tile[] initial_tiles)
+        {
+            wall_tiles = new ArrayList<Tile>();
+            dead_wall_tiles = new ArrayList<Tile>();
+            tile_map = new HashMap<int, Tile>();
+
+            // Split tiles: first 104 go to wall, last 8 go to dead wall
+            // This matches RoundStateWall initialization logic
+            for (int i = 0; i < initial_tiles.length; i++)
+            {
+                Tile tile = initial_tiles[i];
+                tile_map.set(tile.ID, tile);
+
+                if (i < 104)
+                    wall_tiles.add(tile);
+                else
+                    dead_wall_tiles.add(tile);
+            }
+
+        }
+
+        public Tile draw_tile()
+        {
+            if (wall_tiles.size == 0)
+            {
+                Environment.log(LogType.ERROR, "ReplayWall", "Attempted to draw from empty wall!");
+                return new Tile(0, TileType.MAN1);
+            }
+            return wall_tiles.remove_at(0);
+        }
+
+        public Tile draw_dead_wall()
+        {
+            if (dead_wall_tiles.size == 0)
+            {
+                Environment.log(LogType.ERROR, "ReplayWall", "Attempted to draw from empty dead wall!");
+                return new Tile(0, TileType.MAN1);
+            }
+            return dead_wall_tiles.remove_at(0);
+        }
+
+        public void remove_tile(Tile tile)
+        {
+            wall_tiles.remove(tile);
+        }
+
+        public void remove_dead_wall_tile(Tile tile)
+        {
+            dead_wall_tiles.remove(tile);
+        }
+
+        public Tile? get_tile(int tile_ID)
+        {
+            return tile_map.get(tile_ID);
+        }
+
+    }
+
+    class LogServerRoundState : ServerRoundState
+    {
+        private ArrayList<GameLogLine> lines;
+        private bool is_paused = false;
+        private float speed_multiplier = 1.0f;
+        private bool replay_complete = false;
+        private ReplayWall replay_wall;
+        private GameLogRound log_round;  // Store round data for result display
+
+        public LogServerRoundState(ServerSettings settings, Wind round_wind, int dealer, RandomClass rnd, AnimationTimings timings, GameLogRound round)
+        {
+            base(settings, round_wind, dealer, round.start_info.wall_index, rnd,timings, round.tiles.to_array());
+            lines = new ArrayList<GameLogLine>.wrap(round.lines.to_array());
+            replay_wall = new ReplayWall(round.tiles.to_array());
+            log_round = round;  // Save for result display at end
+        }
+
+        protected override void next_player_action(float time)
+        {
+            // Stop all processing if replay is complete
+            if (replay_complete)
+                return;
+
+            // Don't process actions when paused
+            if (is_paused)
+                return;
+
+            if (lines.size == 0)
+            {
+                // No more actions in log - round replay is complete
+                // Trigger round end event based on result type
+                if (!replay_complete)
+                {
+                    replay_complete = true;  // Set flag before triggering events
+
+                    // Trigger appropriate end event based on result type
+                    if (log_round.result_type == RoundResultType.DRAW)
+                    {
+                        // For draw result, show game draw screen
+                        int[] tenpai_indices = new int[0];  // TODO: Could extract from log if needed
+                        int[] nagashi_indices = new int[0];
+                        ArrayList<Tile> all_tiles = new ArrayList<Tile>();
+                        game_draw(tenpai_indices, nagashi_indices, GameDrawType.EMPTY_WALL, all_tiles);
+                    }
+                    // TODO: Add ron/tsumo cases if needed
+                }
+                return;
+            }
+
+            GameLogLine line = lines[0];
+
+            // Skip null lines (shouldn't happen but prevents crashes)
+            if (line == null || line.action == null)
+            {
+                Environment.log(LogType.ERROR, "LogServerRoundState", "Skipping null log line or action");
+                lines.remove_at(0);
+                return;
+            }
+
+            // Divide delta by speed_multiplier to make actions happen faster
+            float adjusted_delta = line.delta / speed_multiplier;
+
+            if (time - move_start_time > adjusted_delta)
+            {
+                action(line.action);
+                lines.remove_at(0);
+            }
+        }
+
+        private void action(ServerAction action)
+        {
+
+            if (action is TileDrawServerAction)
+            {
+                TileDrawServerAction draw_action = action as TileDrawServerAction;
+
+                // Draw from replay_wall to get the tile
+                Tile tile = replay_wall.draw_tile();
+
+                // ALSO draw from validator to keep dead wall state synchronized for kan
+                validator.draw_wall();
+
+
+                // Just emit the signal - no decision logic
+                game_draw_tile(draw_action.player, tile, false);
+            }
+            else if (action is ClientServerAction)
+            {
+                ClientServerAction client_action = action as ClientServerAction;
+
+                // For now, use process_action - it handles the actions correctly
+                // My manual reconstruction was broken
+                process_action(client_action);
+            }
+            else if (action is DefaultDiscardServerAction || action is DefaultNoCallServerAction)
+            {
+                // Skip default actions in replay
+            }
         }
     }
 }

@@ -97,6 +97,28 @@ namespace GameServer
             Environment.log(LogType.ERROR, "ReplayState", @"Tile $(tile.ID) not found in wall!");
         }
 
+        public void dead_wall_remove_tile(Tile tile)
+        {
+            Environment.log(LogType.DEBUG, "ReplayState",
+                @"dead_wall_remove_tile: Searching for tile.ID=$(tile.ID) in dead_wall (size=$(dead_wall_tiles.size))");
+
+            // Remove a specific tile from dead wall (used when log specifies exact tile)
+            for (int i = 0; i < dead_wall_tiles.size; i++)
+            {
+                Environment.log(LogType.DEBUG, "ReplayState",
+                    @"  Checking dead_wall[$i]: ID=$(dead_wall_tiles[i].ID)");
+
+                if (dead_wall_tiles[i].ID == tile.ID)
+                {
+                    Environment.log(LogType.DEBUG, "ReplayState",
+                        @"  Found tile at index $i, removing it");
+                    dead_wall_tiles.remove_at(i);
+                    return;
+                }
+            }
+            Environment.log(LogType.ERROR, "ReplayState", @"Tile $(tile.ID) not found in dead wall!");
+        }
+
         public Tile draw_from_dead_wall()
         {
             if (dead_wall_tiles.size == 0)

@@ -112,6 +112,7 @@ public class Environment
         typeof(ServerMessagePlayerLeft).class_ref();
 
         typeof(ServerMessageTileAssignment).class_ref();
+        typeof(ServerMessageDeadWallDraw).class_ref();
         typeof(ServerMessageTileDraw).class_ref();
         typeof(ServerMessageTileDiscard).class_ref();
         typeof(ServerMessageCallDecision).class_ref();
@@ -137,6 +138,7 @@ public class Environment
 
         typeof(ServerAction).class_ref();
         typeof(TileDrawServerAction).class_ref();
+        typeof(DeadWallDrawServerAction).class_ref();
         typeof(DefaultDiscardServerAction).class_ref();
         typeof(DefaultNoCallServerAction).class_ref();
         typeof(ClientServerAction).class_ref();

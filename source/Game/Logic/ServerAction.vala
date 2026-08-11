@@ -18,6 +18,22 @@ public class TileDrawServerAction : ServerAction
 	public int tile_ID { get; protected set; }
 }
 
+public class DeadWallDrawServerAction : ServerAction
+{
+	public DeadWallDrawServerAction(int player, int tile_ID)
+	{
+		this.player = player;
+		this.tile_ID = tile_ID;
+	}
+	public new string to_string()
+    {
+        return @"DeadWallDrawAction from player_index: $(this.player), tile_ID: $(this.tile_ID)";
+    }
+
+	public int player { get; protected set; }
+	public int tile_ID { get; protected set; }
+}
+
 public class ClientServerAction : ServerAction
 {
 	public ClientServerAction(int client, ClientAction action)

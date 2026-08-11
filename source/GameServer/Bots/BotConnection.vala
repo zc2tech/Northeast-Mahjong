@@ -12,6 +12,7 @@ class BotConnection : Object
         connection.received_message.connect(message_received);
         parser.connect(round_start, typeof(ServerMessageRoundStart));
         parser.connect(tile_assignment, typeof(ServerMessageTileAssignment));
+        parser.connect(dead_wall_draw, typeof(ServerMessageDeadWallDraw));
         parser.connect(tile_draw, typeof(ServerMessageTileDraw));
         parser.connect(tile_discard, typeof(ServerMessageTileDiscard));
         parser.connect(ron, typeof(ServerMessageRon));
@@ -90,6 +91,12 @@ class BotConnection : Object
     {
         ServerMessageTileAssignment tile_assignment = (ServerMessageTileAssignment)message;
         bot.tile_assign(tile_assignment.tile);
+    }
+
+    private void dead_wall_draw(ServerMessage message)
+    {
+        ServerMessageDeadWallDraw msg = (ServerMessageDeadWallDraw)message;
+        bot.tile_assign(msg.tile);
     }
 
     private void tile_draw(ServerMessage message)
