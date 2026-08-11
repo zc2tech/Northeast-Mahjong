@@ -957,6 +957,13 @@ class OracleBot : Bot
                    tiles.remove(p1_list.get(0)); 
                    tiles.remove(p2_list.get(0)); 
                 }
+                // 独苗幺九顺
+                if(stats.terminal_count == 1 && p1_list.size >= 1 && p2_list.size >= 1) {
+                    has_terminal_dragon_pair_seq = true;
+                    tiles.remove(me_list.get(0)); 
+                    tiles.remove(p1_list.get(0)); 
+                    tiles.remove(p2_list.get(0));  
+                }
             }
             if (tile_type == TileType.MAN9 ||
                 tile_type == TileType.PIN9 ||
@@ -969,6 +976,13 @@ class OracleBot : Bot
                    tiles.remove(me_list.get(0)); 
                    tiles.remove(m1_list.get(0)); 
                    tiles.remove(m2_list.get(0)); 
+                }
+                // 独苗幺九顺
+                if(stats.terminal_count == 1 && m1_list.size >= 1 && m2_list.size >= 1) {
+                    has_terminal_dragon_pair_seq = true;
+                    tiles.remove(me_list.get(0)); 
+                    tiles.remove(m1_list.get(0)); 
+                    tiles.remove(m2_list.get(0));  
                 }
             }
         }

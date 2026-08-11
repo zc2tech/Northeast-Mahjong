@@ -808,18 +808,6 @@ public class RoundState : Object
         flow_interrupted = true;
     }
 
-    private void kan()
-    {
-        Environment.log(LogType.DEBUG, "RoundState",
-            "kan() called: setting rinshan=true, drawing from dead wall");
-        rinshan = true;
-        last_dead_wall_draw = tile_draw_dead_wall();
-        Environment.log(LogType.DEBUG, "RoundState",
-            @"kan() drew tile_ID=$(last_dead_wall_draw.ID), type=$(last_dead_wall_draw.tile_type.to_string())");
-        interrupt_flow();
-        Environment.log(LogType.DEBUG, "RoundState", "kan() completed");
-    }
-
     private RoundStateContext create_context(bool ron, Tile win_tile)
     {
         bool last_tile = wall.empty;
