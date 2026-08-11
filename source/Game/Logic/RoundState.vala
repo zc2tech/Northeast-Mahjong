@@ -40,8 +40,8 @@ public class RoundState : Object
 
         if (shuffled)
         {
-            //  wall = create_test_wall_open_kan(dealer, wall_index, rnd);
-            wall = create_test_wall_closed_kan(dealer, wall_index, rnd);
+            wall = create_test_wall_open_kan(dealer, wall_index, rnd);
+            //  wall = create_test_wall_closed_kan(dealer, wall_index, rnd);
             //  wall = create_test_wall_late_kan(dealer, wall_index, rnd);
 
             //  wall = new RoundStateWall.shuffled(dealer, wall_index, rnd);
@@ -156,24 +156,17 @@ public class RoundState : Object
             TileType.SOU3, TileType.SOU3, TileType.SOU3, // P1 has 1
             TileType.SOU6, TileType.SOU6, TileType.SOU6, TileType.SOU6,
             TileType.SOU7, TileType.SOU7, TileType.SOU7, // P2 has 1
-            TileType.PIN1, TileType.PIN1,  // Add 2 more (removed from dead_wall)
-            TileType.PIN2, TileType.PIN2,  // Add 2 more (removed from dead_wall)
-            TileType.PIN3, TileType.PIN3, TileType.PIN3, // P4 has 1
-            TileType.PIN4, TileType.PIN4, TileType.PIN4, // P3 has 1
-            TileType.PIN5, TileType.PIN5, TileType.PIN5, TileType.PIN5,  // Add 2 more (removed from dead_wall), P4 has 2
-            TileType.PIN6, TileType.PIN6, TileType.PIN6, TileType.PIN6,  // Add 1 more (removed from dead_wall), P2 has 1
-            TileType.PIN8, // P3 and P4 have 3 total
             TileType.PIN9, TileType.PIN9, TileType.PIN9, TileType.PIN9,
             TileType.HATSU, TileType.HATSU, TileType.HATSU, // P1 has 1
         };
 
         TileType[] dead_wall = new TileType[]
         {
-            // 8 tiles for dead wall (kan replacements)
-            TileType.MAN1, TileType.MAN2,
-            TileType.MAN3, TileType.MAN4,
-            TileType.SOU1, TileType.SOU2,
-            TileType.SOU3, TileType.SOU4,
+            // 8 tiles for dead wall - only PIN3, PIN4, PIN5, PIN6 have room
+            TileType.PIN3, TileType.PIN3,  // PIN3: was 2, +2 = 4
+            TileType.PIN4, TileType.PIN4,  // PIN4: was 2, +2 = 4
+            TileType.PIN5, TileType.PIN5,  // PIN5: was 2, +2 = 4
+            TileType.PIN6, TileType.PIN6,  // PIN6: was 1, +2 = 3 (still room for 1 more)
         };
 
         return new RoundStateWall.seeded(dealer, wall_index, false, rnd, p1, p2, p3, p4, draw_wall, dead_wall);
@@ -284,9 +277,6 @@ public class RoundState : Object
             TileType.PIN5, TileType.PIN5,  // P2 has 1, +1 in dead = 4 total
             TileType.PIN6, TileType.PIN6, TileType.PIN6,  // P4 has 1, total 4
             TileType.HATSU, TileType.HATSU, TileType.HATSU,  // P1 has 1, total 4
-            // Add 6 more tiles to reach 52 (removed 6 from dead_wall: 14 -> 8)
-            TileType.PIN2, TileType.PIN2, TileType.PIN2, TileType.PIN2,
-            TileType.PIN4, TileType.PIN4,
         };
 
         TileType[] dead_wall = new TileType[]
@@ -473,6 +463,14 @@ public class RoundState : Object
             {
                 game_over = true;
                 game_draw_type = GameDrawType.FOUR_KANS;
+                return;
+            }
+
+            // Six kans total (dead wall exhausted except mark stack) - game draw
+            if (count >= 6)
+            {
+                game_over = true;
+                game_draw_type = GameDrawType.EMPTY_WALL;
                 return;
             }
 
