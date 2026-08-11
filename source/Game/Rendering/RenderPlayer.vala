@@ -214,6 +214,12 @@ public class RenderPlayer : WorldObject
         hand.animate_angle(angle);
     }
 
+    public void sort_and_order_hand()
+    {
+        hand.sort_hand();
+        hand.order_hand(false);  // Don't animate, just reposition
+    }
+
     public ArrayList<RenderTile> hand_tiles { get { return hand.tiles; } }
     //public RenderTile last_drawn_tile { get; private set; }
     public int seat { get; private set; }
