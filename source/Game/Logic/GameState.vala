@@ -246,7 +246,7 @@ public class GameState : Object
             // Store dealer_won for start_round to use
             // If dealer won, they keep dealer position in next round
             // Otherwise, dealer rotates to next player
-            if (!dealer_won)
+            if (!dealer_won && result.result != RoundFinishResult.RoundResultEnum.DRAW)
                 dealer_index = (dealer_index + 1) % players.length;
 
             if (settings.bot_simulation)
@@ -289,7 +289,7 @@ public class GameState : Object
         {
             // Bot's GameState - just update dealer position
             current_round++;
-            if (!dealer_won)
+            if (!dealer_won && result.result != RoundFinishResult.RoundResultEnum.DRAW)
                 dealer_index = (dealer_index + 1) % players.length;
         }
 
