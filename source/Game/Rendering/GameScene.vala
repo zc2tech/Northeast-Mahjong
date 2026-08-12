@@ -14,11 +14,16 @@ public class GameScene : WorldObject
     private Sound discard_sound;
     private Sound draw_sound;
     private Sound ron_sound;
+    private Sound ron_sound_other;
     private Sound tsumo_sound;
+    private Sound tsumo_sound_other;
     private Sound riichi_sound;
     private Sound kan_sound;
+    private Sound kan_sound_other;
     private Sound pon_sound;
+    private Sound pon_sound_other;
     private Sound chii_sound;
+    private Sound chii_sound_other;
     private Sound reveal_sound;
 
     private RenderTable table;
@@ -45,11 +50,16 @@ public class GameScene : WorldObject
         discard_sound = audio.load_sound("discard");
         draw_sound = audio.load_sound("draw");
         ron_sound = audio.load_sound("ron");
+        ron_sound_other = audio.load_sound("ron-other");
         tsumo_sound = audio.load_sound("tsumo");
+        tsumo_sound_other = audio.load_sound("tsumo-other");
         riichi_sound = audio.load_sound("riichi");
         kan_sound = audio.load_sound("kan");
+        kan_sound_other = audio.load_sound("kan-other");
         pon_sound = audio.load_sound("pon");
+        pon_sound_other = audio.load_sound("pon-other");
         chii_sound = audio.load_sound("chii");
+        chii_sound_other = audio.load_sound("chii-other");
         reveal_sound = audio.load_sound("reveal");
 
         RenderTile[] tiles = new RenderTile[112];
@@ -191,9 +201,14 @@ public class GameScene : WorldObject
 
     private void action_ron(RenderActionRon action)
     {
-        ron_sound.play();
-
         var winners = action.get_winners();
+        if ( winners[0].seat == context.observer_index) {
+            ron_sound.play();
+        } else {
+            ron_sound_other.play();
+        }
+
+        
         if (winners.length == 1 && action.tile != null)
             winners[0].ron(action.tile);
 
@@ -216,7 +231,11 @@ public class GameScene : WorldObject
 
     private void action_tsumo(RenderActionTsumo action)
     {
-        tsumo_sound.play();
+        if (action.player.seat == context.observer_index) {
+            tsumo_sound.play();
+        } else {
+            tsumo_sound_other.play();
+        }
         action.player.tsumo();
 
         if (!action.player.open)
@@ -238,21 +257,32 @@ public class GameScene : WorldObject
 
     private void action_late_kan(RenderActionLateKan action)
     {
+        if (action.player.seat == context.observer_index) {
+            kan_sound.play();
+        } else {
+            kan_sound_other.play();
+        }
         action.player.late_kan(action.tile, action.time);
-        kan_sound.play();
     }
 
     private void action_closed_kan(RenderActionClosedKan action)
     {
-        Environment.log(LogType.DEBUG, "GameScene",
-            @"action_closed_kan: Player $(action.player.seat) declares closed kan on $(action.tile_1.tile_type.tile_type.to_string())");
+        if (action.player.seat == context.observer_index) {
+            kan_sound.play();
+        } else {
+            kan_sound_other.play();
+        }
         action.player.closed_kan(action.tile_1, action.tile_2, action.tile_3, action.tile_4, action.time);
-        kan_sound.play();
+
     }
 
     private void action_open_kan(RenderActionOpenKan action)
     {
-        kan_sound.play();
+        if (action.player.seat == context.observer_index) {
+            kan_sound.play();
+        } else {
+            kan_sound_other.play();
+        }
         action.discarder.rob_tile(action.tile);
         action.player.open_kan(action.discarder, action.tile, action.tile_1, action.tile_2, action.tile_3);
 
@@ -262,7 +292,11 @@ public class GameScene : WorldObject
 
     private void action_pon(RenderActionPon action)
     {
-        pon_sound.play();
+        if (action.player.seat == context.observer_index) {
+            pon_sound.play();
+        } else {
+            pon_sound_other.play();
+        }
         action.discarder.rob_tile(action.tile);
         action.player.pon(action.discarder, action.tile, action.tile_1, action.tile_2);
 
@@ -272,7 +306,12 @@ public class GameScene : WorldObject
 
     private void action_chii(RenderActionChii action)
     {
-        chii_sound.play();
+         if (action.player.seat == context.observer_index)
+         {
+             chii_sound.play();
+         } else {
+             chii_sound_other.play();
+         }
         action.discarder.rob_tile(action.tile);
         action.player.chii(action.tile, action.tile_1, action.tile_2, action.time);
 

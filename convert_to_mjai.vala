@@ -6,15 +6,16 @@ void main(string[] args)
 {
     if (args.length < 2)
     {
-        print("Usage: convert_to_mjai <log_file> [output_dir]\n");
-        print("  If output_dir is not specified, uses ../mjai relative to log file location\n");
+        print("Usage: convert_to_mjai <log_file_or_directory> [output_dir]\n");
+        print("  If input is a directory, converts all .log files in it\n");
+        print("  If output_dir is not specified, uses ../mjai relative to input location\n");
         return;
     }
 
     // Initialize environment to register types
     Environment.init(false);
 
-    string log_path = args[1];
+    string input_path = args[1];
     string? output_dir = null;
 
     if (args.length >= 3)
@@ -22,59 +23,117 @@ void main(string[] args)
         output_dir = args[2];
     }
 
-    // Read the log file
+    File input_file = File.new_for_path(input_path);
+
     try {
-        uint8[] data;
-        File file = File.new_for_path(log_path);
-        file.load_contents(null, out data, null);
+        FileInfo info = input_file.query_info("standard::type", FileQueryInfoFlags.NONE);
 
-        print("Loaded %d bytes from %s\n", data.length, log_path);
-
-        // Deserialize the log
-        GameLog log = (GameLog?)Serializable.deserialize(data);
-
-        if (log == null) {
-            stderr.printf("Failed to deserialize log\n");
-            return;
-        }
-
-        print("Game Log Version: %s\n", log.version.to_string());
-        print("Rounds: %d\n", log.rounds.to_array().length);
-
-        // Determine output directory
-        if (output_dir == null)
+        if (info.get_file_type() == FileType.DIRECTORY)
         {
-            // Get parent directory of log file
-            string parent_dir = Path.get_dirname(log_path);
-            // Create ../mjai relative to log directory
-            output_dir = Path.build_filename(parent_dir, "..", "mjai");
+            // Process directory
+            process_directory(input_path, output_dir);
         }
-
-        // Create output directory if it doesn't exist
-        File out_dir = File.new_for_path(output_dir);
-        if (!out_dir.query_exists())
+        else
         {
-            out_dir.make_directory_with_parents();
-            print("Created output directory: %s\n", output_dir);
+            // Process single file
+            process_file(input_path, output_dir);
         }
-
-        // Generate output filename based on input filename
-        string log_basename = Path.get_basename(log_path);
-        string output_name = log_basename.replace(".log", ".json");
-        string output_path = Path.build_filename(output_dir, output_name);
-
-        // Convert to mjai format
-        string mjai_json = convert_to_mjai(log);
-
-        // Write output file
-        File out_file = File.new_for_path(output_path);
-        out_file.replace_contents(mjai_json.data, null, false, FileCreateFlags.NONE, null, null);
-
-        print("Wrote mjai format to: %s\n", output_path);
-
     } catch (Error e) {
         stderr.printf("Error: %s\n", e.message);
     }
+}
+
+void process_directory(string dir_path, string? output_dir)
+{
+    try {
+        File dir = File.new_for_path(dir_path);
+        FileEnumerator enumerator = dir.enumerate_children("standard::name,standard::type", FileQueryInfoFlags.NONE);
+
+        int total = 0;
+        int success = 0;
+        int failed = 0;
+
+        FileInfo file_info;
+        while ((file_info = enumerator.next_file()) != null)
+        {
+            if (file_info.get_file_type() == FileType.REGULAR)
+            {
+                string filename = file_info.get_name();
+                if (filename.has_suffix(".log"))
+                {
+                    total++;
+                    string log_path = Path.build_filename(dir_path, filename);
+                    print("\n[%d] Processing: %s\n", total, filename);
+
+                    try {
+                        process_file(log_path, output_dir);
+                        success++;
+                    } catch (Error e) {
+                        stderr.printf("  Failed: %s\n", e.message);
+                        failed++;
+                    }
+                }
+            }
+        }
+
+        print("\n========================================\n");
+        print("Summary: %d total, %d success, %d failed\n", total, success, failed);
+
+    } catch (Error e) {
+        stderr.printf("Error reading directory: %s\n", e.message);
+    }
+}
+
+void process_file(string log_path, string? output_dir) throws Error
+{
+    uint8[] data;
+    File file = File.new_for_path(log_path);
+    file.load_contents(null, out data, null);
+
+    // Deserialize the log
+    GameLog log = (GameLog?)Serializable.deserialize(data);
+
+    if (log == null) {
+        throw new FileError.FAILED("Failed to deserialize log");
+    }
+
+    print("  Game Log Version: %s, Rounds: %d\n", log.version.to_string(), log.rounds.to_array().length);
+
+    // Determine output directory
+    string out_dir;
+    if (output_dir == null)
+    {
+        // Get parent directory of log file
+        string parent_dir = Path.get_dirname(log_path);
+        // Create ../mjai relative to log directory
+        out_dir = Path.build_filename(parent_dir, "..", "mjai");
+    }
+    else
+    {
+        out_dir = output_dir;
+    }
+
+    // Create output directory if it doesn't exist
+    File out_dir_file = File.new_for_path(out_dir);
+    if (!out_dir_file.query_exists())
+    {
+        out_dir_file.make_directory_with_parents();
+        print("  Created output directory: %s\n", out_dir);
+    }
+
+    // Generate output filename based on input filename
+    string log_basename = Path.get_basename(log_path);
+    string output_name = log_basename.replace(".log", ".json");
+    string output_path = Path.build_filename(out_dir, output_name);
+
+    // Convert to mjai format
+    string mjai_json = convert_to_mjai(log);
+
+    // Write output file
+    File out_file = File.new_for_path(output_path);
+    out_file.replace_contents(mjai_json.data, null, false, FileCreateFlags.NONE, null, null);
+
+    print("  Wrote: %s\n", output_path);
 }
 
 string convert_to_mjai(GameLog log)
