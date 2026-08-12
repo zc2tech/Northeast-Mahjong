@@ -379,7 +379,8 @@ class OracleBot : Bot
 
             // 再分析 hand_readings 之前,先简单分析一下
             bool shouldContNow = false;
-            if(newStats.singles.size > stats.singles.size) {
+            // 幺九的话，你还是要给后续机会的，不能直接continue
+            if(!tile.is_terminal_tile() && newStats.singles.size > stats.singles.size) {
                 // 单张竟然多了, 估计是吃啥吐啥类型的 继续分析
                 foreach(TileType iType in newStats.singles) {
                     if(iType == tile.tile_type) {
@@ -394,15 +395,14 @@ class OracleBot : Bot
                         shouldContNow = true;
                         break;
                     }             
-                } 
-                
+                }                 
             }
             if(shouldContNow) {
                 continue;
             }
 
             // 不能保证两个 对子 是很危险的
-            if(newStats.triplet_count < 1 && newStats.pair_count < 2) {
+            if(!tile.is_terminal_tile() && newStats.triplet_count < 1 && newStats.pair_count < 2) {
                 continue;
             }
 
@@ -1047,8 +1047,8 @@ class OracleBot : Bot
                 }
             }               
         }
-        // 留一下
-        if(pair_cnt <= 2) {
+        // 留一下 3对做个阈值吧，因为有可能对是被人两头用啊
+        if(pair_cnt <= 3) {
              for (int i = 0; i < tiles.size; i++) {
                 if(pair_tile_type.contains(tiles[i].tile_type)) {
                     tiles.remove_at(i--); // 对子还是很珍贵的，
