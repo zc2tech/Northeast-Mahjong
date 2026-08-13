@@ -11,6 +11,12 @@ public abstract class Bot : Object
 
     protected GameState game_state;
     protected RoundState? round_state;
+    private ShantenCalculator shanten_calc;
+
+    construct
+    {
+        shanten_calc = ShantenCalculator.get_instance();
+    }
 
     public void init_game(GameStartInfo info, ServerSettings settings, int player_index)
     {
@@ -308,6 +314,7 @@ public abstract class Bot : Object
         stats.hasTerminalTriplet= false; // 这个指标实在太关键了
         stats.rare_dragon_terminal = TileType.BLANK;
 
+        HashSet<TileType> suit_categories = new HashSet<TileType>(); // 不去管中发白, 用来判断清一色
         // Count tiles by suit
         foreach (Tile t in sorted_hand)
         {
@@ -319,14 +326,17 @@ public abstract class Bot : Object
             if (t.tile_type >= TileType.MAN1 && t.tile_type <= TileType.MAN9)
             {
                 map_man.set(t.tile_type, map_man.get(t.tile_type) + 1);
+                suit_categories.add(TileType.MAN1);
             }
             else if (t.tile_type >= TileType.PIN1 && t.tile_type <= TileType.PIN9)
             {
                 map_pin.set(t.tile_type, map_pin.get(t.tile_type) + 1);
+                suit_categories.add(TileType.PIN1);
             }
             else if (t.tile_type >= TileType.SOU1 && t.tile_type <= TileType.SOU9)
             {
                 map_sou.set(t.tile_type, map_sou.get(t.tile_type) + 1);
+                suit_categories.add(TileType.SOU1);
             }
 
             if (t.is_dragon_tile())
@@ -438,6 +448,20 @@ public abstract class Bot : Object
                     stats.terminal_count++;
                 }
             }
+
+            Tile t_in_c = c.tiles[0];
+            if (t_in_c.tile_type >= TileType.MAN1 && t_in_c.tile_type <= TileType.MAN9)
+            {
+                suit_categories.add(TileType.MAN1);
+            }
+            else if (t_in_c.tile_type >= TileType.PIN1 && t_in_c.tile_type <= TileType.PIN9)
+            {
+                suit_categories.add(TileType.PIN1);
+            }
+            else if (t_in_c.tile_type >= TileType.SOU1 && t_in_c.tile_type <= TileType.SOU9)
+            {
+                suit_categories.add(TileType.SOU1);
+            }
             
         }
 
@@ -463,7 +487,33 @@ public abstract class Bot : Object
             }
         }
 
+        // 0: win , 1: tenpai
+        int shanten_num = get_shanten_for_hand(sorted_hand,calls);
+        if((stats.dragon_count == 0 && stats.terminal_count == 0)
+            || suit_categories.size  <= 1 ) {  // 清一色或者混一色
+            // just from experience, not know really how to calculation
+            if( shanten_num >= 2) {
+                // not too much cost if we are far from tenpai
+                stats.weighted_shanten = shanten_num + 1;
+            } else {
+                stats.weighted_shanten = shanten_num + 2; 
+            }
+        } else {
+           stats.weighted_shanten = shanten_num; 
+        } 
+
         return stats;
+    }
+
+    /**
+     * Get the shanten number for a hypothetical hand
+     * @param hand The hand tiles to evaluate
+     * @param calls The calls/melds
+     * @return Shanten number + 1 (0 = winning, 1 = tenpai, 2 = 1-shanten, etc.)
+     */
+    private int get_shanten_for_hand(ArrayList<Tile> hand, ArrayList<RoundStateCall> calls)
+    {
+        return shanten_calc.calculate_shanten(hand, calls);
     }
 
     // 暂时是为二人抬轿测试服务

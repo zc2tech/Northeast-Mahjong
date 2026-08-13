@@ -567,26 +567,28 @@ class JulianBot : Bot
 
             ArrayList<Tile> tiles = TileRules.get_late_kan_tiles(round_state.self.hand, round_state.self.calls);
             assert(tiles.size > 0);
-            if(tiles[0].is_dragon_tile()) {
-                     do_late_kan(tiles[0]);
+            foreach(Tile hand_tile in tiles) {
+                if(hand_tile.is_dragon_tile()) {
+                    do_late_kan(hand_tile);
                     return;
-            }
-            
-            bool hasNeigh = has_neighbours(tiles[0]);
-            bool hasSecNeigh = has_second_neighbours(tiles[0]);
-
-            if(!hasNeigh && !hasSecNeigh) {
-                if(tiles[0].is_terminal_tile()) {
-                    do_late_kan(tiles[0]);
-                    return; 
                 }
+                
+                bool hasNeigh = has_neighbours(hand_tile);
+                bool hasSecNeigh = has_second_neighbours(hand_tile);
 
-                if(tiles[0].is_terminal_neighbour_tile() || tiles[0].is_terminal_second_neighbour_tile()) {
-                    if(stats.dragon_count < 1 && stats.singles.size <= 1) {
-                        do_late_kan(tiles[0]);
-                        return;
+                if(!hasNeigh && !hasSecNeigh) {
+                    if(hand_tile.is_terminal_tile()) {
+                        do_late_kan(hand_tile);
+                        return; 
                     }
-                }      
+
+                    if(hand_tile.is_terminal_neighbour_tile() || hand_tile.is_terminal_second_neighbour_tile()) {
+                        if(stats.dragon_count < 1 && stats.singles.size <= 1) {
+                            do_late_kan(hand_tile);
+                            return;
+                        }
+                    }      
+                }
             }
         }
 

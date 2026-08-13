@@ -68,6 +68,8 @@ sources = files(
     'source/GameServer/Bots/JulianBot.vala',
     'source/GameServer/Bots/NullBot.vala',
     'source/GameServer/Bots/OracleBot.vala',
+    'source/GameServer/Bots/ShantenBot.vala',
+    'source/GameServer/Bots/ShantenCalculator.vala',
     'source/GameServer/Bots/SimpleBot.vala',
     'source/GameServer/GameState/ServerRoundState.vala',
     'source/GameServer/GameState/ServerRoundStatePlayer.vala',
