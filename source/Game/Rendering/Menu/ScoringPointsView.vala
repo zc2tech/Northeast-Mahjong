@@ -309,6 +309,12 @@ class ScoringPointsView : View2D
         switches = 0;
     }
 
+    public void toggle_hand_visibility()
+    {
+        if (scoring_control != null)
+            scoring_control.toggle_hand_visibility();
+    }
+
     protected override void resized()
     {
         //  if (dora != null)
@@ -591,6 +597,12 @@ class ScoringPointsView : View2D
             }
 
             return str;
+        }
+
+        public void toggle_hand_visibility()
+        {
+            if (hand != null)
+                hand.visible = !hand.visible;
         }
 
         private class YakuLine

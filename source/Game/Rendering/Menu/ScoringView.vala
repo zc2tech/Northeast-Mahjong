@@ -171,9 +171,17 @@ class ScoringView : View2D
                 replay_hand_clicked();
             else if (key.scancode == ScanCode.M && return_menu_button.enabled && return_menu_button.visible)
                 return_menu_clicked();
+            else if (key.scancode == ScanCode.H)
+                toggle_hand_tiles();
             else
                 key.handled = false;
         }
+    }
+
+    private void toggle_hand_tiles()
+    {
+        if (scoring_view != null)
+            scoring_view.toggle_hand_tiles_visibility();
     }
 
     protected override void resized()

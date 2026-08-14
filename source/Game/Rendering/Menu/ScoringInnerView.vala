@@ -148,5 +148,11 @@ class ScoringInnerView : View2D
         left.highlighted = player_index == left.player_index;
     }
 
+    public void toggle_hand_tiles_visibility()
+    {
+        if (view != null)
+            view.toggle_hand_visibility();
+    }
+
     public RoundScoreState score { get; private set; }
 }
