@@ -265,7 +265,7 @@ class ServerMenuView : MenuSubView
             bots_added = true;
             add_bot("JulianBot", 1);
             add_bot("OracleBot", 2);
-            add_bot("JulianBot", 3);
+            add_bot("ShantenBot", 3);
         }
     }
 

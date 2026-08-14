@@ -49,7 +49,7 @@ class ShantenBot : Bot
             // 必碰
             return true;
         }
-        
+
         // 下家打的 没听牌的话 基本都碰, 将牌没了的话，不正好二人抬轿吗
         if(beforeBenefit == 0 && shimocha_index == discarder_index && tripletCnt <= 2) {
             return true;
@@ -133,6 +133,16 @@ class ShantenBot : Bot
         // 以前是有听的话，就不碰了
         if(beforeBenefit > 0) {
             return false;
+        }
+
+        if(stats.weighted_shanten >= 2 && stats.weighted_shanten <= 3 ) {
+            HandStatistics new_stats = analyze_hand(null, newHand,newCalls,null);
+            // 碰的变好了
+            if(new_stats.weighted_shanten < stats.weighted_shanten) {
+                Environment.log(LogType.DEBUG, "ShantenBot",
+                    @"should_call_pon new shanten: $(new_stats.weighted_shanten)"); 
+                return true;
+            }
         }
 
         // 根本没机会和牌时,要不要碰? 继续看:
@@ -338,6 +348,7 @@ class ShantenBot : Bot
         
         ArrayList<Tile> bestGroup = null;
         ArrayList<Tile> plan_b = null;
+        ArrayList<ArrayList<Tile>> shanten_g_candi = new ArrayList<ArrayList<Tile>>(); 
         foreach (ArrayList<Tile> g in groups)
         {
             // 吃掉试试
@@ -427,6 +438,15 @@ class ShantenBot : Bot
                 }
             }
 
+            // 从向听数判断该不该chii
+            if(stats.weighted_shanten >= 2 && stats.weighted_shanten <= 4 ) {
+                HandStatistics new_stats = analyze_hand(null, newHand,newCalls,null);
+                // chii的变好了
+                if(new_stats.weighted_shanten < stats.weighted_shanten) {
+                    shanten_g_candi.add(g);
+                }
+            }
+
             // 注意你是在一个group 的 loop 里
             if (stats.terminal_count == 0 && stats.dragon_count < 2)
             {
@@ -485,6 +505,13 @@ class ShantenBot : Bot
             return false;
         }
 
+        Environment.log(LogType.DEBUG, "ShantenBot", @"shanten_g_candi size: $(shanten_g_candi.size)");
+        foreach(ArrayList<Tile> g in shanten_g_candi) {
+            tiles1 = g[0];
+            tiles2 = g[1];
+            return true; 
+        }
+
         // 有 plan B 就用上吧，也不知道啥情况
         if(plan_b != null) {
             tiles1 = plan_b[0];
@@ -528,9 +555,7 @@ class ShantenBot : Bot
 
         // win_necessary_condition 就当听牌, 所以条件不是特别严格
         // 已经尽力了
-        if( TileRules.win_necessary_condition(sorted_hand, calls, true)
-            && stats.triplet_count >= 1
-        ){
+        if( TileRules.win_necessary_condition(sorted_hand, calls, true) ) {
             HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
             // 如果打掉某张可以听牌的话
             ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();
@@ -736,6 +761,102 @@ class ShantenBot : Bot
         ArrayList<Tile> tiles = round_state.self.get_discard_tiles(); // basically hand tiles
         assert(tiles.size > 0);
 
+        if(stats.weighted_shanten >= 2 && stats.weighted_shanten <= 4 ) {
+            ArrayList<Tile> tmp_hand = new ArrayList<Tile>();
+            HashSet<TileType> checked_type = new HashSet<TileType>();
+            ArrayList<Tile> discard_candi = new ArrayList<Tile>();
+            foreach(Tile t_chance in tiles) {
+                if(checked_type.contains(t_chance.tile_type)) {
+                    continue;
+                } else {
+                    checked_type.add(t_chance.tile_type);
+                }
+                tmp_hand.clear();  // CRITICAL: Clear before adding to prevent accumulation!
+                tmp_hand.add_all(round_state.self.hand);
+                tmp_hand.remove(t_chance);
+                HandStatistics new_stats = analyze_hand(null, tmp_hand,round_state.self.calls,null);
+                // 打掉不影响向听数
+                if(new_stats.weighted_shanten <= stats.weighted_shanten) {
+                    discard_candi.add(t_chance);
+                    Environment.log(LogType.DEBUG, "ShantenBot",
+                    @"$(round_state.self.wind.to_string()) discard candi: $(t_chance.to_string())");
+                }
+            }
+
+            // Check for "two players carry" pattern (二人抬轿)
+            TileType discard_for_two_players_carry = check_two_players_carry_pattern(stats, tiles);
+            if (discard_for_two_players_carry != TileType.BLANK) {
+                // 既然有这个牌型，直接就打了，后面的判断全忽略 缺幺九的话，以后再调整，毕竟吃个幺九或者单砸也挺容易的
+                for (int i = 0; i < discard_candi.size; i++)
+                {
+                    if (discard_candi[i].tile_type == discard_for_two_players_carry) {
+                        Environment.log(LogType.DEBUG, "ShantenBot",
+                        @"two-players-carry discard: $(discard_candi[i])");
+                        return discard_candi[i];
+                    }
+                }
+            }
+
+            ArrayList<Tile> discard_backup = new ArrayList<Tile>();
+            discard_backup.add_all(discard_candi);
+
+            //  for (int i = 0; i < discard_candi.size; i++) {
+            //      Tile tile = discard_candi[i];
+            //      if (count(tile) >= 2) {
+            //          Environment.log(LogType.DEBUG, "ShantenBot",
+            //              @"protect discard candi (pair): $(tile.to_string())");
+            //          discard_candi.remove_at(i--);
+            //      }
+            //  }
+
+            //  if( (stats.hasTerminalTriplet || stats.dragon_count >= 3)  
+            //  && stats.hand_in_seq.contains(tile.tile_type)) {
+            //      // 已经有刻子了的情况下，顺子才珍贵， 要不随时可以打掉
+            //      tiles.remove_at(i--); 
+            //  }     
+
+            if(stats.pair_count <= 2 && stats.triplet_count == 0) {
+                if (!protect_pair_tiles(discard_candi)) {
+                    return discard_backup[0];
+                } 
+                discard_backup.clear();
+                discard_backup.add_all(discard_candi);
+                if (!protect_non_terminal_tiles_with_neighbours(discard_candi)) {
+                    return discard_backup[0];
+                }
+            } else {
+                if(!protect_hand_in_seq(discard_candi, stats)) {
+                    return discard_backup[0]; 
+                }
+
+                discard_backup.clear();
+                discard_backup.add_all(discard_candi);
+                if (!protect_non_terminal_tiles_with_neighbours(discard_candi)) {
+                    return discard_backup[0];
+                }
+
+                discard_backup.clear();
+                discard_backup.add_all(discard_candi);
+                if (!protect_pair_tiles(discard_candi)) {
+                    return discard_backup[0];
+                }               
+            }
+         
+            discard_backup.clear();
+            discard_backup.add_all(discard_candi);
+            if (!protect_one_way(discard_candi)) {
+                return discard_backup[0];
+            }   
+
+            discard_backup.clear();
+            discard_backup.add_all(discard_candi);
+            if (!protect_center_single(discard_candi)) {
+                return discard_backup[0];
+            }   
+            return discard_candi[0]; 
+        }
+        
+
         ArrayList<Tile> backup = new ArrayList<Tile>();
         backup.add_all(tiles);
 
@@ -766,82 +887,17 @@ class ShantenBot : Bot
         }
 
         // 二人抬轿检测 检测时别看手牌了
-        ArrayList<Tile> tpc = stats.two_player_carry; // 应该是排完序的
-        TileType discard_for_two_players_carry  = TileType.BLANK;
-        if(tpc.size == 5) {
-            // 找出来打哪张能形成二人抬轿
-
-            // 先确保没对子
-            bool hasPair = false;
-            for(int i=0; i <= 3; i++) {
-                if(tpc[i].tile_type == tpc[i+1].tile_type) {
-                    hasPair = true;
-                    break;
-                }              
-            } 
-            
-            if(!hasPair) {
-                HashMap<TileType,int>  hDiscardCandi = new HashMap<TileType,int>(); // 需要在里面选distance 和最小的
-                for(int iRemove = 0 ; iRemove < tpc.size; iRemove++) {
-                    int index0 = 0 , index1 = 1, index2 = 2, index3 = 3; // 预定是先看这几个位置的
-                    // 1234 0234 0134 0124 0124
-                    if(index0 == iRemove) {
-                        index0++;
-                        index1++;
-                        index2++;
-                        index3++;
-                    } else if(index1 == iRemove) {
-                        index1++;
-                        index2++;
-                        index3++;
-                    } else if(index2 == iRemove) {
-                        index2++;
-                        index3++;
-                    } else if(index3 == iRemove) {
-                        index3++;
-                    } else {
-                        // 不用动了
-                    }
-                    int distance1 = tpc[index1].tile_type - tpc[index0].tile_type;
-                    int distance2 = tpc[index3].tile_type - tpc[index2].tile_type;
-                    if( (distance1 == 1 || distance1 == 2) 
-                    && (distance2 == 1 || distance2 == 2)) 
-                    {
-                        // 二人抬轿了 但未必最优
-                        hDiscardCandi.set(tpc[iRemove].tile_type, distance1 + distance2);
-                        //  discard_for_two_players_carry = tpc[iRemove].tile_type;
-                        break;
-                    }
-                } // end loop for iRemove
-
-                // 找个distance 和 最小的
-                int discard_for_distance = int.MAX ; // big enough to be impossible;
-                foreach(TileType  tileType in hDiscardCandi.keys ) {
-                    if(stats.rare_dragon_terminal != TileType.BLANK) {
-                        // 我们有一张幺九或者中发白的独苗
-                        if(tileType == stats.rare_dragon_terminal) {
-                            continue;
-                        }
-                    }
-                    if(hDiscardCandi.get(tileType) < discard_for_distance) {
-                        // 找到小一点了
-                        discard_for_distance = hDiscardCandi.get(tileType);
-                        discard_for_two_players_carry = tileType; 
-                    }
+        TileType discard_for_two_players_carry = check_two_players_carry_pattern(stats, tiles);
+        if (discard_for_two_players_carry != TileType.BLANK) {
+            // 既然有这个牌型，直接就打了，后面的判断全忽略 缺幺九的话，以后再调整，毕竟吃个幺九或者单砸也挺容易的
+            for (int i = 0; i < tiles.size; i++)
+            {
+                if (tiles[i].tile_type == discard_for_two_players_carry) {
+                    return tiles[i];
                 }
             }
         }
 
-        if(discard_for_two_players_carry != TileType.BLANK) {
-            // 既然有这个牌型，直接就打了，后面的判断全忽略 缺幺九的话，以后再调整，毕竟吃个幺九或者单砸也挺容易的
-            for (int i = 0; i < tiles.size; i++)
-            {
-                if(tiles[i].tile_type == discard_for_two_players_carry) {
-                    return tiles[i];
-                }
-            } 
-        }
-        
         bool has_terminal_dragon_pair_seq = false; // just check hand tiles
         backup.clear();
         backup.add_all(tiles);
@@ -863,54 +919,7 @@ class ShantenBot : Bot
         // 干净的幺九顺子必须留啊
         backup.clear();
         backup.add_all(tiles);
-        for (int i = 0; i < tiles.size; i++)
-        {
-            Tile tile = tiles[i];
-            if(!tile.is_terminal_tile()) {
-                continue;
-            }
-            TileType tile_type = tile.tile_type;
-            if (tile_type == TileType.MAN1 ||
-                tile_type == TileType.PIN1 ||
-                tile_type == TileType.SOU1) {
-                ArrayList<Tile> me_list = filter_tile_type(tile_type);
-                ArrayList<Tile> p1_list = filter_tile_type(tile_type + 1);
-                ArrayList<Tile> p2_list = filter_tile_type(tile_type + 2);
-                if(me_list.size == 1 && p1_list.size == 1 && p2_list.size == 1) {
-                   has_terminal_dragon_pair_seq = true;
-                   tiles.remove(me_list.get(0)); 
-                   tiles.remove(p1_list.get(0)); 
-                   tiles.remove(p2_list.get(0)); 
-                }
-                // 独苗幺九顺
-                if(stats.terminal_count == 1 && p1_list.size >= 1 && p2_list.size >= 1) {
-                    has_terminal_dragon_pair_seq = true;
-                    tiles.remove(me_list.get(0)); 
-                    tiles.remove(p1_list.get(0)); 
-                    tiles.remove(p2_list.get(0));  
-                }
-            }
-            if (tile_type == TileType.MAN9 ||
-                tile_type == TileType.PIN9 ||
-                tile_type == TileType.SOU9) {
-                ArrayList<Tile> me_list = filter_tile_type(tile_type);
-                ArrayList<Tile> m1_list = filter_tile_type(tile_type - 1);
-                ArrayList<Tile> m2_list = filter_tile_type(tile_type - 2);
-                if(me_list.size == 1 && m1_list.size == 1 && m2_list.size == 1) {
-                   has_terminal_dragon_pair_seq = true;
-                   tiles.remove(me_list.get(0)); 
-                   tiles.remove(m1_list.get(0)); 
-                   tiles.remove(m2_list.get(0)); 
-                }
-                // 独苗幺九顺
-                if(stats.terminal_count == 1 && m1_list.size >= 1 && m2_list.size >= 1) {
-                    has_terminal_dragon_pair_seq = true;
-                    tiles.remove(me_list.get(0)); 
-                    tiles.remove(m1_list.get(0)); 
-                    tiles.remove(m2_list.get(0));  
-                }
-            }
-        }
+        protect_terminal_sequences(tiles, stats, ref has_terminal_dragon_pair_seq);
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
@@ -954,50 +963,8 @@ class ShantenBot : Bot
         backup.add_all(tiles);
 
         // 到了这里不可能算刻子了，这些对子肯定是没近邻的
-        int pair_cnt = 0;
-        HashSet<TileType> pair_tile_type = new HashSet<TileType>();
-        HashSet<TileType> pair_terminal_type = new HashSet<TileType>();
-        
-        for (int i = 0; i < tiles.size; i++)
-        {
-            Tile tile = tiles[i];
-            // pair_cnt 是经过上一轮之后算出的，你需要加上当前的看看 记得别为一对算两遍 pair_cnt
-            if (!pair_tile_type.contains(tile.tile_type) &&  count(tile) >= 2) 
-            {
-                pair_cnt++;
-                pair_tile_type.add(tile.tile_type);
-                if(tile.is_terminal_tile()) {
-                    pair_terminal_type.add(tile.tile_type);
-                    has_terminal_dragon_pair_seq = true;
-                }
-            }               
-        }
-        // 留一下 3对做个阈值吧，因为有可能对是被人两头用啊
-        if(pair_cnt <= 3) {
-             for (int i = 0; i < tiles.size; i++) {
-                if(pair_tile_type.contains(tiles[i].tile_type)) {
-                    tiles.remove_at(i--); // 对子还是很珍贵的，
-                }
-             }
-        } else if (!stats.hasTerminalSeq || !stats.hasTerminalTriplet) {
-             // 即使 对 很多， 幺九对仍然要留
-             for (int i = 0; i < tiles.size; i++) {
-                if(pair_terminal_type.contains(tiles[i].tile_type)) {
-                    tiles.remove_at(i--);
-                }
-             } 
-        } else {
-            // 对子还是很多，就不珍贵了 中心牌的留一下
-            for (int i = 0; i < tiles.size; i++) {
-                TileType tt = tiles[i].tile_type;
-                if(pair_tile_type.contains(tt)
-                    && (tt >= TileType.MAN3 && tt <= TileType.MAN7
-                        || tt >= TileType.PIN3 && tt <= TileType.PIN7
-                        || tt >= TileType.SOU3 && tt <= TileType.SOU7)) {
-                    tiles.remove_at(i--); // 对子还是很珍贵的，
-                }
-            }           
-        }
+        filter_pairs_based_on_count(tiles, stats, ref has_terminal_dragon_pair_seq);
+
         // 留完竟然空了，那就从有紧邻的里选吧 都是好牌啊，不知道可不可能
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
@@ -1242,6 +1209,306 @@ class ShantenBot : Bot
                 count++;
         return count;
     }
+
+    /**
+     * Check for "two players carry" pattern (二人抬轿)
+     * This is a special pattern where discarding one tile creates two groups with distance 1 or 2
+     *
+     * @param stats Hand statistics containing two_player_carry tiles
+     * @param tiles The tile list to check against
+     * @return The tile type to discard for this pattern, or TileType.BLANK if not applicable
+     */
+    private TileType check_two_players_carry_pattern(HandStatistics stats, ArrayList<Tile> tiles)
+    {
+        ArrayList<Tile> tpc = stats.two_player_carry; // 应该是排完序的
+        TileType discard_for_two_players_carry = TileType.BLANK;
+
+        if (tpc.size != 5) {
+            return TileType.BLANK;
+        }
+
+        // 先确保没对子 (ensure no pair exists)
+        bool hasPair = false;
+        for (int i = 0; i <= 3; i++) {
+            if (tpc[i].tile_type == tpc[i+1].tile_type) {
+                hasPair = true;
+                break;
+            }
+        }
+
+        if (hasPair) {
+            return TileType.BLANK;
+        }
+
+        // 需要在里面选distance和最小的 (find candidate with minimum distance sum)
+        HashMap<TileType, int> hDiscardCandi = new HashMap<TileType, int>();
+
+        for (int iRemove = 0; iRemove < tpc.size; iRemove++) {
+            int index0 = 0, index1 = 1, index2 = 2, index3 = 3;
+
+            // Adjust indices to skip the removed position
+            // 1234 0234 0134 0124 0123
+            if (index0 == iRemove) {
+                index0++;
+                index1++;
+                index2++;
+                index3++;
+            } else if (index1 == iRemove) {
+                index1++;
+                index2++;
+                index3++;
+            } else if (index2 == iRemove) {
+                index2++;
+                index3++;
+            } else if (index3 == iRemove) {
+                index3++;
+            }
+
+            int distance1 = tpc[index1].tile_type - tpc[index0].tile_type;
+            int distance2 = tpc[index3].tile_type - tpc[index2].tile_type;
+
+            // Check if both groups have distance 1 or 2 (valid for two players carry)
+            if ((distance1 == 1 || distance1 == 2) &&
+                (distance2 == 1 || distance2 == 2)) {
+                // 二人抬轿了 但未必最优 (found pattern but may not be optimal)
+                hDiscardCandi.set(tpc[iRemove].tile_type, distance1 + distance2);
+                break;
+            }
+        }
+
+        // 找个distance和最小的 (find the one with minimum distance sum)
+        int discard_for_distance = int.MAX; // big enough to be impossible
+        foreach (TileType tileType in hDiscardCandi.keys) {
+            // Skip rare dragon/terminal tiles if they exist
+            if (stats.rare_dragon_terminal != TileType.BLANK) {
+                // 我们有一张幺九或者中发白的独苗 (we have a lone terminal or dragon)
+                if (tileType == stats.rare_dragon_terminal) {
+                    continue;
+                }
+            }
+
+            if (hDiscardCandi.get(tileType) < discard_for_distance) {
+                // 找到小一点了 (found a smaller distance)
+                discard_for_distance = hDiscardCandi.get(tileType);
+                discard_for_two_players_carry = tileType;
+            }
+        }
+
+        return discard_for_two_players_carry;
+    }
+
+    /**
+     * Remove non-terminal tiles that have neighbours from discard candidates
+     * These tiles are valuable for forming sequences, so we protect them
+     *
+     * @param discard_candi The list of discard candidates to modify
+     * @return true if candidates remain, false if list is empty
+     */
+    private bool protect_non_terminal_tiles_with_neighbours(ArrayList<Tile> discard_candi)
+    {
+        for (int i = 0; i < discard_candi.size; i++) {
+            Tile tile = discard_candi[i];
+            if (!tile.is_terminal_tile() && has_neighbours(tile)) {
+                Environment.log(LogType.DEBUG, "ShantenBot",
+                    @"protect discard candi (has neighbours): $(tile.to_string())");
+                discard_candi.remove_at(i--);
+            }
+        }
+        return discard_candi.size > 0;
+    }
+    // 保护好看的顺子
+    private bool protect_hand_in_seq(ArrayList<Tile> discard_candi, HandStatistics stats)
+    {
+        for (int i = 0; i < discard_candi.size; i++) {
+            Tile tile = discard_candi[i];
+            if (stats.hand_in_seq.contains(tile.tile_type)) {
+                Environment.log(LogType.DEBUG, "ShantenBot",
+                    @"protect discard candi (hand_in_seq): $(tile.to_string())");
+                discard_candi.remove_at(i--);
+            }
+        }
+        return discard_candi.size > 0;
+    }
+
+    /**
+     * Remove pair tiles from discard candidates
+     * Pairs are valuable, so we protect them from being discarded
+     *
+     * @param discard_candi The list of discard candidates to modify
+     * @return true if candidates remain, false if list is empty
+     */
+    private bool protect_pair_tiles(ArrayList<Tile> discard_candi)
+    {
+        for (int i = 0; i < discard_candi.size; i++) {
+            Tile tile = discard_candi[i];
+            if (count(tile) >= 2) {
+                Environment.log(LogType.DEBUG, "ShantenBot",
+                    @"protect discard candi (pair): $(tile.to_string())");
+                discard_candi.remove_at(i--);
+            }
+        }
+        return discard_candi.size > 0;
+    }
+
+    // 有连就行， 比如  98 ， 1 3  ， 3 5。 34 45 之类的，应该早被保护了，但是为了算法方便，也写进去
+    private bool protect_one_way(ArrayList<Tile> discard_candi)
+    {
+        for (int i = 0; i < discard_candi.size; i++) {
+            Tile tile = discard_candi[i];
+            if (has_second_neighbours(tile) || has_neighbours(tile)) {
+                  Environment.log(LogType.DEBUG, "ShantenBot",
+                    @"protect discard candi (one-way): $(tile.to_string())");
+                discard_candi.remove_at(i--);
+            }
+        }
+        return discard_candi.size > 0;
+    }
+    // 非边章就保护
+    private bool protect_center_single(ArrayList<Tile> discard_candi)
+    {
+        for (int i = 0; i < discard_candi.size; i++) {
+            Tile tile = discard_candi[i];
+            if (!tile.is_dragon_tile() && !tile.is_terminal_tile()) {
+                Environment.log(LogType.DEBUG, "ShantenBot",
+                @"protect center tile (remove from discard candi): $(tile.to_string())");
+                discard_candi.remove_at(i--);
+            }
+        }
+        return discard_candi.size > 0;
+    }
+
+    /**
+     * Filter pairs from discard candidates based on pair count and type
+     * Strategy varies based on how many pairs exist and whether they're terminal pairs
+     *
+     * @param tiles The tile list to modify
+     * @param stats Hand statistics
+     * @param has_terminal_dragon_pair_seq Flag indicating if terminal/dragon pair found
+     */
+    private void filter_pairs_based_on_count(ArrayList<Tile> tiles, HandStatistics stats, ref bool has_terminal_dragon_pair_seq)
+    {
+        int pair_cnt = 0;
+        HashSet<TileType> pair_tile_type = new HashSet<TileType>();
+        HashSet<TileType> pair_terminal_type = new HashSet<TileType>();
+
+        // Count pairs and identify terminal pairs
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            // pair_cnt 是经过上一轮之后算出的，你需要加上当前的看看 记得别为一对算两遍 pair_cnt
+            if (!pair_tile_type.contains(tile.tile_type) && count(tile) >= 2)
+            {
+                pair_cnt++;
+                pair_tile_type.add(tile.tile_type);
+                if (tile.is_terminal_tile()) {
+                    pair_terminal_type.add(tile.tile_type);
+                    has_terminal_dragon_pair_seq = true;
+                }
+            }
+        }
+
+        // 留一下 3对做个阈值吧，因为有可能对是被人两头用啊
+        // Strategy 1: If pair count <= 3, preserve all pairs (they're valuable)
+        if (pair_cnt <= 3) {
+            for (int i = 0; i < tiles.size; i++) {
+                if (pair_tile_type.contains(tiles[i].tile_type)) {
+                    tiles.remove_at(i--); // 对子还是很珍贵的 (pairs are precious)
+                }
+            }
+        }
+        // Strategy 2: If many pairs but no terminal sequences/triplets, preserve terminal pairs
+        else if (!stats.hasTerminalSeq || !stats.hasTerminalTriplet) {
+            // 即使 对 很多， 幺九对仍然要留 (even with many pairs, keep terminal pairs)
+            for (int i = 0; i < tiles.size; i++) {
+                if (pair_terminal_type.contains(tiles[i].tile_type)) {
+                    tiles.remove_at(i--);
+                }
+            }
+        }
+        // Strategy 3: Many pairs exist, preserve only center tile pairs (3-7)
+        else {
+            // 对子还是很多，就不珍贵了 中心牌的留一下 (many pairs, only keep center pairs)
+            for (int i = 0; i < tiles.size; i++) {
+                TileType tt = tiles[i].tile_type;
+                if (pair_tile_type.contains(tt)
+                    && (tt >= TileType.MAN3 && tt <= TileType.MAN7
+                        || tt >= TileType.PIN3 && tt <= TileType.PIN7
+                        || tt >= TileType.SOU3 && tt <= TileType.SOU7)) {
+                    tiles.remove_at(i--); // 对子还是很珍贵的 (pairs are still precious)
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove terminal sequences (123 or 789) from the tile list
+     * Keeps clean terminal sequences to preserve valuable patterns
+     *
+     * @param tiles The tile list to modify
+     * @param stats Hand statistics
+     * @param has_terminal_dragon_pair_seq Reference to flag indicating if terminal sequence was found
+     */
+    private void protect_terminal_sequences(ArrayList<Tile> tiles, HandStatistics stats, ref bool has_terminal_dragon_pair_seq)
+    {
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if (!tile.is_terminal_tile()) {
+                continue;
+            }
+
+            TileType tile_type = tile.tile_type;
+
+            // Check for 1-2-3 sequences (MAN1, PIN1, SOU1)
+            if (tile_type == TileType.MAN1 ||
+                tile_type == TileType.PIN1 ||
+                tile_type == TileType.SOU1) {
+                ArrayList<Tile> me_list = filter_tile_type(tile_type);
+                ArrayList<Tile> p1_list = filter_tile_type(tile_type + 1);
+                ArrayList<Tile> p2_list = filter_tile_type(tile_type + 2);
+
+                // Clean terminal sequence: exactly 1 of each tile
+                if (me_list.size == 1 && p1_list.size == 1 && p2_list.size == 1) {
+                    has_terminal_dragon_pair_seq = true;
+                    tiles.remove(me_list.get(0));
+                    tiles.remove(p1_list.get(0));
+                    tiles.remove(p2_list.get(0));
+                }
+                // 独苗幺九顺 (lone terminal sequence)
+                else if (stats.terminal_count == 1 && p1_list.size >= 1 && p2_list.size >= 1) {
+                    has_terminal_dragon_pair_seq = true;
+                    tiles.remove(me_list.get(0));
+                    tiles.remove(p1_list.get(0));
+                    tiles.remove(p2_list.get(0));
+                }
+            }
+
+            // Check for 7-8-9 sequences (MAN9, PIN9, SOU9)
+            if (tile_type == TileType.MAN9 ||
+                tile_type == TileType.PIN9 ||
+                tile_type == TileType.SOU9) {
+                ArrayList<Tile> me_list = filter_tile_type(tile_type);
+                ArrayList<Tile> m1_list = filter_tile_type(tile_type - 1);
+                ArrayList<Tile> m2_list = filter_tile_type(tile_type - 2);
+
+                // Clean terminal sequence: exactly 1 of each tile
+                if (me_list.size == 1 && m1_list.size == 1 && m2_list.size == 1) {
+                    has_terminal_dragon_pair_seq = true;
+                    tiles.remove(me_list.get(0));
+                    tiles.remove(m1_list.get(0));
+                    tiles.remove(m2_list.get(0));
+                }
+                // 独苗幺九顺 (lone terminal sequence)
+                else if (stats.terminal_count == 1 && m1_list.size >= 1 && m2_list.size >= 1) {
+                    has_terminal_dragon_pair_seq = true;
+                    tiles.remove(me_list.get(0));
+                    tiles.remove(m1_list.get(0));
+                    tiles.remove(m2_list.get(0));
+                }
+            }
+        }
+    }
+
     private ArrayList<Tile>  filter_tile_type(TileType tp)
     {
         ArrayList<Tile> list = new ArrayList<Tile>();

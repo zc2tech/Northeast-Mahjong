@@ -209,6 +209,8 @@ private static void run_bot_simulation(int num_hands)
             bot = new SimpleBot();
         else if (bot_type == "OracleBot")
             bot = new OracleBot();
+        else if (bot_type == "ShantenBot")
+            bot = new ShantenBot();
         else
         {
             stdout.printf("Unknown bot type: %s, using SimpleBot\n", bot_type);

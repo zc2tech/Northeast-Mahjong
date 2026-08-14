@@ -519,9 +519,7 @@ class JulianBot : Bot
 
         // win_necessary_condition 就当听牌, 所以条件不是特别严格
         // 已经尽力了
-        if( TileRules.win_necessary_condition(sorted_hand, calls, true)
-            && stats.triplet_count >= 1
-        ){
+        if( TileRules.win_necessary_condition(sorted_hand, calls, true)) {
             HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
             // 如果打掉某张可以听牌的话
             ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();

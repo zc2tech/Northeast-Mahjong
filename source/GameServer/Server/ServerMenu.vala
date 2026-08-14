@@ -165,6 +165,8 @@ namespace GameServer
                 bot = new SimpleBot();
             else if (msg.name == "OracleBot")
                 bot = new OracleBot();
+            else if (msg.name == "ShantenBot")
+                bot = new ShantenBot();
 
             if (bot == null)
                 return;

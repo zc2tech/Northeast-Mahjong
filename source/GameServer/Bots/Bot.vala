@@ -308,7 +308,7 @@ public abstract class Bot : Object
         stats.hand_in_seq = new HashSet<TileType>(); // 手牌里 在顺子中的单个牌
         stats.singles = new ArrayList<TileType>();
         stats.singles_ish = new ArrayList<TileType>();
-        stats.pair_count = 0;
+        stats.pair_count = 0; // triplet not count in
         stats.triplet_count = 0;
         stats.hasTerminalSeq = false; // 这个指标实在太关键了
         stats.hasTerminalTriplet= false; // 这个指标实在太关键了
@@ -490,9 +490,10 @@ public abstract class Bot : Object
         // 0: win , 1: tenpai
         int shanten_num = get_shanten_for_hand(sorted_hand,calls);
         if((stats.dragon_count == 0 && stats.terminal_count == 0)
-            || suit_categories.size  <= 1 ) {  // 清一色或者混一色
+            || suit_categories.size  <= 1  // 清一色或者混一色
+            || stats.triplet_count <= 0 ) { 
             // just from experience, not know really how to calculation
-            if( shanten_num >= 2) {
+            if( shanten_num >= 3) {
                 // not too much cost if we are far from tenpai
                 stats.weighted_shanten = shanten_num + 1;
             } else {
@@ -525,7 +526,7 @@ public abstract class Bot : Object
         // 拿掉所有顺子
         for (int i = start_tile; i <= end_tile - 2 ; i++)
         {
-            while (copy_map[i] >=1 && copy_map[i+1] >=1 && copy_map[i+1] >=1 ) {
+            while (copy_map[i] >=1 && copy_map[i+1] >=1 && copy_map[i+2] >=1 ) {
                bool done_i = false;
                bool done_p1 = false;
                bool done_p2 = false;

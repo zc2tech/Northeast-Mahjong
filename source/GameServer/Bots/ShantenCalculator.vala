@@ -57,12 +57,58 @@ class ShantenCalculator
      *   - ret[8] = 0  (3 melds + pair: need 1 more meld to complete)
      *   - ret[9] = 0  (4 melds + pair: WINNING HAND)
      *
-     * For a winning regular hand, you need 4 melds + 1 pair.
-     * If you already have m open melds (from pon/chii/kan), you need (4-m) more melds.
-     * So the target index is: m + 5 (m melds + has pair)
+     * ===== CRITICAL: Understanding the 'm' parameter =====
      *
-     * Example: If you called pon twice (m=2), you need 2 more melds + 1 pair.
-     *          Target index = 2 + 5 = 7 (2 melds and has a pair)
+     * 'm' represents the TARGET number of melds we want to form from the tiles being analyzed.
+     *
+     * KEY INSIGHT: We hash ONLY the closed hand tiles (not open call tiles).
+     *              The 'm' parameter tells the lookup table how many melds we want to form
+     *              from those closed tiles.
+     *
+     * HOW 'm' IS CALCULATED:
+     *   m = (number of closed hand tiles) / 3
+     *
+     * EXAMPLES:
+     *
+     * Example 1: No open calls, 14 tiles in hand
+     *   - Closed hand: 14 tiles
+     *   - m = 14 / 3 = 4 (we want to form 4 melds + pair from the 14 tiles)
+     *   - We look up: ret[4 + 5] = ret[9]
+     *   - Meaning: "Form 4 melds + pair from these 14 tiles" = winning structure
+     *
+     * Example 2: Called 1 pon (3 tiles revealed), 11 tiles in hand
+     *   - Closed hand: 11 tiles (we DON'T count the pon tiles)
+     *   - Open calls: 1 pon (already a complete meld)
+     *   - m = 11 / 3 = 3 (we want to form 3 melds + pair from the 11 closed tiles)
+     *   - We look up: ret[3 + 5] = ret[8]
+     *   - Meaning: "Form 3 melds + pair from closed hand" + 1 open pon = 4 total melds + pair
+     *
+     * Example 3: Called 2 pon (6 tiles revealed), 8 tiles in hand
+     *   - Closed hand: 8 tiles
+     *   - Open calls: 2 pon (2 complete melds)
+     *   - m = 8 / 3 = 2 (we want to form 2 melds + pair from the 8 closed tiles)
+     *   - We look up: ret[2 + 5] = ret[7]
+     *   - Meaning: "Form 2 melds + pair from closed hand" + 2 open pon = 4 total melds + pair
+     *
+     * WHY THIS WORKS:
+     *   A winning hand needs: 4 melds + 1 pair
+     *   If you have C open calls (each = 1 meld), you need (4 - C) more melds from closed hand
+     *   Closed tiles = 14 - 3*C
+     *   m = (14 - 3*C) / 3 = 4 - C
+     *   Check ret[m + 5] = ret[(4-C) + 5] = ret[9 - C]
+     *
+     * ALTERNATIVE VIEW (equivalent formula):
+     *   ret[m + 5] = ret[9 - number_of_open_calls]
+     *   This is mathematically equivalent, but conceptually 'm' represents
+     *   "target melds from the tiles we're querying", not "open calls we have".
+     *
+     * THE ALGORITHM:
+     * 1. Count only closed hand tiles (exclude open call tiles)
+     * 2. Hash those closed tiles to get a lookup index
+     * 3. Calculate m = closed_tiles / 3 (target melds from closed hand)
+     * 4. Look up ret[m + 5] (target m melds + has pair)
+     * 5. The value tells us: "minimum tiles needed to form m melds + pair from closed hand"
+     * 6. Total winning structure = m (from closed) + open_calls = 4 melds + pair
      */
 
     // Table sizes for hash calculations
@@ -184,10 +230,19 @@ class ShantenCalculator
      * @param rhs Right-hand side: Shanten results for the current suit being added
      *            Same 10-byte structure as lhs
      *
-     * @param m Number of already-completed (open) melds from pon/chii/kan calls
+     * @param m Target number of melds we want to form from closed hand
+     *          This is calculated as: m = closed_tiles / 3
+     *          Example: 11 closed tiles → m = 3 (we want 3 melds + pair from those 11 tiles)
      *
      * The algorithm combines results by trying all ways to distribute melds between
      * the accumulated results (lhs) and the new suit (rhs), keeping the minimum.
+     *
+     * WHY do we need 'm'?
+     * Because we only compute up to index m+5 (not all 10 indices).
+     * If we have open calls, we don't need to compute impossible states.
+     * Example: 1 open call → 11 closed tiles → m=3
+     *          We only care about ret[8] = "3 melds + pair from closed hand"
+     *          Computing ret[9] would mean "4 melds + pair from 11 tiles" which is impossible!
      */
     private void add1(uint8[] lhs, uint8[] rhs, int m)
     {
@@ -196,18 +251,19 @@ class ShantenCalculator
         for (int j = m + 5; j >= 5; j--)
         {
             // Try combining: all melds from lhs + no melds from rhs, or vice versa
-            uint8 sht = uint8.min(lhs[j] + rhs[0], lhs[0] + rhs[j]);
+            // IMPORTANT: Use int for intermediate calculations to avoid uint8 overflow!
+            int sht = int.min((int)lhs[j] + (int)rhs[0], (int)lhs[0] + (int)rhs[j]);
 
             // Try all ways to split melds between lhs and rhs
             // k melds from lhs, (j-k) melds from rhs
             for (int k = 5; k < j; k++)
             {
-                uint8 val1 = lhs[k] + rhs[j - k];
-                uint8 val2 = lhs[j - k] + rhs[k];
-                sht = uint8.min(sht, uint8.min(val1, val2));
+                int val1 = (int)lhs[k] + (int)rhs[j - k];
+                int val2 = (int)lhs[j - k] + (int)rhs[k];
+                sht = int.min(sht, int.min(val1, val2));
             }
 
-            lhs[j] = sht;  // Store the best result back into lhs
+            lhs[j] = (uint8)sht;  // Store the best result back into lhs
         }
 
         // Process indices from m down to 0
@@ -215,15 +271,16 @@ class ShantenCalculator
         for (int j = m; j >= 0; j--)
         {
             // Start with: all melds from lhs, none from rhs
-            uint8 sht = lhs[j] + rhs[0];
+            // IMPORTANT: Use int for intermediate calculations to avoid uint8 overflow!
+            int sht = (int)lhs[j] + (int)rhs[0];
 
             // Try all ways to distribute melds
             for (int k = 0; k < j; k++)
             {
-                sht = uint8.min(sht, lhs[k] + rhs[j - k]);
+                sht = int.min(sht, (int)lhs[k] + (int)rhs[j - k]);
             }
 
-            lhs[j] = sht;  // Store the best result back into lhs
+            lhs[j] = (uint8)sht;  // Store the best result back into lhs
         }
     }
 
@@ -236,27 +293,32 @@ class ShantenCalculator
      *
      * @param lhs Accumulated shanten results (modified in-place)
      * @param rhs Shanten results for the final suit (Man tiles)
-     * @param m Number of already-completed (open) melds
+     * @param m Target number of melds from closed hand (m = closed_tiles / 3)
+     *          Example: 11 closed tiles → m = 3
      *
      * We only care about index [m+5] which represents:
-     * m complete melds + 1 pair = winning hand structure (4 melds + 1 pair)
+     * "m complete melds + 1 pair from closed hand"
+     *
+     * Total winning structure: m (closed) + open_calls = 4 melds + 1 pair
+     * Example: m=3 with 1 open call → 3 + 1 = 4 melds + pair ✓
      */
     private void add2(uint8[] lhs, uint8[] rhs, int m)
     {
         int j = m + 5;  // Target index: m melds + has pair (index 5 offset)
 
         // Try: all melds from lhs + none from rhs, or vice versa
-        uint8 sht = uint8.min(lhs[j] + rhs[0], lhs[0] + rhs[j]);
+        // IMPORTANT: Use int for intermediate calculations to avoid uint8 overflow!
+        int sht = int.min((int)lhs[j] + (int)rhs[0], (int)lhs[0] + (int)rhs[j]);
 
         // Try all ways to distribute the m melds between lhs and rhs
         for (int k = 5; k < j; k++)
         {
-            uint8 val1 = lhs[k] + rhs[j - k];
-            uint8 val2 = lhs[j - k] + rhs[k];
-            sht = uint8.min(sht, uint8.min(val1, val2));
+            int val1 = (int)lhs[k] + (int)rhs[j - k];
+            int val2 = (int)lhs[j - k] + (int)rhs[k];
+            sht = int.min(sht, int.min(val1, val2));
         }
 
-        lhs[j] = sht;  // Store the final result
+        lhs[j] = (uint8)sht;  // Store the final result
     }
 
     /**
@@ -289,22 +351,39 @@ class ShantenCalculator
                 tile_counts[index]++;
         }
 
-        // Count tiles in calls (already revealed melds)
-        foreach (RoundStateCall call in calls)
-        {
-            foreach (Tile tile in call.tiles)
-            {
-                int index = (int)tile.tile_type - 1;
-                if (index >= 0 && index < NUM_TILE_TYPES)
-                    tile_counts[index]++;
-            }
-        }
+        // ===== CRITICAL: We do NOT count tiles in calls here! =====
+        // The open call tiles (from pon/chii/kan) are NOT included in tile_counts.
+        // We only hash and calculate shanten for the CLOSED HAND tiles.
+        //
+        // WHY? Because:
+        // 1. The lookup tables are pre-computed for any tile combination
+        // 2. We tell the table "form m melds from these closed tiles"
+        // 3. Then we account for open calls: total = m (closed) + open_calls = 4 melds + pair
 
-        // Calculate number of melds (each call is one meld)
-        int num_melds = calls.size;
+        // Calculate total closed tiles to determine target meld count
+        int total_tiles = 0;
+        for (int i = 0; i < NUM_TILE_TYPES; i++)
+            total_tiles += tile_counts[i];
+
+        // ===== Understanding 'm' =====
+        // m = target number of melds we want to form from the CLOSED hand tiles
+        //
+        // Formula: m = total_closed_tiles / 3
+        //
+        // Examples:
+        //   No open calls: 14 tiles → m = 14/3 = 4 (need 4 melds + pair from 14 tiles)
+        //   1 open call:   11 tiles → m = 11/3 = 3 (need 3 melds + pair from 11 tiles)
+        //   2 open calls:   8 tiles → m =  8/3 = 2 (need 2 melds + pair from 8 tiles)
+        //   3 open calls:   5 tiles → m =  5/3 = 1 (need 1 meld + pair from 5 tiles)
+        //
+        // The lookup table will return ret[m+5], which means:
+        //   "Shanten for forming m melds + pair from the closed tiles"
+        //
+        // Total winning structure: m (closed) + open_calls = 4 melds + pair
+        int m = total_tiles / 3;
 
         // Calculate shanten for standard form (4 melds + 1 pair)
-        int shanten_lh = calc_lh(tile_counts, num_melds);
+        int shanten_lh = calc_lh(tile_counts, m);
 
         // Calculate shanten for seven pairs (only if no open melds)
         //  int shanten_sp = (num_melds == 0) ? calc_sp(tile_counts) : 100;
@@ -394,15 +473,45 @@ class ShantenCalculator
      * when you already have m complete melds from open calls.
      *
      * @param tiles Tile count array [0-33]
-     * @param m Number of already-completed (open) melds
+     * @param m Target number of melds to form from the closed hand tiles
+     *          Calculated as: m = (number of closed tiles) / 3
+     *
+     *          Examples with concrete numbers:
+     *          - No open calls: 14 closed tiles → m = 14/3 = 4
+     *            We need 4 melds + pair from closed hand = winning structure
+     *            Look up ret[4+5] = ret[9]
+     *
+     *          - 1 open call: 11 closed tiles → m = 11/3 = 3
+     *            We need 3 melds + pair from closed hand
+     *            Plus 1 open meld = 4 total melds + pair
+     *            Look up ret[3+5] = ret[8]
+     *
+     *          - 2 open calls: 8 closed tiles → m = 8/3 = 2
+     *            We need 2 melds + pair from closed hand
+     *            Plus 2 open melds = 4 total melds + pair
+     *            Look up ret[2+5] = ret[7]
+     *
      * @return Shanten number (distance to tenpai, 0 = tenpai)
      */
     private int calc_lh(int[] tiles, int m)
     {
+        // Debug: Log input tiles
+        //  StringBuilder tile_log = new StringBuilder();
+        //  for (int i = 0; i < NUM_TILE_TYPES; i++)
+        //  {
+        //      if (tiles[i] > 0)
+        //          tile_log.append(@"[$(i):$(tiles[i])] ");
+        //  }
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"calc_lh input (m=$(m)): $(tile_log.str)");
+
         // Step 1: Start with honor tiles (indices 27-33: TON,NAN,SHAA,PEI,HAKU,HATSU,CHUN)
         // The lookup table gives us shanten values for all possible honor tile combinations
         int hash_honors = hash7(tiles, 27);
         uint8[] ret = new uint8[LOOKUP_SIZE];
+
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"hash_honors = $(hash_honors)");
 
         // Copy the lookup result - this is our starting point
         // ret[0-4] = shanten with 0-4 melds and no pair
@@ -410,13 +519,37 @@ class ShantenCalculator
         for (int i = 0; i < LOOKUP_SIZE; i++)
             ret[i] = get_table_value(index_h, hash_honors, i);
 
+        // Debug: Log honor tiles result
+        //  StringBuilder ret_log = new StringBuilder();
+        //  for (int i = 0; i < LOOKUP_SIZE; i++)
+        //      ret_log.append(@"$(ret[i]) ");
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"After honors: [$(ret_log.str)]");
+
         // Step 2: Add Sou tiles (索子, indices 18-26: 1s-9s)
         // Look up shanten for this suit, then combine with existing results
         int hash_sou = hash9(tiles, 18);
         uint8[] sou_result = new uint8[LOOKUP_SIZE];
         for (int i = 0; i < LOOKUP_SIZE; i++)
             sou_result[i] = get_table_value(index_s, hash_sou, i);
+
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"hash_sou = $(hash_sou)");
+
+        // Debug: Log sou_result before adding
+        StringBuilder sou_log = new StringBuilder();
+        for (int i = 0; i < LOOKUP_SIZE; i++)
+            sou_log.append(@"$(sou_result[i]) ");
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"sou_result: [$(sou_log.str)]");
+
         add1(ret, sou_result, m);  // ret now contains combined honor+sou results
+
+        //  ret_log = new StringBuilder();
+        //  for (int i = 0; i < LOOKUP_SIZE; i++)
+        //      ret_log.append(@"$(ret[i]) ");
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"After sou: [$(ret_log.str)]");
 
         // Step 3: Add Pin tiles (筒子, indices 9-17: 1p-9p)
         // Look up shanten for this suit, then combine with honor+sou results
@@ -424,7 +557,24 @@ class ShantenCalculator
         uint8[] pin_result = new uint8[LOOKUP_SIZE];
         for (int i = 0; i < LOOKUP_SIZE; i++)
             pin_result[i] = get_table_value(index_s, hash_pin, i);
+
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"hash_pin = $(hash_pin)");
+
+        // Debug: Log pin_result before adding
+        //  StringBuilder pin_log = new StringBuilder();
+        //  for (int i = 0; i < LOOKUP_SIZE; i++)
+        //      pin_log.append(@"$(pin_result[i]) ");
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"pin_result: [$(pin_log.str)]");
+
         add1(ret, pin_result, m);  // ret now contains honor+sou+pin results
+
+        //  ret_log = new StringBuilder();
+        //  for (int i = 0; i < LOOKUP_SIZE; i++)
+        //      ret_log.append(@"$(ret[i]) ");
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"After pin: [$(ret_log.str)]");
 
         // Step 4: Add Man tiles (万子, indices 0-8: 1m-9m) - final suit uses add2
         // For the last suit, we know exactly what we need (m melds + pair),
@@ -433,66 +583,39 @@ class ShantenCalculator
         uint8[] man_result = new uint8[LOOKUP_SIZE];
         for (int i = 0; i < LOOKUP_SIZE; i++)
             man_result[i] = get_table_value(index_s, hash_man, i);
+
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"hash_man = $(hash_man)");
+
         add2(ret, man_result, m);  // Final combination: all 4 suits
 
+        //  ret_log = new StringBuilder();
+        //  for (int i = 0; i < LOOKUP_SIZE; i++)
+        //      ret_log.append(@"$(ret[i]) ");
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"After man: [$(ret_log.str)]");
+
         // Return the result at index m+5
-        // m+5 means: m melds (from open calls) + need 4-m more melds + 1 pair = winning structure
-        // The value is the minimum number of tiles needed to reach that structure
-        return ret[m + 5];
-    }
+        // ===== WHY ret[m+5]? =====
+        // m+5 means: "m melds + has pair" (index 5 is the offset for "has pair")
+        //
+        // The lookup table returns: "Shanten for forming m melds + pair from closed tiles"
+        // Total winning structure: m (from closed) + open_calls = 4 melds + 1 pair
+        //
+        // Mathematical equivalence:
+        //   m = closed_tiles / 3 = (14 - 3*open_calls) / 3 = 4 - open_calls
+        //   ret[m + 5] = ret[(4 - open_calls) + 5] = ret[9 - open_calls]
+        //
+        // So ret[m+5] is equivalent to ret[9 - open_calls]:
+        //   0 open calls → ret[9]  (4 melds + pair from 14 tiles)
+        //   1 open call  → ret[8]  (3 melds + pair from 11 tiles)
+        //   2 open calls → ret[7]  (2 melds + pair from 8 tiles)
+        //   3 open calls → ret[6]  (1 meld + pair from 5 tiles)
+        int result = ret[m + 5];
+        //  Environment.log(LogType.DEBUG, "ShantenCalculator",
+        //      @"Final result ret[$(m+5)] = $(result)");
 
-    /**
-     * Calculate shanten for seven pairs (七対子)
-     * Implements calc_sp from calsht.cpp
-     */
-    private int calc_sp(int[] tiles)
-    {
-        int pairs = 0;
-        int kinds = 0;
-
-        for (int i = 0; i < NUM_TILE_TYPES; i++)
-        {
-            if (tiles[i] > 0)
-                kinds++;
-            if (tiles[i] >= 2)
-                pairs++;
-        }
-
-        // Shanten = 7 - pairs + max(0, 7 - kinds)
-        int shanten = 7 - pairs;
-        if (kinds < 7)
-            shanten += 7 - kinds;
-
-        return shanten;
-    }
-
-    /**
-     * Calculate shanten for thirteen orphans (国士無双)
-     * Implements calc_to from calsht.cpp
-     */
-    private int calc_to(int[] tiles)
-    {
-        // Terminal and honor tile indices (0-based)
-        int[] orphan_indices = {
-            0, 8,     // Man 1, 9
-            9, 17,    // Pin 1, 9
-            18, 26,   // Sou 1, 9
-            27, 28, 29, 30, 31, 32, 33  // All honors
-        };
-
-        int kinds = 0;
-        int pairs = 0;
-
-        foreach (int idx in orphan_indices)
-        {
-            if (tiles[idx] >= 1)
-                kinds++;
-            if (tiles[idx] >= 2)
-                pairs++;
-        }
-
-        // Shanten = 14 - kinds - (pairs > 0 ? 1 : 0)
-        return 14 - kinds - (pairs > 0 ? 1 : 0);
+        return result;
     }
 }
 
