@@ -1332,7 +1332,7 @@ class ShantenBot : Bot
         // Common final filters for both paths
         discard_backup.clear();
         discard_backup.add_all(discard_candi);
-        if (!protect_one_way(discard_candi)) {
+        if (!protect_one_way(discard_candi,stats)) {
             return discard_backup[0];
         }
 
@@ -1396,11 +1396,12 @@ class ShantenBot : Bot
     }
 
     // 有连就行， 比如  98 ， 1 3  ， 3 5。 34 45 之类的，应该早被保护了，但是为了算法方便，也写进去
-    private bool protect_one_way(ArrayList<Tile> discard_candi)
+    private bool protect_one_way(ArrayList<Tile> discard_candi,HandStatistics stats)
     {
         for (int i = 0; i < discard_candi.size; i++) {
             Tile tile = discard_candi[i];
-            if (has_second_neighbours(tile) || has_neighbours(tile)) {
+            if (!stats.singles_ish.contains(tile.tile_type) 
+                && ( has_second_neighbours(tile) || has_neighbours(tile))) {
                   Environment.log(LogType.DEBUG, "ShantenBot",
                     @"protect discard candi (one-way): $(tile.to_string())");
                 discard_candi.remove_at(i--);
