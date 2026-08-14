@@ -751,13 +751,6 @@ class ShantenBot : Bot
                 @"do_call_decision BeforeBenefit: $(beforeBenefit) ");
         }
 
-        // Evaluate pon decision
-        if (should_call_pon(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
-        {
-            call_pon();
-            return;
-        }
-
         // Evaluate chii decision
         Tile chii_tile1;
         Tile chii_tile2;
@@ -766,6 +759,15 @@ class ShantenBot : Bot
             call_chii(chii_tile1, chii_tile2);
             return;
         }
+
+        // Evaluate pon decision
+        if (should_call_pon(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
+        {
+            call_pon();
+            return;
+        }
+
+
 
          // Evaluate kan decision
         if (should_call_kan(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
