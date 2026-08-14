@@ -325,18 +325,35 @@ public class GameScene : WorldObject
 
         foreach (RenderPlayer player in players)
         {
-            if (action.players.contains(player))
+            if (player == observer)
+                continue;
+
+            // For VOID_HAND: only reveal tenpai players' hands, close non-tenpai hands
+            // For other draw types: reveal ALL players' hands
+            if (action.draw_type == GameDrawType.VOID_HAND)
             {
+                if (action.players.contains(player))
+                {
+                    if (!player.open)
+                    {
+                        player.open_hand();
+                        revealed = true;
+                    }
+                }
+                else
+                {
+                    player.close_hand();
+                    revealed = true;
+                }
+            }
+            else
+            {
+                // Regular draw game: reveal all hands
                 if (!player.open)
                 {
                     player.open_hand();
                     revealed = true;
                 }
-            }
-            else if (player != observer && action.draw_type != GameDrawType.VOID_HAND)
-            {
-                player.close_hand();
-                revealed = true;
             }
         }
 
