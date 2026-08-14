@@ -21,8 +21,14 @@ public struct HandStatistics
 }
 
 // Result of finding the best discard for tenpai
-struct BestDiscardResult
+public class BestDiscardResult
 {
     public Tile? tile;
     public int benefit;
+
+    public BestDiscardResult(Tile? tile = null, int benefit = 0)
+    {
+        this.tile = tile;
+        this.benefit = benefit;
+    }
 }

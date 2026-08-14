@@ -332,7 +332,7 @@ class JulianBot : Bot
             return false;
         }
 
-        BestDiscardResult bestChiiResut = BestDiscardResult();
+        BestDiscardResult bestChiiResut = new BestDiscardResult();
         bestChiiResut.benefit = beforeBenefit;
         
         ArrayList<Tile> bestGroup = null;
@@ -550,14 +550,31 @@ class JulianBot : Bot
             if (hDiscardForTenpai.keys.size > 0) {
                 populate_needed_tiles_for_discards(hDiscardForTenpai, sorted_hand, calls);
                 HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-                BestDiscardResult result = find_best_discard(discard_benefit);
+                ArrayList <BestDiscardResult> result_array = find_best_discards(discard_benefit);
 
-                if (result.tile != null) {
-                    do_discard(result.tile);
-                    return;
+                // 下面算法主要是为了收益相同的时候， 考虑怎么容易改听
+                ArrayList<BestDiscardResult> backup = new ArrayList<BestDiscardResult>();
+                for (int i = result_array.size -1 ; i >=0; i-- ) {
+                    backup.clear();
+                    backup.add_all(result_array);
+                    Tile keep = result_array[i].tile;
+                    if( has_neighbours(keep) || has_second_neighbours(keep)) {
+                        result_array.remove_at(i); 
+                    }
+                    if(result_array.size == 0) {
+                        do_discard(backup[0].tile);
+                        return;
+                    }
                 }
-            }
-        }
+
+                // 剩下的就是不需要保护的
+                if(result_array.size > 0) {
+                    do_discard(result_array[0].tile);
+                    return; 
+                }
+            
+            } // hDiscardForTenpai.keys.size > 0
+        } // win_necessary_condition check end
     
         // 既然到了这里,说明你没有办法和牌或者听牌 
         if (round_state.can_late_kan()) // 后杠
@@ -580,12 +597,12 @@ class JulianBot : Bot
                         return; 
                     }
 
-                    if(hand_tile.is_terminal_neighbour_tile() || hand_tile.is_terminal_second_neighbour_tile()) {
-                        if(stats.dragon_count < 1 && stats.singles.size <= 1) {
+                    if( hand_tile.is_terminal_neighbour_tile() || hand_tile.is_terminal_second_neighbour_tile()) {
+                        if(stats.dragon_count >= 2 || stats.hasTerminalSeq || stats.hasTerminalTriplet) {
                             do_late_kan(hand_tile);
-                            return;
+                            return;  
                         }
-                    }      
+                    }        
                 }
             }
         }
@@ -1199,26 +1216,6 @@ class JulianBot : Bot
         }
 
         return available;
-    }
-
-    // Find the discard with the highest benefit
-    private BestDiscardResult find_best_discard(HashMap<Tile, int> discard_benefit)
-    {
-        BestDiscardResult result = BestDiscardResult();
-        result.tile = null;
-        result.benefit = 0;
-
-        foreach (Tile tDiscard in discard_benefit.keys) {
-            int benefit = discard_benefit.get(tDiscard);
-            Environment.log(LogType.DEBUG, "JulianBot",
-                        @"find_best_discard $(tDiscard) for $(benefit)"); 
-            if (benefit > result.benefit) {
-                result.benefit = benefit;
-                result.tile = tDiscard;
-            }
-        }
-
-        return result;
     }
 
     // 我手牌里有多少这样的牌

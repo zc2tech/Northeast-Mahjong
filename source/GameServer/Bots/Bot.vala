@@ -293,16 +293,6 @@ public abstract class Bot : Object
         HandStatistics stats = HandStatistics();
         stats.two_player_carry = new ArrayList<Tile>();
         stats.two_player_carry.add_all(sorted_hand); // 二人抬轿 只是把刻子，对子移除。后续还要设牌时判断
-        // Create suit maps
-        HashMap<TileType, int> map_man = create_suit_map(TileType.MAN1, TileType.MAN9);
-        HashMap<TileType, int> map_pin = create_suit_map(TileType.PIN1, TileType.PIN9);
-        HashMap<TileType, int> map_sou = create_suit_map(TileType.SOU1, TileType.SOU9);
-
-        remove_melds(TileType.MAN1, TileType.MAN9,map_man, ref stats.two_player_carry);
-        remove_melds(TileType.PIN1, TileType.PIN9,map_pin, ref stats.two_player_carry);
-        remove_melds(TileType.SOU1, TileType.SOU9,map_sou, ref stats.two_player_carry);
-
-
         stats.terminal_count = 0;
         stats.dragon_count = 0;
         stats.hand_in_seq = new HashSet<TileType>(); // 手牌里 在顺子中的单个牌
@@ -314,6 +304,10 @@ public abstract class Bot : Object
         stats.hasTerminalTriplet= false; // 这个指标实在太关键了
         stats.rare_dragon_terminal = TileType.BLANK;
 
+         // Initiate suit maps
+        HashMap<TileType, int> map_man = create_suit_map(TileType.MAN1, TileType.MAN9);
+        HashMap<TileType, int> map_pin = create_suit_map(TileType.PIN1, TileType.PIN9);
+        HashMap<TileType, int> map_sou = create_suit_map(TileType.SOU1, TileType.SOU9);
         HashSet<TileType> suit_categories = new HashSet<TileType>(); // 不去管中发白, 用来判断清一色
         // Count tiles by suit
         foreach (Tile t in sorted_hand)
@@ -344,6 +338,11 @@ public abstract class Bot : Object
                 stats.dragon_count++;
             }
         }
+
+        // prepare data for two_player_carry check
+        remove_melds(TileType.MAN1, TileType.MAN9,map_man, ref stats.two_player_carry);
+        remove_melds(TileType.PIN1, TileType.PIN9,map_pin, ref stats.two_player_carry);
+        remove_melds(TileType.SOU1, TileType.SOU9,map_sou, ref stats.two_player_carry);
 
         // 这时候还只是算手牌的中发白，二人抬轿预备队里 所以有刻子把它去了
         if(stats.dragon_count >=3 ) {
@@ -526,50 +525,63 @@ public abstract class Bot : Object
         // 拿掉所有顺子
         for (int i = start_tile; i <= end_tile - 2 ; i++)
         {
-            while (copy_map[i] >=1 && copy_map[i+1] >=1 && copy_map[i+2] >=1 ) {
-               bool done_i = false;
-               bool done_p1 = false;
-               bool done_p2 = false;
-               // Iterate backwards to safely remove during iteration
-               for (int idx = two_player_carry.size - 1; idx >= 0; idx--) {
-                    Tile t = two_player_carry[idx];
-                    if(!done_i && t.tile_type == copy_map[i]) {
-                        two_player_carry.remove_at(idx);
-                        done_i = true;
-                        copy_map[i] = copy_map[i] -1;
-                        continue;
-                    }
-                    if(!done_p1 && t.tile_type == copy_map[i+1]) {
-                        two_player_carry.remove_at(idx);
-                        done_p1 = true;
-                        copy_map[i+1] = copy_map[i+1] -1;
-                        continue;
-                    }
-                    if(!done_p2 && t.tile_type == copy_map[i+2]) {
-                        two_player_carry.remove_at(idx);
-                        done_p2 = true;
-                        copy_map[i+2] = copy_map[i+2] -1;
-                        continue;
-                    }
-               }
+            //  // just for debug
+            //  int i0 = copy_map[(TileType)i]; 
+            //  int i1 = copy_map[(TileType)(i + 1)]; 
+            //  int i2 = copy_map[(TileType)(i + 2)]; 
+            //  // just for debug
+            //  int j0 = map_sort[(TileType)i]; 
+            //  int j1 = map_sort[(TileType)(i + 1)]; 
+            //  int j2 = map_sort[(TileType)(i + 2)]; 
+
+            while (copy_map[(TileType)i] >=1 && copy_map[(TileType)(i+1)] >=1 && copy_map[(TileType)(i+2)] >=1 ) {
+            
+
+                bool done_i = false;
+                bool done_p1 = false;
+                bool done_p2 = false;
+                // Iterate backwards to safely remove during iteration
+                for (int idx = two_player_carry.size - 1; idx >= 0; idx--) {
+                        Tile t = two_player_carry[idx];
+                        if(!done_i && t.tile_type == (TileType)i) {
+                            two_player_carry.remove_at(idx);
+                            done_i = true;
+                            copy_map[(TileType)i] = copy_map[(TileType)i] - 1;
+                            continue;
+                        }
+                        if(!done_p1 && t.tile_type == (TileType)(i+1)) {
+                            two_player_carry.remove_at(idx);
+                            done_p1 = true;
+                            copy_map[(TileType)(i+1)] = copy_map[(TileType)(i+1)] - 1;
+                            continue;
+                        }
+                        if(!done_p2 && t.tile_type == (TileType)(i+2)) {
+                            two_player_carry.remove_at(idx);
+                            done_p2 = true;
+                            copy_map[(TileType)(i+2)] = copy_map[(TileType)(i+2)] - 1;
+                            continue;
+                        }
+                }
             }
         }
 
         // 拿掉所有刻子（不包括 dragon)
         for (int i = start_tile; i <= end_tile ; i++)
         {
-            if (copy_map[i] >= 3 ) {
+            int i0 = copy_map[(TileType)i]; 
+
+            if (copy_map[(TileType)i] >= 3 ) {
                 int counter = 0;
                 // Iterate backwards to safely remove during iteration
                 for (int idx = two_player_carry.size - 1; idx >= 0 && counter < 3; idx--) {
                     Tile t = two_player_carry[idx];
                     // 只去掉3个，不许多去
-                    if(t.tile_type == i) {
+                    if(t.tile_type == (TileType)i) {
                         two_player_carry.remove_at(idx);
                         counter++;
                     }
                 }
-            } 
+            }
         }
     }
 
@@ -692,6 +704,48 @@ public abstract class Bot : Object
         } else {
             return RandomTerminalHonor(tiles);
         }
+    }
+    // Find the discard with the highest benefit
+    // could be array whose elements have same high benefit
+    protected ArrayList<BestDiscardResult> find_best_discards(HashMap<Tile, int> discard_benefit)
+    {
+        ArrayList<BestDiscardResult> rtn = new ArrayList<BestDiscardResult>();
+        int best_benefit = 0;
+        foreach (Tile tDiscard in discard_benefit.keys) {
+            int benefit = discard_benefit.get(tDiscard);
+            Environment.log(LogType.DEBUG, "Bot",
+                        @"find_best_discards $(tDiscard) for $(benefit)");
+            if (benefit > best_benefit) {
+                rtn.clear(); // found a new high, so clear others
+                BestDiscardResult tmp = new BestDiscardResult(tDiscard, benefit);
+                best_benefit = benefit;
+                rtn.add(tmp);
+            } else if( benefit == best_benefit ) {
+                BestDiscardResult tmp = new BestDiscardResult(tDiscard, benefit);
+                rtn.add(tmp);
+            }
+        }
+
+        return rtn;
+    }
+    // Find the discard with the highest benefit / singular for backward compatible
+    protected BestDiscardResult find_best_discard(HashMap<Tile, int> discard_benefit)
+    {
+        BestDiscardResult result = new BestDiscardResult();
+        result.tile = null;
+        result.benefit = 0;
+
+        foreach (Tile tDiscard in discard_benefit.keys) {
+            int benefit = discard_benefit.get(tDiscard);
+            Environment.log(LogType.DEBUG, "Bot",
+                        @"find_best_discard $(tDiscard) for $(benefit)"); 
+            if (benefit > result.benefit) {
+                result.benefit = benefit;
+                result.tile = tDiscard;
+            }
+        }
+
+        return result;
     }
 
     ////////////

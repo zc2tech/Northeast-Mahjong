@@ -132,7 +132,7 @@ class OracleBot : Bot
 
             populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
             HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-            BestDiscardResult result = find_best_discard(discard_benefit,warn_win);
+            BestDiscardResult result = find_best_discard_safe(discard_benefit,warn_win);
 
             if (result.tile != null && result.benefit > beforeBenefit) {
                  Environment.log(LogType.DEBUG, "OracleBot",
@@ -344,7 +344,7 @@ class OracleBot : Bot
             return false;
         }
 
-        BestDiscardResult bestChiiResut = BestDiscardResult();
+        BestDiscardResult bestChiiResut = new BestDiscardResult();
         bestChiiResut.benefit = beforeBenefit;
         
         ArrayList<Tile> bestGroup = null;
@@ -434,7 +434,7 @@ class OracleBot : Bot
             if( hDiscardForTenpai.keys.size > 0 ) {         
                 populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
                 HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-                BestDiscardResult result = find_best_discard(discard_benefit,warn_win);
+                BestDiscardResult result = find_best_discard_safe(discard_benefit,warn_win);
 
                 if (result.tile != null && result.benefit >  bestChiiResut.benefit) {
                     bestChiiResut.benefit = result.benefit;
@@ -605,7 +605,7 @@ class OracleBot : Bot
             if (hDiscardForTenpai.keys.size > 0) {
                 populate_needed_tiles_for_discards(hDiscardForTenpai, sorted_hand, calls);
                 HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-                BestDiscardResult result = find_best_discard(discard_benefit,warn_win);
+                BestDiscardResult result = find_best_discard_safe(discard_benefit,warn_win);
 
                 if (result.tile != null) {
                     do_discard(result.tile);
@@ -635,10 +635,10 @@ class OracleBot : Bot
                         return; 
                     }
 
-                    if(hand_tile.is_terminal_neighbour_tile() || hand_tile.is_terminal_second_neighbour_tile()) {
-                        if(stats.dragon_count < 1 && stats.singles.size <= 1) {
+                    if( hand_tile.is_terminal_neighbour_tile() || hand_tile.is_terminal_second_neighbour_tile()) {
+                        if(stats.dragon_count >= 2 || stats.hasTerminalSeq || stats.hasTerminalTriplet) {
                             do_late_kan(hand_tile);
-                            return;
+                            return;  
                         }
                     }      
                 }
@@ -1298,22 +1298,22 @@ class OracleBot : Bot
         return available;
     }
 
-    // Find the discard with the highest benefit
-    private BestDiscardResult find_best_discard(HashMap<Tile, int> discard_benefit, HashSet<TileType>? warn_win)
+    // Find the discard with the highest benefit, also considering warn_win array
+    private BestDiscardResult find_best_discard_safe(HashMap<Tile, int> discard_benefit, HashSet<TileType>? warn_win)
     {
-        BestDiscardResult result = BestDiscardResult();
+        BestDiscardResult result = new BestDiscardResult();
         result.tile = null;
         result.benefit = 0;
 
         foreach (Tile tDiscard in discard_benefit.keys) {
             if(warn_win!= null & warn_win.contains(tDiscard.tile_type)) {
                 Environment.log(LogType.DEBUG, "OracleBot",
-                    @"-find_best_discard remove deal-in tile: $(tDiscard)"); 
+                    @"-find_best_discard_safe remove deal-in tile: $(tDiscard)"); 
                 continue;
             }
             int benefit = discard_benefit.get(tDiscard);
             Environment.log(LogType.DEBUG, "OracleBot",
-                        @"find_best_discard $(tDiscard) for $(benefit)"); 
+                        @"find_best_discard_safe $(tDiscard) for $(benefit)"); 
             if (benefit > result.benefit) {
                 result.benefit = benefit;
                 result.tile = tDiscard;

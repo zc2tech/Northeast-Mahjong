@@ -120,11 +120,14 @@ class ShantenBot : Bot
         if(hDiscardForTenpai.keys.size > 0 ) {
             populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
             HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-            BestDiscardResult result = find_best_discard(discard_benefit);
+            ArrayList<BestDiscardResult> result_array = find_best_discards(discard_benefit);
 
-            if (result.tile != null && result.benefit > beforeBenefit) {
-                 Environment.log(LogType.DEBUG, "ShantenBot",
-                    @"should_call_pon ($(round_state.self.wind.to_string())) discard $(result.tile.to_string()) for $(result.benefit) win tiles");
+            foreach(BestDiscardResult r in result_array ) {
+                Environment.log(LogType.DEBUG, "ShantenBot",
+                @"should_call_pon ($(round_state.self.wind.to_string())) discard $(r.tile.to_string()) for $(r.benefit) win tiles");
+            }
+            if (result_array.size > 0 && result_array[0].tile != null && result_array[0].benefit > beforeBenefit) {
+
                 // 既然值得碰,那就碰吧.
                 return true;
             }
@@ -343,7 +346,7 @@ class ShantenBot : Bot
             return false;
         }
 
-        BestDiscardResult bestChiiResut = BestDiscardResult();
+        BestDiscardResult bestChiiResut = new BestDiscardResult();
         bestChiiResut.benefit = beforeBenefit;
         
         ArrayList<Tile> bestGroup = null;
@@ -425,15 +428,17 @@ class ShantenBot : Bot
             if( hDiscardForTenpai.keys.size > 0 ) {
                 populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
                 HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-                BestDiscardResult result = find_best_discard(discard_benefit);
+                ArrayList<BestDiscardResult> result_array = find_best_discards(discard_benefit);
 
-                if (result.tile != null && result.benefit >  bestChiiResut.benefit) {
-                    bestChiiResut.benefit = result.benefit;
-                    bestChiiResut.tile = result.tile;
+                if (result_array.size > 0 && result_array[0].tile != null && result_array[0].benefit >  bestChiiResut.benefit) {
+                    bestChiiResut.benefit = result_array[0].benefit;
+                    bestChiiResut.tile = result_array[0].tile; // just select a representative tile that has high benefit
                     bestGroup = g;
                     // 有起色就立即　continue 看下一个 group 是不是更出色, 不需要plan_b 了
-                    Environment.log(LogType.DEBUG, "ShantenBot",
-                    @"should_call_chii ($(round_state.self.wind.to_string())) chii $(tile.to_string()) discard $(result.tile.to_string()) for $(result.benefit) win tiles");
+                    foreach(BestDiscardResult r in result_array) {
+                        Environment.log(LogType.DEBUG, "ShantenBot",
+                        @"should_call_chii ($(round_state.self.wind.to_string())) chii $(tile.to_string()) discard $(r.tile.to_string()) for $(r.benefit) win tiles");
+                    }
                     continue;
                 }
             }
@@ -563,7 +568,7 @@ class ShantenBot : Bot
 
             Tile discard_for_tenpai = null;
             HashSet<TileType> checked = new HashSet<TileType>();
-             Environment.log(LogType.DEBUG, "ShantenBot", @"*-* $(round_state.self.wind.to_string()) passed win necessary, tiles_allowd: $(tiles_allowed.size)");
+            Environment.log(LogType.DEBUG, "ShantenBot", @"*-* $(round_state.self.wind.to_string()) passed win necessary, tiles_allowd: $(tiles_allowed.size)");
             foreach (Tile tile in tiles_allowed)
             {
                 if(checked.contains(tile.tile_type)) {
@@ -586,14 +591,31 @@ class ShantenBot : Bot
             if (hDiscardForTenpai.keys.size > 0) {
                 populate_needed_tiles_for_discards(hDiscardForTenpai, sorted_hand, calls);
                 HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
-                BestDiscardResult result = find_best_discard(discard_benefit);
+                ArrayList <BestDiscardResult> result_array = find_best_discards(discard_benefit);
 
-                if (result.tile != null) {
-                    do_discard(result.tile);
-                    return;
+                // 下面算法主要是为了收益相同的时候， 考虑怎么容易改听
+                ArrayList<BestDiscardResult> backup = new ArrayList<BestDiscardResult>();
+                for (int i = result_array.size -1 ; i >=0 ; i-- ) {
+                    backup.clear();
+                    backup.add_all(result_array);
+                    Tile keep = result_array[i].tile;
+                    if( has_neighbours(keep) || has_second_neighbours(keep)) {
+                       result_array.remove_at(i); 
+                    }
+                    if(result_array.size == 0) {
+                        do_discard(backup[0].tile);
+                        return;
+                    }
                 }
-            }
-        }
+
+                // 剩下的就是不需要保护的
+                if(result_array.size > 0) {
+                    do_discard(result_array[0].tile);
+                    return; 
+                }
+             
+            } // hDiscardForTenpai.keys.size > 0
+        } // win_necessary_condition check end
 
         // 既然到了这里,说明你没有办法和牌或者听牌 
         if (round_state.can_late_kan()) // 后杠
@@ -616,10 +638,10 @@ class ShantenBot : Bot
                         return; 
                     }
 
-                    if(hand_tile.is_terminal_neighbour_tile() || hand_tile.is_terminal_second_neighbour_tile()) {
-                        if(stats.dragon_count < 1 && stats.singles.size <= 1) {
+                    if( hand_tile.is_terminal_neighbour_tile() || hand_tile.is_terminal_second_neighbour_tile()) {
+                        if(stats.dragon_count >= 2 || stats.hasTerminalSeq || stats.hasTerminalTriplet) {
                             do_late_kan(hand_tile);
-                            return;
+                            return;  
                         }
                     }      
                 }
@@ -761,7 +783,7 @@ class ShantenBot : Bot
         ArrayList<Tile> tiles = round_state.self.get_discard_tiles(); // basically hand tiles
         assert(tiles.size > 0);
 
-        if(stats.weighted_shanten >= 2 && stats.weighted_shanten <= 4 ) {
+        if(stats.weighted_shanten >= 2 && stats.weighted_shanten <= 3 ) {
             ArrayList<Tile> tmp_hand = new ArrayList<Tile>();
             HashSet<TileType> checked_type = new HashSet<TileType>();
             ArrayList<Tile> discard_candi = new ArrayList<Tile>();
@@ -797,66 +819,12 @@ class ShantenBot : Bot
                 }
             }
 
-            ArrayList<Tile> discard_backup = new ArrayList<Tile>();
-            discard_backup.add_all(discard_candi);
-
-            //  for (int i = 0; i < discard_candi.size; i++) {
-            //      Tile tile = discard_candi[i];
-            //      if (count(tile) >= 2) {
-            //          Environment.log(LogType.DEBUG, "ShantenBot",
-            //              @"protect discard candi (pair): $(tile.to_string())");
-            //          discard_candi.remove_at(i--);
-            //      }
-            //  }
-
-            //  if( (stats.hasTerminalTriplet || stats.dragon_count >= 3)  
-            //  && stats.hand_in_seq.contains(tile.tile_type)) {
-            //      // 已经有刻子了的情况下，顺子才珍贵， 要不随时可以打掉
-            //      tiles.remove_at(i--); 
-            //  }     
-
-            if(stats.pair_count <= 2 && stats.triplet_count == 0) {
-                if (!protect_pair_tiles(discard_candi)) {
-                    return discard_backup[0];
-                } 
-                discard_backup.clear();
-                discard_backup.add_all(discard_candi);
-                if (!protect_non_terminal_tiles_with_neighbours(discard_candi)) {
-                    return discard_backup[0];
-                }
-            } else {
-                if(!protect_hand_in_seq(discard_candi, stats)) {
-                    return discard_backup[0]; 
-                }
-
-                discard_backup.clear();
-                discard_backup.add_all(discard_candi);
-                if (!protect_non_terminal_tiles_with_neighbours(discard_candi)) {
-                    return discard_backup[0];
-                }
-
-                discard_backup.clear();
-                discard_backup.add_all(discard_candi);
-                if (!protect_pair_tiles(discard_candi)) {
-                    return discard_backup[0];
-                }               
+            if(discard_candi.size > 0 ) {
+                return apply_protection_filters(discard_candi, stats);
             }
-         
-            discard_backup.clear();
-            discard_backup.add_all(discard_candi);
-            if (!protect_one_way(discard_candi)) {
-                return discard_backup[0];
-            }   
-
-            discard_backup.clear();
-            discard_backup.add_all(discard_candi);
-            if (!protect_center_single(discard_candi)) {
-                return discard_backup[0];
-            }   
-            return discard_candi[0]; 
-        }
+           
+        } // if stats.weighted_shanten >= 2 && stats.weighted_shanten <= 3
         
-
         ArrayList<Tile> backup = new ArrayList<Tile>();
         backup.add_all(tiles);
 
@@ -1178,27 +1146,7 @@ class ShantenBot : Bot
         }
 
         return available;
-    }
-
-    // Find the discard with the highest benefit
-    private BestDiscardResult find_best_discard(HashMap<Tile, int> discard_benefit)
-    {
-        BestDiscardResult result = BestDiscardResult();
-        result.tile = null;
-        result.benefit = 0;
-
-        foreach (Tile tDiscard in discard_benefit.keys) {
-            int benefit = discard_benefit.get(tDiscard);
-            Environment.log(LogType.DEBUG, "ShantenBot",
-                        @"find_best_discard $(tDiscard) for $(benefit)"); 
-            if (benefit > result.benefit) {
-                result.benefit = benefit;
-                result.tile = tDiscard;
-            }
-        }
-
-        return result;
-    }
+    } 
 
     // 我手牌里有多少这样的牌
     private int count(Tile tile)
@@ -1316,6 +1264,87 @@ class ShantenBot : Bot
         }
         return discard_candi.size > 0;
     }
+
+    /**
+     * Apply protection filters to discard candidates in the appropriate order
+     *
+     * This function applies various tile protection strategies to narrow down
+     * the discard candidates. The order of filters depends on hand statistics:
+     * - Always protect key pairs first (rare dragons/terminals)
+     * - If pair_count <= 2 && triplet_count == 0: protect pairs early
+     * - Otherwise: protect sequences and neighbours first, then pairs
+     * - Finally: protect one-way waits and center singles
+     *
+     * @param discard_candi The list of candidate tiles to discard (will be modified)
+     * @param stats Hand statistics containing pair/triplet counts
+     * @return The best tile to discard, or first remaining candidate
+     */
+    private Tile apply_protection_filters(ArrayList<Tile> discard_candi, HandStatistics stats)
+    {
+        ArrayList<Tile> discard_backup = new ArrayList<Tile>();
+        discard_backup.add_all(discard_candi);
+
+        // Always protect key pairs first (rare dragons/terminals)
+        if (!protect_key_pair(discard_candi, stats)) {
+            return discard_backup[0];
+        }
+
+        discard_backup.clear();
+        discard_backup.add_all(discard_candi);
+
+        // Choose protection order based on hand composition
+        if (stats.pair_count <= 2 && stats.triplet_count == 0) {
+            // Few pairs, no triplets: prioritize protecting pairs
+            if (!protect_pair_tiles(discard_candi)) {
+                return discard_backup[0];
+            }
+
+            discard_backup.clear();
+            discard_backup.add_all(discard_candi);
+            if (!protect_hand_in_seq(discard_candi, stats)) {
+                return discard_backup[0];
+            }
+
+            discard_backup.clear();
+            discard_backup.add_all(discard_candi);
+            if (!protect_non_terminal_tiles_with_neighbours(discard_candi)) {
+                return discard_backup[0];
+            }
+        } else {
+            // More pairs or have triplets: prioritize protecting sequences
+            if (!protect_hand_in_seq(discard_candi, stats)) {
+                return discard_backup[0];
+            }
+
+            discard_backup.clear();
+            discard_backup.add_all(discard_candi);
+            if (!protect_non_terminal_tiles_with_neighbours(discard_candi)) {
+                return discard_backup[0];
+            }
+
+            discard_backup.clear();
+            discard_backup.add_all(discard_candi);
+            if (!protect_pair_tiles(discard_candi)) {
+                return discard_backup[0];
+            }
+        }
+
+        // Common final filters for both paths
+        discard_backup.clear();
+        discard_backup.add_all(discard_candi);
+        if (!protect_one_way(discard_candi)) {
+            return discard_backup[0];
+        }
+
+        discard_backup.clear();
+        discard_backup.add_all(discard_candi);
+        if (!protect_center_single(discard_candi)) {
+            return discard_backup[0];
+        }
+
+        return discard_candi[0];
+    }
+
     // 保护好看的顺子
     private bool protect_hand_in_seq(ArrayList<Tile> discard_candi, HandStatistics stats)
     {
@@ -1344,6 +1373,22 @@ class ShantenBot : Bot
             if (count(tile) >= 2) {
                 Environment.log(LogType.DEBUG, "ShantenBot",
                     @"protect discard candi (pair): $(tile.to_string())");
+                discard_candi.remove_at(i--);
+            }
+        }
+        return discard_candi.size > 0;
+    }
+
+    // 幺九对或者中发白对子
+    private bool protect_key_pair(ArrayList<Tile> discard_candi,HandStatistics stats)
+    {
+        for (int i = 0; i < discard_candi.size; i++) {
+            Tile tile = discard_candi[i];
+            if ( (!stats.hasTerminalSeq && !stats.hasTerminalTriplet && stats.dragon_count <= 1 )
+             && (tile.is_dragon_tile() || tile.is_terminal_tile() )
+             && count(tile) >= 2) {
+                Environment.log(LogType.DEBUG, "ShantenBot",
+                    @"protect discard candi (key pair): $(tile.to_string())");
                 discard_candi.remove_at(i--);
             }
         }
