@@ -4,7 +4,7 @@ namespace Engine
 {
     public class FileLoader
     {
-        private const int MAX_SIZE = 10 * 1024 * 1024; // 10 MiB
+        private const int MAX_SIZE = 200 * 1024 * 1024; // 200 MiB
 
         private static ArrayList<string>? search_paths;
 

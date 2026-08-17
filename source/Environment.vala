@@ -189,6 +189,7 @@ public class Environment
 
         typeof(NullBot).class_ref();
         typeof(SimpleBot).class_ref();
+        typeof(MortalBot).class_ref();
     }
 
     private static void fc_bug_fix()
@@ -344,15 +345,25 @@ public class GameLogger
 
     private void write()
     {
-        FileWriter file = FileLoader.open(name);
-        file.write_data(game_log.serialize());
+        string tmp_name = name + ".tmp";
+        FileWriter file = FileLoader.open(tmp_name);
+        if (file == null)
+            return;
+        if (!file.write_data(game_log.serialize()))
+            return;
+        file.close();
+        // Atomically replace the real file so a crash mid-write never leaves a 0-byte log
+        try
+        {
+            File.new_for_path(tmp_name).move(File.new_for_path(name), FileCopyFlags.OVERWRITE);
+        }
+        catch {}
     }
 
     public void log(GameLogLine line)
     {
         log_lock.lock();
         game_log.add_line(line);
-        write();
         log_lock.unlock();
     }
 
@@ -360,7 +371,6 @@ public class GameLogger
     {
         log_lock.lock();
         game_log.start_round(info, tiles, initial_hands);
-        write();
         log_lock.unlock();
     }
 
@@ -368,7 +378,6 @@ public class GameLogger
     {
         log_lock.lock();
         game_log.update_current_round_initial_hands(initial_hands);
-        write();
         log_lock.unlock();
     }
 
@@ -376,6 +385,12 @@ public class GameLogger
     {
         log_lock.lock();
         game_log.set_round_result(transfers, result_type);
+        log_lock.unlock();
+    }
+
+    public void save()
+    {
+        log_lock.lock();
         write();
         log_lock.unlock();
     }

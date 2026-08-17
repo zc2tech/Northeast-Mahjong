@@ -10,10 +10,13 @@ namespace GameServer
         private ArrayList<ServerPlayer> players;
         private ClientMessageParser parser = new ClientMessageParser();
         private bool finished = false;
+        private int rounds_done = 0;
+        private int total_rounds;
 
         public BotController(ArrayList<ServerPlayer> players, RandomClass rnd, GameStartInfo info, ServerSettings settings)
         {
             this.players = players;
+            this.total_rounds = info.round_count;
 
             // Connect player message signals
             foreach (ServerPlayer player in players)
@@ -21,6 +24,11 @@ namespace GameServer
 
             // Create server
             server = new RegularServer(players, new ArrayList<ServerPlayer>(), rnd, info, settings);
+            server.on_round_finished.connect(() => {
+                rounds_done++;
+                stdout.printf("%d/%d\n", rounds_done, total_rounds);
+                stdout.flush();
+            });
         }
         // Called from main.vala line 264
         // ignore the warning!!!
@@ -37,9 +45,6 @@ namespace GameServer
 
                 // Update server
                 server.process(time);
-
-                // Minimal sleep for CPU
-                Thread.usleep(100); // 0.1ms
             }
         }
 

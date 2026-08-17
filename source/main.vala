@@ -149,6 +149,13 @@ private static void load_bot_config(string config_path, bool hands_from_cmdline)
                 bot_configs[2].bot_name = value;
             else if (key == "player4_name")
                 bot_configs[3].bot_name = value;
+            else if (key == "mortal_host")
+                MortalBot.server_host = value;
+            else if (key == "mortal_port")
+            {
+                int port = int.parse(value);
+                if (port > 0) MortalBot.server_port = (uint16)port;
+            }
         }
 
         stdout.printf("Loaded bot config from %s\n", config_path);
@@ -211,6 +218,8 @@ private static void run_bot_simulation(int num_hands)
             bot = new OracleBot();
         else if (bot_type == "ShantenBot")
             bot = new ShantenBot();
+        else if (bot_type == "MortalBot")
+            bot = new MortalBot();
         else
         {
             stdout.printf("Unknown bot type: %s, using SimpleBot\n", bot_type);

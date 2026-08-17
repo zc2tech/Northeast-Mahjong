@@ -568,7 +568,7 @@ public abstract class Bot : Object
         // 拿掉所有刻子（不包括 dragon)
         for (int i = start_tile; i <= end_tile ; i++)
         {
-            int i0 = copy_map[(TileType)i]; 
+            //  int i0 = copy_map[(TileType)i]; 
 
             if (copy_map[(TileType)i] >= 3 ) {
                 int counter = 0;

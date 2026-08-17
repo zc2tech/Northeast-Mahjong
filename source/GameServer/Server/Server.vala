@@ -65,6 +65,7 @@ namespace GameServer
 
                     // Notify subclass that round finished (for logging)
                     round_finished(score);
+                    on_round_finished();
 
                     timer.set_time(start_info.timings.get_animation_round_end_delay(score));
 
@@ -163,6 +164,8 @@ namespace GameServer
         protected abstract ServerGameRound create_round(RoundStartInfo info);
         protected abstract RoundStartInfo get_round_start_info();
         protected virtual void round_finished(RoundScoreState score) {}
+
+        public signal void on_round_finished();
 
         public bool finished { get; private set; }
 
@@ -276,7 +279,11 @@ namespace GameServer
 
             game_log.set_round_result(transfers, result_type);
 
-         
+            // In bot simulation: write only once at game end (maximum speed).
+            // In regular play: write after every round so a mid-game quit doesn't lose data.
+            if (state.game_is_finished || !settings.bot_simulation)
+                game_log.save();
+
         }
     }
 
