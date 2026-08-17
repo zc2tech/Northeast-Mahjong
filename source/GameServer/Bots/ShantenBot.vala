@@ -649,7 +649,7 @@ class ShantenBot : Bot
            
         }
 
-        if (round_state.can_closed_kan())
+        if (sorted_hand.size > 5 && round_state.can_closed_kan())
         {
             ArrayList<ArrayList<Tile>> groups = round_state.self.get_closed_kan_groups();
             assert(groups.size > 0);

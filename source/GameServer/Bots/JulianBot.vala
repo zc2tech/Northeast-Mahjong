@@ -579,7 +579,6 @@ class JulianBot : Bot
         // 既然到了这里,说明你没有办法和牌或者听牌 
         if (round_state.can_late_kan()) // 后杠
         {
-
             ArrayList<Tile> tiles = TileRules.get_late_kan_tiles(round_state.self.hand, round_state.self.calls);
             assert(tiles.size > 0);
             foreach(Tile hand_tile in tiles) {
@@ -607,7 +606,7 @@ class JulianBot : Bot
             }
         }
 
-        if (round_state.can_closed_kan())
+        if (sorted_hand.size > 5 && round_state.can_closed_kan())
         {
             ArrayList<ArrayList<Tile>> groups = round_state.self.get_closed_kan_groups();
             assert(groups.size > 0);

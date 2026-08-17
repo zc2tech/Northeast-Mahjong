@@ -383,7 +383,7 @@ class MortalBot : Bot
                 int cnt = 0;
                 foreach (Tile t2 in round_state.self.hand)
                     if (t2.tile_type == t.tile_type) cnt++;
-                if (cnt >= 4) { do_closed_kan(t.tile_type); return; }
+                if (cnt >= 4 && round_state.self.hand.size > 5) { do_closed_kan(t.tile_type); return; }
             }
         }
 
@@ -407,6 +407,10 @@ class MortalBot : Bot
 
     private void apply_call_action(int action, Tile discard_tile)
     {
+        if(round_state.self.hand.size <= 4) {
+            call_nothing();
+            return;
+        }
         // 43: ron (agari on call)
         if (action == 43 && round_state.can_ron(round_state.self))
         {
