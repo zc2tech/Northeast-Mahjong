@@ -4,18 +4,20 @@ namespace ConvertToMjai {
 
 void main(string[] args)
 {
-    if (args.length < 2)
-    {
-        print("Usage: convert_to_mjai <log_file_or_directory> [output_dir]\n");
-        print("  If input is a directory, converts all .log files in it\n");
-        print("  If output_dir is not specified, uses ../mjai relative to input location\n");
-        return;
-    }
-
     // Initialize environment to register types
     Environment.init(false);
 
-    string input_path = args[1];
+    string input_path;
+    if (args.length < 2)
+    {
+        string home = Environment.get_home_dir();
+        input_path = Path.build_filename(home, ".config", "Northeast-Mahjong", "logs", "game");
+        print("No input specified, using default: %s\n", input_path);
+    }
+    else
+    {
+        input_path = args[1];
+    }
     string? output_dir = null;
 
     if (args.length >= 3)

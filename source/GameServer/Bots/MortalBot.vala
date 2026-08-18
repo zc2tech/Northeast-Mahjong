@@ -308,10 +308,189 @@ class MortalBot : Bot
         send_snapshot();
         send_line("{\"type\":\"turn_decision\"}");
 
+        // Always read the server response first to keep the socket in sync.
         int action = read_action();
-        if (action < 0) { fallback_discard(); return; }
 
+        ArrayList<Tile> sorted_hand = Tile.sort_tiles_type(round_state.self.hand);
+        ArrayList<RoundStateCall> calls = round_state.self.calls;
+
+        HashMap<TileType, int> hcalled = called_tiles();
+        if( TileRules.win_necessary_condition(sorted_hand, calls, true)) {
+            HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
+            // 如果打掉某张可以听牌的话
+            ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();
+            ArrayList<Tile> tiles_allowed = round_state.self.get_discard_tiles();
+
+            Tile discard_for_tenpai = null;
+            HashSet<TileType> checked = new HashSet<TileType>();
+             Environment.log(LogType.DEBUG, "JulianBot", @"*-* $(round_state.self.wind.to_string()) passed win necessary, tiles_allowd: $(tiles_allowed.size)");
+            foreach (Tile tile in tiles_allowed)
+            {
+                if(checked.contains(tile.tile_type)) {
+                    continue;
+                } else {
+                    checked.add(tile.tile_type);
+                }
+                copy_for_tenpai.add_all(round_state.self.hand);
+                copy_for_tenpai.remove(tile);
+                // 能听牌当然就打你了
+                if (TileRules.in_tenpai(copy_for_tenpai, round_state.self.calls)) {
+                    discard_for_tenpai = tile;
+                     Environment.log(LogType.DEBUG, "JulianBot", @"!!! Found tenpai discard ($(round_state.self.wind.to_string())): $(tile.tile_type.to_string())");
+                    hDiscardForTenpai.set(discard_for_tenpai, new HashMap<TileType, int>());
+                }
+                copy_for_tenpai.clear();
+            }
+            if (hDiscardForTenpai.keys.size > 0) {
+                populate_needed_tiles_for_discards(hDiscardForTenpai, sorted_hand, calls);
+                HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
+                ArrayList <BestDiscardResult> result_array = find_best_discards(discard_benefit);
+
+                // 下面算法主要是为了收益相同的时候， 考虑怎么容易改听
+                ArrayList<BestDiscardResult> backup = new ArrayList<BestDiscardResult>();
+                for (int i = result_array.size -1 ; i >=0; i-- ) {
+                    backup.clear();
+                    backup.add_all(result_array);
+                    Tile keep = result_array[i].tile;
+                    if( has_neighbours(keep) || has_second_neighbours(keep)) {
+                        result_array.remove_at(i);
+                    }
+                    if(result_array.size == 0) {
+                        do_discard(backup[0].tile);
+                        return;
+                    }
+                }
+
+                // 剩下的就是不需要保护的
+                if(result_array.size > 0) {
+                    do_discard(result_array[0].tile);
+                    return;
+                }
+
+            } // hDiscardForTenpai.keys.size > 0
+        } // win_necessary_condition check end
+
+        // Fall back to the model's action
+        if (action < 0) { fallback_discard(); return; }
         apply_turn_action(action);
+    }
+
+    // Calculate benefit (available tile count) for each potential discard
+    private HashMap<Tile, int> calculate_discard_benefits(HashMap<Tile, HashMap<TileType, int>> discard_map)
+    {
+        HashMap<Tile, int> discard_benefit = new HashMap<Tile, int>();
+
+        foreach (Tile tDiscard in discard_map.keys) {
+            HashMap<TileType, int> needed_tiles = discard_map.get(tDiscard);
+            int total_benefit = 0;
+
+            foreach (TileType type_needed in needed_tiles.keys) {
+                int available_count = count_available_tiles(type_needed,round_state.self.index,false);
+                total_benefit += available_count;
+            }
+
+            discard_benefit.set(tDiscard, total_benefit);
+        }
+
+        return discard_benefit;
+    }
+
+    private int count_available_tiles(TileType tile_type, int me_index, bool cheating)
+    {
+        int available = 4;  // Start with max count
+
+        // Subtract dead wall mark tile
+        Tile? mark = round_state.dead_wall_mark;
+        if (mark != null && mark.tile_type == tile_type) {
+            available--;
+        }
+
+        // Subtract tiles visible in all players' ponds and calls
+        for (int i = 0; i < 4; i++) {
+            RoundStatePlayer player = round_state.get_player(i);
+            // Usually, we can only see ourselves hand tiles unless you cheat
+            // we don't count the tile which assumed discarding as otherwise we call tsumo
+            // we assume that every player will keep the tiles we needed, although that may not be the truth
+            if(cheating || me_index == i) {
+                // Check hand
+                foreach (Tile hand_tile in player.hand) {
+                    if (hand_tile.tile_type == tile_type) {
+                        available--;
+                    } 
+                }
+            }
+
+            // Check pond
+            foreach (Tile pond_tile in player.pond) {
+                if (pond_tile.tile_type == tile_type) {
+                    available--;
+                }
+            }
+
+            // Check calls (open melds)
+            foreach (RoundStateCall call in player.calls) {
+                foreach (Tile call_tile in call.tiles) {
+                    if (call_tile.tile_type == tile_type) {
+                        available--;
+                    }
+                }
+            }
+
+         
+        }
+
+        return available;
+    }
+
+      // Populate needed tiles for each potential discard that leads to tenpai
+    private void populate_needed_tiles_for_discards(HashMap<Tile, HashMap<TileType, int>> discard_map,
+                                                     ArrayList<Tile> sorted_hand,
+                                                     ArrayList<RoundStateCall> calls)
+    {
+        //  int64 start_time = get_monotonic_time();
+
+        // Collect keys first to avoid concurrent modification during iteration
+        ArrayList<Tile> keys = new ArrayList<Tile>();
+        keys.add_all(discard_map.keys);
+
+        HashSet<TileType> checked = new HashSet<TileType>();
+        foreach (Tile tDiscard in keys) {
+            if(checked.contains(tDiscard.tile_type)) {
+                continue;
+            } else {
+                checked.add(tDiscard.tile_type);
+            }
+            HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
+
+            // Create hand without this discard
+            ArrayList<Tile> hand_after_discard = new ArrayList<Tile>();
+            hand_after_discard.add_all(sorted_hand);
+            hand_after_discard.remove(tDiscard);
+            populate_needed_tiles(needed_tiles, hand_after_discard, calls);
+            discard_map.set(tDiscard, needed_tiles);
+            StringBuilder sb_for_log = new StringBuilder();
+            foreach(TileType t in needed_tiles.keys) {
+                sb_for_log.append(new Tile(-1,t).to_string() + " ");
+            }
+            Environment.log(LogType.DEBUG, "JulianBot", @"assume discard: $(tDiscard.to_string()), tenpai: $(sb_for_log.str)");
+        }
+
+    }
+
+    private void populate_needed_tiles(HashMap<TileType, int> needed_tiles,
+                                                     ArrayList<Tile> sorted_hand,
+                                                     ArrayList<RoundStateCall> calls)
+    {
+
+        // Find all tiles that would complete this hand (tenpai)
+        ArrayList<HandReading> readings = TileRules.hand_readings(sorted_hand, calls, true, false);
+        foreach (HandReading hr in readings) {
+            foreach (Tile tHR in hr.tiles) {
+                if (tHR.ID == -1) {  // ID == -1 means this is the needed tile
+                    needed_tiles.set(tHR.tile_type, 4);  // Start with max 4 tiles of this type
+                }
+            }
+        }
     }
 
     protected override void do_call_decision(RoundStatePlayer discarding_player, Tile tile)
@@ -407,13 +586,13 @@ class MortalBot : Bot
 
     private void apply_call_action(int action, Tile discard_tile)
     {
-        if(round_state.self.hand.size <= 4) {
-            call_nothing();
-            return;
-        }
+        Environment.log(LogType.DEBUG, "MortalBot",
+            @"apply_call_action: action=$(action), discard=$(tile_to_mjai(discard_tile.tile_type)), hand_size=$(round_state.self.hand.size), calls=$(round_state.self.calls.size)");
+
         // 43: ron (agari on call)
         if (action == 43 && round_state.can_ron(round_state.self))
         {
+            Environment.log(LogType.DEBUG, "MortalBot", "calling ron");
             call_ron();
             return;
         }
@@ -421,22 +600,29 @@ class MortalBot : Bot
         // 41: pon
         if (action == 41 && round_state.can_pon(round_state.self))
         {
+            Environment.log(LogType.DEBUG, "MortalBot", "calling pon");
             call_pon();
             return;
         }
+        if (action == 41)
+            Environment.log(LogType.DEBUG, "MortalBot", @"model wants pon but can_pon=false");
 
         // 42: open kan
         if (action == 42)
         {
+            Environment.log(LogType.DEBUG, "MortalBot", "calling open kan");
             call_open_kan();
             return;
         }
 
         // 38-40: chi
-        if (action >= 38 && action <= 40 && round_state.can_chii(round_state.self))
+        if (action >= 38 && action <= 40)
         {
-            ArrayList<ArrayList<Tile>> groups = round_state.self.get_chii_groups(discard_tile);
-            if (groups.size > 0)
+            bool can = round_state.can_chii(round_state.self);
+            ArrayList<ArrayList<Tile>> groups = can ? round_state.self.get_chii_groups(discard_tile) : new ArrayList<ArrayList<Tile>>();
+            Environment.log(LogType.DEBUG, "MortalBot",
+                @"model wants chi $(action), can_chii=$(can), groups=$(groups.size)");
+            if (can && groups.size > 0)
             {
                 int gi = 0;
                 if (action == 39 && groups.size > 1) gi = 1;
@@ -447,6 +633,8 @@ class MortalBot : Bot
             }
         }
 
+        // 45 or anything else: pass
+        Environment.log(LogType.DEBUG, "MortalBot", @"passing (action=$(action))");
         call_nothing();
     }
 }

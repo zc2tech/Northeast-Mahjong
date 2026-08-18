@@ -748,6 +748,34 @@ public abstract class Bot : Object
         return result;
     }
 
+    // 已经吃碰或者打出的所有 还有墙上翻开的
+    protected  HashMap<TileType, int> called_tiles() {
+        HashMap<TileType,int> hCalled = new HashMap<TileType,int>(); // Other Player: OP
+        for(int i= TileType.MAN1 ;  i < TileType.CHUN; i++ ) {
+           hCalled.set((TileType)i,0); 
+        }
+        for(int i = 0 ; i < 4 ; i++ ) {
+            //  if(i == round_state.self.index) {
+            //      continue;
+            //  }
+            RoundStatePlayer p =  round_state.get_player(i);
+            foreach(Tile t in p.pond) {
+                hCalled.set(t.tile_type, hCalled.get(t.tile_type) + 1 );
+            }
+            foreach( RoundStateCall c in  p.calls ) {
+                foreach(Tile t in c.tiles) {
+                hCalled.set(t.tile_type, hCalled.get(t.tile_type) + 1 ); 
+                }
+            }
+            Tile? mark = round_state.dead_wall_mark;
+            if(mark != null) {
+                Tile t = mark;
+                hCalled.set(t.tile_type, hCalled.get(t.tile_type) + 1 ); 
+            }
+        }
+        return hCalled;
+
+    } 
     ////////////
 
     public signal void poll();
