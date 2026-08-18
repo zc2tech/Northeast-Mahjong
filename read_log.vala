@@ -57,6 +57,12 @@ void main(string[] args)
     print("\n");
 
     GameLogRound[] rounds = log.rounds.to_array();
+    int total_rounds = rounds.length;
+    int[] wins = new int[4];
+    int[] ron_wins = new int[4];
+    int[] tsumo_wins = new int[4];
+    int draws = 0;
+
     for (int r = 0; r < rounds.length; r++)
     {
         GameLogRound round = rounds[r];
@@ -189,17 +195,25 @@ void main(string[] args)
                     print("          Player %d calls closed KAN on %s\n", csa.client, TILE_TYPE_TO_STRING(kan.tile_type));
                     print("          Declares 4 identical tiles from concealed hand, then draws from dead wall\n");
                 }
-                else if (ca is RonClientAction)
+                        else if (ca is RonClientAction)
                 {
                     print("    [%3d] RonClientAction:\n", i);
                     print("          Player %d declares RON - wins by calling the last discarded tile\n", csa.client);
                     print("          ROUND ENDS - winning hand completed\n");
+                    if (csa.client >= 0 && csa.client < 4) {
+                        wins[csa.client]++;
+                        ron_wins[csa.client]++;
+                    }
                 }
                 else if (ca is TsumoClientAction)
                 {
                     print("    [%3d] TsumoClientAction:\n", i);
                     print("          Player %d declares TSUMO - wins by self-draw\n", csa.client);
                     print("          ROUND ENDS - winning hand completed from own draw\n");
+                    if (csa.client >= 0 && csa.client < 4) {
+                        wins[csa.client]++;
+                        tsumo_wins[csa.client]++;
+                    }
                 }
                 else
                 {
@@ -213,8 +227,47 @@ void main(string[] args)
                 print("    [%3d] %s\n", i, action.get_type().name());
             }
         }
+        if (round.result_type == RoundResultType.DRAW)
+            draws++;
+
         print("\n");
     }
+
+    // Collect player names
+    string[] player_names = new string[4];
+    GamePlayer[] players = log.start_info.player_list.to_array();
+    for (int p = 0; p < 4; p++) {
+        player_names[p] = (p < players.length && players[p].name != null && players[p].name != "")
+            ? players[p].name : @"Player $p";
+    }
+
+    // Summary
+    print("=== SUMMARY ===\n");
+    print("Total rounds: %d  (wins: %d, draws: %d)\n\n",
+          total_rounds,
+          wins[0] + wins[1] + wins[2] + wins[3],
+          draws);
+
+    // Find highest/lowest win rate
+    int best_player = 0;
+    int worst_player = 0;
+    for (int p = 1; p < 4; p++) {
+        if (wins[p] > wins[best_player]) best_player = p;
+        if (wins[p] < wins[worst_player]) worst_player = p;
+    }
+
+    for (int p = 0; p < 4; p++) {
+        double rate = total_rounds > 0 ? (wins[p] * 100.0 / total_rounds) : 0.0;
+        string human_tag = (p == log.human_player_index) ? " (human)" : "";
+        string best_tag  = (p == best_player && wins[p] > 0) ? " <-- highest win rate" : "";
+        string worst_tag = (p == worst_player && p != best_player) ? " <-- lowest win rate" : "";
+        print("  %s%s: %d wins (%.1f%%)  ron=%d tsumo=%d%s%s\n",
+              player_names[p], human_tag, wins[p], rate,
+              ron_wins[p], tsumo_wins[p],
+              best_tag, worst_tag);
+    }
+    print("\n");
+
     } catch (Error e) {
         print("Error: %s\n", e.message);
     }
