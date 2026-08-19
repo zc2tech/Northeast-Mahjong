@@ -280,6 +280,16 @@ class MortalBot : Bot
         }
         sb.append("]");
 
+        // last_discard: the tile that was just discarded (for call_decision context)
+        if (last_discard_tile != null)
+        {
+            sb.append(",\"last_discard\":\"");
+            sb.append(tile_to_mjai(last_discard_tile.tile_type));
+            sb.append("\"");
+            sb.append(",\"last_discard_player\":");
+            sb.append(last_discard_player.to_string());
+        }
+
         sb.append("}");
         send_line(sb.str);
     }
@@ -298,18 +308,18 @@ class MortalBot : Bot
 
     protected override void do_turn_decision()
     {
+        if (round_state.can_tsumo())
+        {
+            do_tsumo();
+            return;
+        }
+        ArrayList<Tile> tiles_allowed = round_state.self.get_discard_tiles();
         if (!connected) connect_to_server();
         if (!connected)
         {
-            fallback_discard();
+            fallback_discard(tiles_allowed);
             return;
         }
-
-        send_snapshot();
-        send_line("{\"type\":\"turn_decision\"}");
-
-        // Always read the server response first to keep the socket in sync.
-        int action = read_action();
 
         ArrayList<Tile> sorted_hand = Tile.sort_tiles_type(round_state.self.hand);
         ArrayList<RoundStateCall> calls = round_state.self.calls;
@@ -319,11 +329,11 @@ class MortalBot : Bot
             HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
             // 如果打掉某张可以听牌的话
             ArrayList<Tile> copy_for_tenpai = new ArrayList<Tile>();
-            ArrayList<Tile> tiles_allowed = round_state.self.get_discard_tiles();
+         
 
             Tile discard_for_tenpai = null;
             HashSet<TileType> checked = new HashSet<TileType>();
-             Environment.log(LogType.DEBUG, "JulianBot", @"*-* $(round_state.self.wind.to_string()) passed win necessary, tiles_allowd: $(tiles_allowed.size)");
+             Environment.log(LogType.DEBUG, "MortalBot", @"*-* $(round_state.self.wind.to_string()) passed win necessary, tiles_allowd: $(tiles_allowed.size)");
             foreach (Tile tile in tiles_allowed)
             {
                 if(checked.contains(tile.tile_type)) {
@@ -336,7 +346,7 @@ class MortalBot : Bot
                 // 能听牌当然就打你了
                 if (TileRules.in_tenpai(copy_for_tenpai, round_state.self.calls)) {
                     discard_for_tenpai = tile;
-                     Environment.log(LogType.DEBUG, "JulianBot", @"!!! Found tenpai discard ($(round_state.self.wind.to_string())): $(tile.tile_type.to_string())");
+                     Environment.log(LogType.DEBUG, "MortalBot", @"!!! Found tenpai discard ($(round_state.self.wind.to_string())): $(tile.tile_type.to_string())");
                     hDiscardForTenpai.set(discard_for_tenpai, new HashMap<TileType, int>());
                 }
                 copy_for_tenpai.clear();
@@ -360,7 +370,6 @@ class MortalBot : Bot
                         return;
                     }
                 }
-
                 // 剩下的就是不需要保护的
                 if(result_array.size > 0) {
                     do_discard(result_array[0].tile);
@@ -369,10 +378,15 @@ class MortalBot : Bot
 
             } // hDiscardForTenpai.keys.size > 0
         } // win_necessary_condition check end
+        send_snapshot();
+        send_line("{\"type\":\"turn_decision\"}");
+
+        // Always read the server response first to keep the socket in sync.
+        int action = read_action();
 
         // Fall back to the model's action
-        if (action < 0) { fallback_discard(); return; }
-        apply_turn_action(action);
+        if (action < 0) { fallback_discard(tiles_allowed); return; }
+        apply_turn_action(action,tiles_allowed);
     }
 
     // Calculate benefit (available tile count) for each potential discard
@@ -472,7 +486,7 @@ class MortalBot : Bot
             foreach(TileType t in needed_tiles.keys) {
                 sb_for_log.append(new Tile(-1,t).to_string() + " ");
             }
-            Environment.log(LogType.DEBUG, "JulianBot", @"assume discard: $(tDiscard.to_string()), tenpai: $(sb_for_log.str)");
+            Environment.log(LogType.DEBUG, "MortalBot", @"assume discard: $(tDiscard.to_string()), tenpai: $(sb_for_log.str)");
         }
 
     }
@@ -495,6 +509,16 @@ class MortalBot : Bot
 
     protected override void do_call_decision(RoundStatePlayer discarding_player, Tile tile)
     {
+        if (round_state.can_ron(round_state.self))
+        {
+            call_ron();
+            return;
+        }
+        if(round_state.self.hand.size <= 4) {
+            // 手牌只剩两张的话,就没法胡了
+            call_nothing();  // CRITICAL: Must notify server we're done deciding
+            return;
+        }
         last_discard_player = discarding_player.index;
         last_discard_tile   = tile;
 
@@ -516,10 +540,14 @@ class MortalBot : Bot
     // Action dispatch
     // -----------------------------------------------------------------------
 
-    private void fallback_discard()
+    private void fallback_discard(ArrayList<Tile> tiles_allowed)
     {
-        if (round_state != null && round_state.self.hand.size > 0)
-            do_discard(round_state.self.hand[round_state.self.hand.size - 1]);
+        if (tiles_allowed.size > 0 ) {
+            do_discard(tiles_allowed[0]);
+        } else {
+            Environment.log(LogType.DEBUG, "MortalBot",
+                @"fallback_discard, no available tile to discard");
+        }
     }
 
     private Tile? find_tile_of_type(ArrayList<Tile> hand, TileType type)
@@ -530,20 +558,22 @@ class MortalBot : Bot
         return null;
     }
 
-    private void apply_turn_action(int action)
+    private void apply_turn_action(int action, ArrayList<Tile> tiles_allowed)
     {
         // 0-33: discard tile by libne index
         if (action >= 0 && action <= 33)
         {
             TileType desired = libne_idx_to_tile_type(action);
             Tile? t = find_tile_of_type(round_state.self.hand, desired);
-            if (t == null && round_state.self.hand.size > 0)
-                t = round_state.self.hand[round_state.self.hand.size - 1];
-            if (t != null)
-                do_discard(t);
-            return;
+            if( t!= null) {
+                foreach(Tile t_allow in tiles_allowed) {
+                    if(t_allow.tile_type == t.tile_type) {
+                        do_discard(t);
+                        return;
+                    }
+                }
+            }
         }
-
         // 42: kan
         if (action == 42)
         {
@@ -565,23 +595,20 @@ class MortalBot : Bot
                 if (cnt >= 4 && round_state.self.hand.size > 5) { do_closed_kan(t.tile_type); return; }
             }
         }
-
         // 43: tsumo
         if (action == 43 && round_state.can_tsumo())
         {
             do_tsumo();
             return;
         }
-
         // 44: void hand
         if (action == 44 && round_state.can_void_hand())
         {
             do_void_hand();
             return;
         }
-
         // Fallback
-        fallback_discard();
+        fallback_discard(tiles_allowed);
     }
 
     private void apply_call_action(int action, Tile discard_tile)

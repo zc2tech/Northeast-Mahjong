@@ -185,14 +185,19 @@ namespace GameServer
                 return false;
             }
 
+            debug_log("client_tile_discard: is_players_turn passed, calling validator.discard_tile");
+
             if (!validator.discard_tile(tile_ID))
             {
                 debug_log("client_tile_discard(" + player_index.to_string() + "): Player can't discard selected tile(" + tile_ID.to_string() + ")");
                 return false;
             }
 
+            debug_log("client_tile_discard: discard_tile passed, calling tile_discard");
+
             log_action(action);
             tile_discard(validator.get_tile(tile_ID));
+            debug_log("client_tile_discard: done");
             return true;
         }
 
@@ -479,7 +484,9 @@ namespace GameServer
                 return;
             }
 
+            debug_log("check_calls_done: calling turn_decision for caller=%d".printf(caller.index));
             turn_decision(caller.index);
+            debug_log("check_calls_done: turn_decision returned for caller=%d".printf(caller.index));
         }
 
         private void queue_turn_decision(int player_index)
@@ -504,11 +511,13 @@ namespace GameServer
 
         private void queue_call_decisions()
         {
+            debug_log("queue_call_decisions: pending_call_decisions set to true");
             pending_call_decisions = true;
         }
 
         private void call_decisions()
         {
+            debug_log("call_decisions: started");
             call_decisions_started();
 
             var call_players = validator.do_player_calls();

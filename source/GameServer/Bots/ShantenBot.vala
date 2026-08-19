@@ -690,19 +690,19 @@ class ShantenBot : Bot
 
         ArrayList<Tile> sortedhand = Tile.sort_tiles_type(round_state.self.hand);
         ArrayList<RoundStateCall> calls = round_state.self.calls;
-        if(sortedhand.size < 4) {
-            // 手牌只剩两张的话,就没法胡了
-            call_nothing();  // CRITICAL: Must notify server we're done deciding
-            return;
-        }
 
-        // 如果听牌数特别多,未必就要立即去胡的,说不定想自摸呢
-       
+        // 如果听牌数特别多,未必就要立即去胡的,说不定想自摸呢    
         if (round_state.can_ron(round_state.self))
         {
             call_ron();
             return;
         }
+        if(sortedhand.size <= 4) {
+            // 手牌只剩两张的话,就没法胡了
+            call_nothing();  // CRITICAL: Must notify server we're done deciding
+            return;
+        }
+
         // Analyze hand statistics
         HashMap<TileType, int> hOP = called_tiles();
         HandStatistics stats = analyze_hand(tile, sortedhand, calls, hOP);

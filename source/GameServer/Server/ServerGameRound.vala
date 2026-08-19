@@ -317,7 +317,7 @@ namespace GameServer
 
             // Connect to initial_hands_ready signal to collect hands at the right time
             ((RegularServerRoundState)round).initial_hands_ready.connect(collect_initial_hands);
-
+            
             parser.connect(client_action, typeof(ClientMessageGameAction));
 
             for (int i = 0; i < players.size; i++)
