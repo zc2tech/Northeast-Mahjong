@@ -170,7 +170,7 @@ public abstract class Bot : Object
 
     public void chii(int player_index, int tile_1_ID, int tile_2_ID)
     {
-        int discard_player_index = round_state.get_last_discard_player_index();
+        //  int discard_player_index = round_state.get_last_discard_player_index();
 
         round_state.chii(player_index, tile_1_ID, tile_2_ID);
 

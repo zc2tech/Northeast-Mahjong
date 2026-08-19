@@ -324,7 +324,7 @@ class MortalBot : Bot
         ArrayList<Tile> sorted_hand = Tile.sort_tiles_type(round_state.self.hand);
         ArrayList<RoundStateCall> calls = round_state.self.calls;
 
-        HashMap<TileType, int> hcalled = called_tiles();
+        //  HashMap<TileType, int> hcalled = called_tiles();
         if( TileRules.win_necessary_condition(sorted_hand, calls, true)) {
             HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
             // 如果打掉某张可以听牌的话

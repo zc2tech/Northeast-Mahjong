@@ -307,10 +307,17 @@ namespace GameServer
             else
             {
                 ServerRoundStatePlayer? player = null;
+                // adjust here if you want pon/chii take priority
+
                 if (kan_pon_player != null)
                     player = kan_pon_player;
                 else if (chii_player != null)
                     player = chii_player;
+
+                //  if (chii_player != null)
+                //      player = chii_player;
+                //  else if (kan_pon_player != null)
+                //      player = kan_pon_player;
 
                 if (player != null)
                 {
