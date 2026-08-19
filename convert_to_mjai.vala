@@ -10,7 +10,7 @@ void main(string[] args)
     string input_path;
     if (args.length < 2)
     {
-        string home = Environment.get_home_dir();
+        string home = GLib.Environment.get_home_dir();
         input_path = Path.build_filename(home, ".config", "Northeast-Mahjong", "logs", "game");
         print("No input specified, using default: %s\n", input_path);
     }
@@ -244,9 +244,9 @@ void convert_round_to_mjai(StringBuilder sb, GameLogRound round, Tile[] all_tile
     int dealer = start_info.dealer;
 
     // Get dora marker tile
-    int dora_marker_id = start_info.dead_wall_mark_tile_id;
-    Tile? dora_marker_tile = find_tile(all_tiles, dora_marker_id);
-    string dora_marker_str = dora_marker_tile != null ? tile_to_mjai(dora_marker_tile.tile_type) : "?";
+    int dead_wall_marker_id = start_info.dead_wall_mark_tile_id;
+    Tile? dead_wall_marker_tile = find_tile(all_tiles, dead_wall_marker_id);
+    string dead_wall_marker_str = dead_wall_marker_tile != null ? tile_to_mjai(dead_wall_marker_tile.tile_type) : "?";
 
     // Get initial hands
     SerializableList<Tile>[] hands = round.initial_hands.to_array();
@@ -258,7 +258,7 @@ void convert_round_to_mjai(StringBuilder sb, GameLogRound round, Tile[] all_tile
     sb.append(",\"honba\":0");
     sb.append(",\"kyotaku\":0");
     sb.append_printf(",\"oya\":%d", dealer);
-    sb.append_printf(",\"dora_marker\":\"%s\"", dora_marker_str);
+    sb.append_printf(",\"dead_wall_marker\":\"%s\"", dead_wall_marker_str);
     sb.append_printf(",\"scores\":[%d,%d,%d,%d]", scores[0], scores[1], scores[2], scores[3]);
     sb.append(",\"tehais\":[");
 

@@ -626,21 +626,21 @@ class OracleBot : Bot
                     return;
                 }
                 
-                bool hasNeigh = has_neighbours(hand_tile);
-                bool hasSecNeigh = has_second_neighbours(hand_tile);
+                ArrayList<Tile> all_neighbours = neighbours(hand_tile);
+                ArrayList<Tile> all_sec_neighbours = second_neighbours(hand_tile);
 
-                if(!hasNeigh && !hasSecNeigh) {
-                    if(hand_tile.is_terminal_tile()) {
-                        do_late_kan(hand_tile);
-                        return; 
-                    }
-
-                    if( hand_tile.is_terminal_neighbour_tile() || hand_tile.is_terminal_second_neighbour_tile()) {
-                        if(stats.dragon_count >= 2 || stats.hasTerminalSeq || stats.hasTerminalTriplet) {
+                if(all_neighbours.size == 0 && all_sec_neighbours.size == 0 ) {
+                    do_late_kan(hand_tile);
+                    return; 
+                } else {
+                    // 有关联牌友的话，也就幺九牌的朋友可能会杠，其他都留着吧
+                    bool i_in_seq = stats.hand_in_seq.contains(hand_tile.tile_type);
+                    foreach(Tile nb in all_neighbours ) {
+                        if(!i_in_seq && count(nb) >= 2 && nb.is_terminal_tile()) {
                             do_late_kan(hand_tile);
                             return;  
                         }
-                    }      
+                    }
                 }
             }
         }

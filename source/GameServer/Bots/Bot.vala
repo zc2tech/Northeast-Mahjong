@@ -241,6 +241,44 @@ public abstract class Bot : Object
         return false;
     }
 
+    public ArrayList<Tile> second_neighbours(Tile tile)
+    {
+        ArrayList<Tile> rtn = new ArrayList<Tile>();
+        if (!tile.is_suit_tile()) {
+            return rtn;
+        }
+
+        foreach (Tile t in round_state.self.hand)
+        {
+            if (tile == t)
+                continue;
+
+            if (tile.is_second_neighbour(t))
+                rtn.add(t);
+        }
+
+        return rtn;
+    }
+    
+    public ArrayList<Tile> neighbours(Tile tile)
+    {
+        ArrayList<Tile> rtn = new ArrayList<Tile>();
+        if (!tile.is_suit_tile()) {
+            return rtn;
+        }
+
+        foreach (Tile t in round_state.self.hand)
+        {
+            if (tile == t)
+                continue;
+
+            if (tile.is_neighbour(t))
+                rtn.add(t);
+        }
+
+        return rtn;
+    }
+
     public void count_singles_ish(HashMap<TileType, int> suit_map,
                                      int start_tile,
                                      int end_tile,
