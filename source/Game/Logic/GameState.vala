@@ -239,6 +239,13 @@ public class GameState : Object
             Environment.log(LogType.DEBUG, "GameState",
                 @"[HAND COUNT] Hand $(hand_count_played) completed (target: $(round_count))");
 
+            int ch_hits, ch_misses;
+            TileRules.get_cache_stats(out ch_hits, out ch_misses);
+            int ch_total = ch_hits + ch_misses;
+            double ch_rate = ch_total > 0 ? (ch_hits * 100.0 / ch_total) : 0.0;
+            Environment.log(LogType.DEBUG, "GameState",
+                @"[CACHE] hand_readings: hits=$(ch_hits) misses=$(ch_misses) total=$(ch_total) rate=$("%.1f".printf(ch_rate))%%");
+
             // Always advance to next round after each hand finishes
             current_round++;
 

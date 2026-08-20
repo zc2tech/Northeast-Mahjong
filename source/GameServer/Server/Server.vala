@@ -151,6 +151,14 @@ namespace GameServer
 
             action_state = State.ACTIVE;
 
+            // Log hand_readings cache hit rate for the round that just ended
+            int ch_hits, ch_misses;
+            TileRules.get_cache_stats(out ch_hits, out ch_misses);
+            int ch_total = ch_hits + ch_misses;
+            double ch_rate = ch_total > 0 ? (ch_hits * 100.0 / ch_total) : 0.0;
+            Environment.log(LogType.DEBUG, "Server",
+                @"hand_readings cache: hits=$(ch_hits) misses=$(ch_misses) total=$(ch_total) rate=$("%.1f".printf(ch_rate))%%");
+
             // Clear hand_readings cache at the start of each round
             TileRules.clear_hand_readings_cache();
 

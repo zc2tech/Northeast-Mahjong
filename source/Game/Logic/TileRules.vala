@@ -61,6 +61,14 @@ public class TileRules
         cache_mutex.unlock();
     }
 
+    public static void get_cache_stats(out int hits, out int misses)
+    {
+        cache_mutex.lock();
+        hits = cache_hits;
+        misses = cache_misses;
+        cache_mutex.unlock();
+    }
+
     public static Scoring get_score(PlayerStateContext player, RoundStateContext round)
     {
         return calculate_yaku(player, round, false);
