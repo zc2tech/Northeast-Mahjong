@@ -675,7 +675,7 @@ class JulianBot : Bot
 
             Tile for_log = new Tile(-1,type_needed);
             Environment.log(LogType.DEBUG, "JulianBot",
-                @"do_call_decision Before_Need_Tile: $(for_log.to_string()) : $(available_count) ");
+                @"do_call_decision Before_Win_Tile: $(for_log.to_string()) : $(available_count) ");
         }
         if (beforeBenefit > 0) {
             Environment.log(LogType.DEBUG, "JulianBot",
@@ -1186,16 +1186,6 @@ class JulianBot : Bot
         }
 
         return available;
-    }
-
-    // 我手牌里有多少这样的牌
-    private int count(Tile tile)
-    {
-        int count = 0;
-        foreach (Tile t in round_state.self.hand)
-            if (t.tile_type == tile.tile_type)
-                count++;
-        return count;
     }
     private ArrayList<Tile>  filter_tile_type(TileType tp)
     {

@@ -514,11 +514,58 @@ class MortalBot : Bot
             call_ron();
             return;
         }
+
         if(round_state.self.hand.size <= 4) {
             // 手牌只剩两张的话,就没法胡了
             call_nothing();  // CRITICAL: Must notify server we're done deciding
             return;
         }
+
+        ArrayList<Tile> sortedhand = Tile.sort_tiles_type(round_state.self.hand);
+        ArrayList<RoundStateCall> calls = round_state.self.calls;
+        // Analyze hand statistics
+        HashMap<TileType, int> hOP = called_tiles();
+        HandStatistics stats = analyze_hand(tile, sortedhand, calls, hOP);
+
+        int beforeBenefit = 0;
+        HashMap<TileType, int> needed_tiles = new HashMap<TileType, int>();
+        populate_needed_tiles(needed_tiles,sortedhand,calls);
+        foreach (TileType type_needed in needed_tiles.keys) {
+            int available_count = count_available_tiles(type_needed,round_state.self.index,false);
+            beforeBenefit += available_count;
+
+            Tile for_log = new Tile(-1,type_needed);
+            Environment.log(LogType.DEBUG, "MortalBot",
+                @"do_call_decision Before_Win_Tile: $(for_log.to_string()) : $(available_count) ");
+        }
+        if (beforeBenefit > 0) {
+            Environment.log(LogType.DEBUG, "MortalBot",
+                @"do_call_decision BeforeBenefit: $(beforeBenefit) ");
+        }
+
+        // Evaluate chii decision
+        Tile chii_tile1;
+        Tile chii_tile2;
+        if (should_call_chii(tile, sortedhand, calls, beforeBenefit, stats, discarding_player, out chii_tile1, out chii_tile2))
+        {
+            call_chii(chii_tile1, chii_tile2);
+            return;
+        }
+
+        // Evaluate pon decision
+        if (should_call_pon(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
+        {
+            call_pon();
+            return;
+        }
+
+         // Evaluate kan decision
+        if (should_call_kan(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
+        {
+            call_open_kan();
+            return;
+        }
+
         last_discard_player = discarding_player.index;
         last_discard_tile   = tile;
 
@@ -534,6 +581,80 @@ class MortalBot : Bot
         if (action < 0) { call_nothing(); return; }
 
         apply_call_action(action, tile);
+    }
+
+    private bool should_call_kan(Tile tile,
+                                  ArrayList<Tile> sortedhand,
+                                  ArrayList<RoundStateCall> calls,
+                                  int beforeBenefit,
+                                  HandStatistics stats,
+                                  RoundStatePlayer discarding_player)
+    {
+        if(sortedhand.size <= 4) {
+            return false;
+        }
+        if (!round_state.can_open_kan(round_state.self))
+        {
+            return false;
+        }
+
+
+        //  int pairCnt = stats.pair_count;
+        //  int tripletCnt = stats.triplet_count;
+        //  int singleCnt = stats.singles.size;
+        //  int terminalCnt = stats.terminal_count;
+
+        //   // Get s (下家 - shimocha)
+        //  int shimocha_index = (round_state.self.index + 1) % 4;
+
+        // Get cross/opposite player (对面 - toimen)
+
+        // Get (上家 - kamicha)
+        int kamicha_index = (round_state.self.index + 3) % 4;
+
+        if(kamicha_index == discarding_player.index) {
+            // no reason the hand tiles can get better with kan, although it's possible with pon which checked before
+            return false;
+        }
+        // 有听不杠
+        if(beforeBenefit > 0 ) {
+            return false;
+        }
+
+        // start from here, it's must from shimocha
+
+        // 杠掉试试
+        ArrayList<Tile> newHand = new ArrayList<Tile>();
+        ArrayList<RoundStateCall> newCalls = new ArrayList<RoundStateCall>();
+        newCalls.add_all(calls);
+        ArrayList<Tile> kan_tiles = new ArrayList<Tile>();
+        kan_tiles.add(tile);
+
+        foreach (Tile t in sortedhand)
+        {
+            if (t.tile_type == tile.tile_type)
+            {
+                kan_tiles.add(t);
+            }
+            else
+            {
+                newHand.add(t);
+            }
+        }
+        RoundStateCall new_call = new RoundStateCall(RoundStateCall.CallType.OPEN_KAN, kan_tiles, tile, discarding_player.index);
+        newCalls.add(new_call);
+
+        //  newCalls.add(new RoundStateCall(RoundStateCall.CallType.OPEN_KAN, kan, tile, discarder_index));
+        //  HashMap<TileType, int> hOP = other_player_tiles();
+        HandStatistics newStats = analyze_hand(tile, newHand, newCalls,null);
+        if (newStats.half_sequence_count_by_tile <  stats.half_sequence_count_by_tile)
+        {
+            // 牌变差了
+            return false;
+        }
+
+        // 默认就杠吧 上家的情况早就判断了
+        return true;
     }
 
     // -----------------------------------------------------------------------
@@ -611,18 +732,252 @@ class MortalBot : Bot
         fallback_discard(tiles_allowed);
     }
 
+     // Evaluate whether to call chii (吃) on a tile
+    // Returns true if should call chii, false otherwise
+    // If true, sets the out parameters tiles1 and tiles2 to the tiles to use
+    private bool should_call_chii(Tile tile,
+                                   ArrayList<Tile> sortedhand,
+                                   ArrayList<RoundStateCall> calls,
+                                   int beforeBenefit,
+                                   HandStatistics stats,
+                                   RoundStatePlayer discarding_player,
+                                   out Tile tiles1,
+                                   out Tile tiles2)
+    {
+        tiles1 = null;
+        tiles2 = null;
+
+        if(sortedhand.size <= 4) {
+            return false;
+        }
+
+        if (!round_state.can_chii(round_state.self))
+        {
+            return false;
+        }
+ 
+        ArrayList<ArrayList<Tile>> groups = TileRules.get_chii_groups(round_state.self.hand, tile);
+
+        // 到这里就算有 幺九刻子或者对子了
+        if (stats.singles.size >= 3)
+        {
+            return false;
+        }
+
+        BestDiscardResult bestChiiResut = new BestDiscardResult();
+        bestChiiResut.benefit = beforeBenefit;
+        
+        ArrayList<Tile> bestGroup = null;
+        ArrayList<ArrayList<Tile>> shanten_g_candi = new ArrayList<ArrayList<Tile>>(); 
+        foreach (ArrayList<Tile> g in groups)
+        {
+            // 吃掉试试
+            ArrayList<Tile> newHand = new ArrayList<Tile>();
+            newHand.add_all(sortedhand);
+            ArrayList<RoundStateCall> newCalls = new ArrayList<RoundStateCall>();
+            newCalls.add_all(calls);
+            ArrayList<Tile> chii = new ArrayList<Tile>();
+            chii.add(tile);
+            chii.add(g[0]);
+            chii.add(g[1]);
+            newHand.remove(g[0]);
+            newHand.remove(g[1]);
+
+            newCalls.add(new RoundStateCall(RoundStateCall.CallType.CHII, chii, tile, discarding_player.index));
+
+            HandStatistics newStats = analyze_hand(null, newHand, newCalls,null);
+
+            // 再分析 hand_readings 之前,先简单分析一下
+            bool shouldContNow = false;
+            // 幺九的话，你还是要给后续机会的，不能直接continue
+            if(!tile.is_terminal_tile() && newStats.singles.size > stats.singles.size) {
+                // 单张竟然多了, 估计是吃啥吐啥类型的 继续分析
+                foreach(TileType iType in newStats.singles) {
+                    if(iType == tile.tile_type) {
+                        // 多出来的正好是吃进去的 试试下一个
+                        shouldContNow = true;
+                        break;
+                    }
+                }
+                // 多出来的单张是另一头的， 比如说 789 吃 6    123 吃 4    
+                foreach(TileType iType in newStats.singles) {
+                    if( ((int)iType - (int)tile.tile_type).abs() == 3 ) {
+                        shouldContNow = true;
+                        break;
+                    }             
+                } 
+                
+            }
+            if(shouldContNow) {
+                continue;
+            }
+
+            if(stats.hasTerminalTriplet && !newStats.hasTerminalTriplet) {
+                // 把 “唯一的” 幺九刻给吃没了
+                continue;
+            }
+           
+            // 找一下该打什么牌
+            HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
+            HashSet<TileType> checked = new HashSet<TileType>();
+            foreach (Tile t in newHand)
+            {
+                if(checked.contains(t.tile_type)) {
+                    continue;
+                } else {
+                    checked.add(t.tile_type);
+                }
+                ArrayList<Tile> tmpHand = new ArrayList<Tile>();
+                tmpHand.add_all(newHand);
+                tmpHand.remove(t);
+
+                // 至少得能听牌吧
+                if( TileRules.in_tenpai(tmpHand,newCalls)) {
+                    hDiscardForTenpai.set(t,new HashMap<TileType,int>());
+                }
+            }
+
+            if( hDiscardForTenpai.keys.size > 0 ) {
+                populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
+                HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
+                ArrayList<BestDiscardResult> result_array = find_best_discards(discard_benefit);
+
+                if (result_array.size > 0 && result_array[0].tile != null && result_array[0].benefit >  bestChiiResut.benefit) {
+                    bestChiiResut.benefit = result_array[0].benefit;
+                    bestChiiResut.tile = result_array[0].tile; // just select a representative tile that has high benefit
+                    bestGroup = g;
+                    // 有起色就立即　continue 看下一个 group 是不是更出色, 不需要plan_b 了
+                    foreach(BestDiscardResult r in result_array) {
+                        Environment.log(LogType.DEBUG, "MortalBot",
+                        @"should_call_chii ($(round_state.self.wind.to_string())) chii $(tile.to_string()) discard $(r.tile.to_string()) for $(r.benefit) win tiles");
+                    }
+                    continue;
+                }
+            }
+            
+        } // groups loop
+
+        if(bestGroup != null) {
+            // 比没吃前听的好
+            tiles1 = bestGroup[0];
+            tiles2 = bestGroup[1];
+            return true;
+        }
+
+        if( beforeBenefit > 0) {
+            // 都已经听牌的，不吃了
+            return false;
+        }
+
+        foreach(ArrayList<Tile> g in shanten_g_candi) {
+            tiles1 = g[0];
+            tiles2 = g[1];
+            return true; 
+        }
+
+        // 最后肯定觉得吃的不好，要吃上面早吃了
+        return false;
+    }
+
+    // Evaluate whether to call pon (碰) on a tile
+    // Returns true if should call pon, false otherwise
+    private bool should_call_pon(Tile tile,
+                                  ArrayList<Tile> sortedhand,
+                                  ArrayList<RoundStateCall> calls,
+                                  int beforeBenefit,
+                                  HandStatistics stats,
+                                  RoundStatePlayer discarding_player)
+    {
+        if (!round_state.can_pon(round_state.self) || count(tile) != 2)
+        {
+            return false;
+        }
+
+        int terminalCnt = stats.terminal_count;
+        int dragonCnt = stats.dragon_count;
+
+        if( dragonCnt < 2 && terminalCnt == 0 ) {
+            // 牌太烂了
+            return false;
+        }
+
+        // 没听牌，你又没幺九刻子时，赶紧碰
+        if( stats.dragon_count < 3 && !stats.hasTerminalTriplet
+             && (tile.is_dragon_tile() || tile.is_terminal_tile())
+            && beforeBenefit == 0) {
+            // 必碰
+            return true;
+        }
+
+        // 碰掉试试 , 外围逻辑已经确认我们手中只有两个同种牌
+        ArrayList<Tile> newHand = new ArrayList<Tile>();
+        ArrayList<RoundStateCall> newCalls = new ArrayList<RoundStateCall>();
+        newCalls.add_all(calls);
+        ArrayList<Tile> pon = new ArrayList<Tile>();
+        pon.add(tile);
+
+        foreach (Tile t in sortedhand)
+        {
+            if (t.tile_type == tile.tile_type)
+            {
+                pon.add(t);
+            }
+            else
+            {
+                newHand.add(t);
+            }
+        }
+
+        newCalls.add(new RoundStateCall(RoundStateCall.CallType.PON, pon, tile, 1));
+
+        // 找一下该打什么牌
+        HashMap<Tile, HashMap<TileType, int>> hDiscardForTenpai= new HashMap<Tile,HashMap<TileType, int>>();
+        HashSet<TileType> checked = new HashSet<TileType>();
+        foreach (Tile t in newHand)
+        {
+            if(checked.contains(t.tile_type)) {
+                continue;
+            } else {
+                checked.add(t.tile_type);
+            }
+            ArrayList<Tile> tmpHand = new ArrayList<Tile>();
+            tmpHand.add_all(newHand);
+            tmpHand.remove(t);
+
+            // 至少得能听牌吧
+            if( TileRules.in_tenpai(tmpHand,newCalls)) {
+                hDiscardForTenpai.set(t,new HashMap<TileType,int>());
+            }
+        }
+        if(hDiscardForTenpai.keys.size > 0 ) {
+            populate_needed_tiles_for_discards(hDiscardForTenpai,newHand,newCalls);
+            HashMap<Tile, int> discard_benefit = calculate_discard_benefits(hDiscardForTenpai);
+            ArrayList<BestDiscardResult> result_array = find_best_discards(discard_benefit);
+
+            foreach(BestDiscardResult r in result_array ) {
+                Environment.log(LogType.DEBUG, "MortalBot",
+                @"should_call_pon ($(round_state.self.wind.to_string())) discard $(r.tile.to_string()) for $(r.benefit) win tiles");
+            }
+            if (result_array.size > 0 && result_array[0].tile != null && result_array[0].benefit > beforeBenefit) {
+
+                // 既然值得碰,那就碰吧.
+                return true;
+            }
+        }
+
+        // 以前是有听的话，就不碰了
+        if(beforeBenefit > 0) {
+            return false;
+        }
+
+        // 默认就不碰啦
+        return false;
+    }
+
     private void apply_call_action(int action, Tile discard_tile)
     {
         Environment.log(LogType.DEBUG, "MortalBot",
             @"apply_call_action: action=$(action), discard=$(tile_to_mjai(discard_tile.tile_type)), hand_size=$(round_state.self.hand.size), calls=$(round_state.self.calls.size)");
-
-        // 43: ron (agari on call)
-        if (action == 43 && round_state.can_ron(round_state.self))
-        {
-            Environment.log(LogType.DEBUG, "MortalBot", "calling ron");
-            call_ron();
-            return;
-        }
 
         // 41: pon
         if (action == 41 && round_state.can_pon(round_state.self))

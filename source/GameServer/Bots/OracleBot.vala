@@ -50,11 +50,6 @@ class OracleBot : Bot
             // 必碰
             return true;
         }
-        
-        // 下家打的 没听牌的话 基本都碰, 将牌没了的话，不正好二人抬轿吗
-        if(beforeBenefit == 0 && shimocha_index == discarder_index && tripletCnt <= 2) {
-            return true;
-        }
 
         // 牌好吗 其实如果那一对子正好是 幺九 对的话,其实还行
         if (beforeBenefit == 0 && 
@@ -172,9 +167,10 @@ class OracleBot : Bot
             return false;
         }
 
-        if( kamicha_index == discarder_index) {
+        bool need_terminal_dragon = stats.terminal_count < 1 && stats.dragon_count <=1 ;
+        if( kamicha_index == discarder_index && need_terminal_dragon) {
             // 上家的牌,一般不想碰
-            if(tripletCnt < 1 || singleCnt <=1 ) {
+            if(tripletCnt < 1 ) {
                 return true;
             }
         }
@@ -506,12 +502,15 @@ class OracleBot : Bot
         }
 
         // 有 plan B 就用上吧，也不知道啥情况
-        if(plan_b != null) {
+        bool need_terminal_dragon = stats.terminal_count < 1 && stats.dragon_count <=1 ;
+        if ( (need_terminal_dragon && !tile.is_terminal_tile()) || (stats.pair_count <= 1 && stats.triplet_count < 1 )) {
+            return false;
+        } else if( plan_b != null) {
             tiles1 = plan_b[0];
             tiles2 = plan_b[1];
             return true;
-        }        
-        
+        }
+
         // 最后肯定觉得吃的不好，要吃上面早吃了
         return false;
     }
@@ -682,7 +681,7 @@ class OracleBot : Bot
             if(i == round_state.self.index) {
                 continue;
             }
-            round_state.get_player(i).cal_map(); 
+            round_state.get_player(i).assess_risk(); 
             round_state.get_player(i).cal_pon_candi();
             warn_pon.add_all(round_state.get_player(i).pon_candi);
         }
@@ -726,18 +725,11 @@ class OracleBot : Bot
 
             Tile for_log = new Tile(-1,type_needed);
             Environment.log(LogType.DEBUG, "OracleBot",
-                @"do_call_decision Before_Need_Tile: $(for_log.to_string()) : $(available_count) ");
+                @"do_call_decision Before_Win_Tile: $(for_log.to_string()) : $(available_count) ");
         }
         if (beforeBenefit > 0) {
             Environment.log(LogType.DEBUG, "OracleBot",
                 @"do_call_decision BeforeBenefit: $(beforeBenefit) ");
-        }
-
-        // Evaluate pon decision
-        if (should_call_pon(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
-        {
-            call_pon();
-            return;
         }
 
         // Evaluate chii decision
@@ -746,6 +738,13 @@ class OracleBot : Bot
         if (should_call_chii(tile, sortedhand, calls, beforeBenefit, stats, discarding_player, out chii_tile1, out chii_tile2))
         {
             call_chii(chii_tile1, chii_tile2);
+            return;
+        }
+
+        // Evaluate pon decision
+        if (should_call_pon(tile, sortedhand, calls, beforeBenefit, stats, discarding_player))
+        {
+            call_pon();
             return;
         }
 
@@ -784,6 +783,15 @@ class OracleBot : Bot
         if (tiles.size == 0) // 有可能都是炮牌？
             return RandomTileSmart(stats,backup);     
 
+        foreach (Tile tile in tiles)
+        {
+            if (tile.is_dragon_tile())
+            {
+                if(count(tile) <= 1)
+                    return tile;
+            }
+        }
+
         backup = new ArrayList<Tile>();
         backup.add_all(tiles);
         for (int i = 0; i < tiles.size; i++)
@@ -795,99 +803,31 @@ class OracleBot : Bot
         if (tiles.size == 0)
             return RandomTileSmart(stats,backup);
 
-        foreach (Tile tile in tiles)
-        {
-            //  if (tile.is_wind_tile())
-            //  {
-            //      if (!tile.is_wind(round_state.self.wind) && !tile.is_wind(round_state.round_wind))
-            //          return tile;
-            //      else if (count(tile) <= 1)
-            //          return tile;
-            //  }
-            if (tile.is_dragon_tile())
-            {
-                if(count(tile) <= 1)
-                    return tile;
-            }
-        }
-
-        // 二人抬轿检测 检测时别看手牌了
-        ArrayList<Tile> tpc = stats.two_player_carry; // 应该是排完序的
-        TileType discard_for_two_players_carry  = TileType.BLANK;
-        if(tpc.size == 5) {
-            // 找出来打哪张能形成二人抬轿
-
-            // 先确保没对子
-            bool hasPair = false;
-            for(int i=0; i <= 3; i++) {
-                if(tpc[i].tile_type == tpc[i+1].tile_type) {
-                    hasPair = true;
-                    break;
-                }              
-            } 
-            
-            if(!hasPair) {
-                HashMap<TileType,int>  hDiscardCandi = new HashMap<TileType,int>(); // 需要在里面选distance 和最小的
-                for(int iRemove = 0 ; iRemove < tpc.size; iRemove++) {
-                    int index0 = 0 , index1 = 1, index2 = 2, index3 = 3; // 预定是先看这几个位置的
-                    // 1234 0234 0134 0124 0124
-                    if(index0 == iRemove) {
-                        index0++;
-                        index1++;
-                        index2++;
-                        index3++;
-                    } else if(index1 == iRemove) {
-                        index1++;
-                        index2++;
-                        index3++;
-                    } else if(index2 == iRemove) {
-                        index2++;
-                        index3++;
-                    } else if(index3 == iRemove) {
-                        index3++;
-                    } else {
-                        // 不用动了
-                    }
-                    int distance1 = tpc[index1].tile_type - tpc[index0].tile_type;
-                    int distance2 = tpc[index3].tile_type - tpc[index2].tile_type;
-                    if( (distance1 == 1 || distance1 == 2) 
-                    && (distance2 == 1 || distance2 == 2)) 
-                    {
-                        // 二人抬轿了 但未必最优
-                        hDiscardCandi.set(tpc[iRemove].tile_type, distance1 + distance2);
-                        //  discard_for_two_players_carry = tpc[iRemove].tile_type;
-                        break;
-                    }
-                } // end loop for iRemove
-
-                // 找个distance 和 最小的
-                int discard_for_distance = int.MAX ; // big enough to be impossible;
-                foreach(TileType  tileType in hDiscardCandi.keys ) {
-                    if(stats.rare_dragon_terminal != TileType.BLANK) {
-                        // 我们有一张幺九或者中发白的独苗
-                        if(tileType == stats.rare_dragon_terminal) {
-                            continue;
-                        }
-                    }
-                    if(hDiscardCandi.get(tileType) < discard_for_distance) {
-                        // 找到小一点了
-                        discard_for_distance = hDiscardCandi.get(tileType);
-                        discard_for_two_players_carry = tileType; 
-                    }
-                }
-            }
-        }
-
-        if(discard_for_two_players_carry != TileType.BLANK) {
+        // Check for "two players carry" pattern (二人抬轿)
+        TileType discard_for_two_players_carry = check_two_players_carry_pattern(stats, tiles);
+        if (discard_for_two_players_carry != TileType.BLANK) {
             // 既然有这个牌型，直接就打了，后面的判断全忽略 缺幺九的话，以后再调整，毕竟吃个幺九或者单砸也挺容易的
             for (int i = 0; i < tiles.size; i++)
             {
-                if(tiles[i].tile_type == discard_for_two_players_carry) {
+                if (tiles[i].tile_type == discard_for_two_players_carry) {
+                    Environment.log(LogType.DEBUG, "OracleBot",
+                    @"two-players-carry discard: $(tiles[i])");
                     return tiles[i];
                 }
-            } 
+            }
         }
-        
+       
+        backup = new ArrayList<Tile>();
+        backup.add_all(tiles);
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if (count(tile) >= 3)
+                tiles.remove_at(i--);
+        }
+        if (tiles.size == 0)
+            return RandomTileSmart(stats,backup);
+
         bool has_terminal_dragon_pair_seq = false; // just check hand tiles
         backup.clear();
         backup.add_all(tiles);
@@ -909,78 +849,26 @@ class OracleBot : Bot
         // 干净的幺九顺子必须留啊
         backup.clear();
         backup.add_all(tiles);
-        for (int i = 0; i < tiles.size; i++)
-        {
-            Tile tile = tiles[i];
-            if(!tile.is_terminal_tile()) {
-                continue;
-            }
-            TileType tile_type = tile.tile_type;
-            if (tile_type == TileType.MAN1 ||
-                tile_type == TileType.PIN1 ||
-                tile_type == TileType.SOU1) {
-                ArrayList<Tile> me_list = filter_tile_type(tile_type);
-                ArrayList<Tile> p1_list = filter_tile_type(tile_type + 1);
-                ArrayList<Tile> p2_list = filter_tile_type(tile_type + 2);
-                if(me_list.size == 1 && p1_list.size == 1 && p2_list.size == 1) {
-                   has_terminal_dragon_pair_seq = true;
-                   tiles.remove(me_list.get(0)); 
-                   tiles.remove(p1_list.get(0)); 
-                   tiles.remove(p2_list.get(0)); 
-                }
-                // 独苗幺九顺
-                if(stats.terminal_count == 1 && p1_list.size >= 1 && p2_list.size >= 1) {
-                    has_terminal_dragon_pair_seq = true;
-                    tiles.remove(me_list.get(0)); 
-                    tiles.remove(p1_list.get(0)); 
-                    tiles.remove(p2_list.get(0));  
-                }
-            }
-            if (tile_type == TileType.MAN9 ||
-                tile_type == TileType.PIN9 ||
-                tile_type == TileType.SOU9) {
-                ArrayList<Tile> me_list = filter_tile_type(tile_type);
-                ArrayList<Tile> m1_list = filter_tile_type(tile_type - 1);
-                ArrayList<Tile> m2_list = filter_tile_type(tile_type - 2);
-                if(me_list.size == 1 && m1_list.size == 1 && m2_list.size == 1) {
-                   has_terminal_dragon_pair_seq = true;
-                   tiles.remove(me_list.get(0)); 
-                   tiles.remove(m1_list.get(0)); 
-                   tiles.remove(m2_list.get(0)); 
-                }
-                // 独苗幺九顺
-                if(stats.terminal_count == 1 && m1_list.size >= 1 && m2_list.size >= 1) {
-                    has_terminal_dragon_pair_seq = true;
-                    tiles.remove(me_list.get(0)); 
-                    tiles.remove(m1_list.get(0)); 
-                    tiles.remove(m2_list.get(0));  
-                }
-            }
-        }
+        protect_terminal_sequences(tiles, stats, ref has_terminal_dragon_pair_seq);
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
-
-        backup.clear();
-        backup.add_all(tiles);
-        for (int i = 0; i < tiles.size; i++)
-        {
-            Tile tile = tiles[i];
-            if (has_neighbours(tile)) {
-                // count if from self.hand, so don't worry the data consistency when removed one tile of pair
-                if(count(tile) == 2) {
-                    if(tile.is_terminal_tile()) {
-                        has_terminal_dragon_pair_seq = true;
-                    }
-                    if(!stats.hasTerminalSeq && !stats.hasTerminalTriplet && tile.is_terminal_tile()) {
-                        tiles.remove_at(i--); 
-                    }
+        /////////////////////
+        if(stats.pair_count >=2 || stats.hasTerminalTriplet || stats.dragon_count >=3) {
+            // need to protect sequence
+            backup.clear();
+            backup.add_all(tiles);
+            for (int i = 0; i < tiles.size; i++) {
+                Tile tile = tiles[i];
+                if(stats.hand_in_seq.contains(tile.tile_type)) {
+                    tiles.remove_at(i--);
                 }
-            }             
+            }
+            if (tiles.size == 0)
+            return RandomTileSmart(stats, backup); 
         }
-        if (tiles.size == 0)
-            return RandomTileSmart(stats, backup);
-
+        /////////////////////
+     
         // 顺子里的独苗还是要留 1234 怎么办？
         backup.clear();
         backup.add_all(tiles);
@@ -998,7 +886,6 @@ class OracleBot : Bot
 
         backup.clear();
         backup.add_all(tiles);
-
         // 到了这里不可能算刻子了，这些对子肯定是没近邻的
         int pair_cnt = 0;
         HashSet<TileType> pair_tile_type = new HashSet<TileType>();
@@ -1019,9 +906,10 @@ class OracleBot : Bot
             }               
         }
         // 留一下 3对做个阈值吧，因为有可能对是被人两头用啊
-        if(pair_cnt <= 3) {
+        if(pair_cnt <= 3 && !stats.hasTerminalTriplet && stats.dragon_count <= 2) {
              for (int i = 0; i < tiles.size; i++) {
-                if(pair_tile_type.contains(tiles[i].tile_type)) {
+                Tile tile = tiles[i];
+                if(pair_tile_type.contains(tile.tile_type)) {
                     tiles.remove_at(i--); // 对子还是很珍贵的，
                 }
              }
@@ -1065,15 +953,15 @@ class OracleBot : Bot
         // Do this in reverse order to avoid index shifting issues
         for (int i = tiles.size - 1; i >= 0; i--)
         {
-            bool should_remove = false;
+            bool should_protect = false;
             Tile tile = tiles[i];
             foreach(Tile t in terminal_in_need) {
                 if(t == tile|| t.is_neighbour(tile) || t.is_second_neighbour(tile)) {
-                    should_remove = true;
+                    should_protect = true;
                     break;
                 }
             }
-            if (should_remove) {
+            if (should_protect) {
                 tiles.remove_at(i);
             }
         }
@@ -1093,29 +981,63 @@ class OracleBot : Bot
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
+        // 依附与 两面搭子的跳搭是没有价值的
         backup.clear();
         backup.add_all(tiles);
-
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
-            if ( (has_neighbours(tile) ||  has_second_neighbours(tile)) && !stats.singles_ish.contains(tile.tile_type))
+            ArrayList<Tile> sec_ns = second_neighbours(tile);
+            bool i_have_value = true;
+            foreach(Tile sec_t in sec_ns) {
+                // if my second neighbour has it's own neighbour, that means i don't have value
+                if( has_neighbours(sec_t)) {
+                    i_have_value = false;
+                    break;
+                }
+            }
+            if ( (has_neighbours(tile) ||  has_second_neighbours(tile)) 
+                && i_have_value
+                && !stats.singles_ish.contains(tile.tile_type))
                 tiles.remove_at(i--);
         }
-
         if (tiles.size == 0)
             return RandomTileSmart(stats, backup);
 
+        // 下家牌已经不错的情况下 不许让人吃了，
         backup.clear();
         backup.add_all(tiles);
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if(warn_chii.contains(tile.tile_type)) {
+                tiles.remove_at(i--); 
+            }
+        }
+        if (tiles.size == 0)
+            return RandomTileSmart(stats,backup);
 
+        // 别人牌不错了的，不想让人碰
+        backup.clear();
+        backup.add_all(tiles);
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if(warn_pon.contains(tile.tile_type)) {
+                tiles.remove_at(i--); 
+            }
+        }
+        if (tiles.size == 0)
+            return RandomTileSmart(stats,backup);
+
+        backup.clear();
+        backup.add_all(tiles);
         for (int i = 0; i < tiles.size; i++)
         {
             Tile tile = tiles[i];
             if (!stats.singles_ish.contains(tile.tile_type)) // 不是垃圾牌，保护一下
                 tiles.remove_at(i--);
         }
-
         if (tiles.size == 0)
             return RandomTileSmart(stats,backup);
 
@@ -1143,6 +1065,58 @@ class OracleBot : Bot
             return RandomTileSmart(stats,backup);     
 
         return RandomTileSmart(stats, tiles);
+    }
+
+    // 干净的幺九顺子必须留啊: remove low/high terminal sequences from candidate discard list
+    private void protect_terminal_sequences(ArrayList<Tile> tiles, HandStatistics stats, ref bool has_terminal_dragon_pair_seq)
+    {
+        for (int i = 0; i < tiles.size; i++)
+        {
+            Tile tile = tiles[i];
+            if (!tile.is_terminal_tile())
+                continue;
+            TileType tile_type = tile.tile_type;
+            if (tile_type == TileType.MAN1 ||
+                tile_type == TileType.PIN1 ||
+                tile_type == TileType.SOU1) {
+                ArrayList<Tile> me_list = filter_tile_type(tile_type);
+                ArrayList<Tile> p1_list = filter_tile_type(tile_type + 1);
+                ArrayList<Tile> p2_list = filter_tile_type(tile_type + 2);
+                if (me_list.size == 1 && p1_list.size == 1 && p2_list.size == 1) {
+                    has_terminal_dragon_pair_seq = true;
+                    tiles.remove(me_list.get(0));
+                    tiles.remove(p1_list.get(0));
+                    tiles.remove(p2_list.get(0));
+                }
+                // 独苗幺九顺
+                if (stats.terminal_count == 1 && p1_list.size >= 1 && p2_list.size >= 1) {
+                    has_terminal_dragon_pair_seq = true;
+                    tiles.remove(me_list.get(0));
+                    tiles.remove(p1_list.get(0));
+                    tiles.remove(p2_list.get(0));
+                }
+            }
+            if (tile_type == TileType.MAN9 ||
+                tile_type == TileType.PIN9 ||
+                tile_type == TileType.SOU9) {
+                ArrayList<Tile> me_list = filter_tile_type(tile_type);
+                ArrayList<Tile> m1_list = filter_tile_type(tile_type - 1);
+                ArrayList<Tile> m2_list = filter_tile_type(tile_type - 2);
+                if (me_list.size == 1 && m1_list.size == 1 && m2_list.size == 1) {
+                    has_terminal_dragon_pair_seq = true;
+                    tiles.remove(me_list.get(0));
+                    tiles.remove(m1_list.get(0));
+                    tiles.remove(m2_list.get(0));
+                }
+                // 独苗幺九顺
+                if (stats.terminal_count == 1 && m1_list.size >= 1 && m2_list.size >= 1) {
+                    has_terminal_dragon_pair_seq = true;
+                    tiles.remove(me_list.get(0));
+                    tiles.remove(m1_list.get(0));
+                    tiles.remove(m2_list.get(0));
+                }
+            }
+        }
     }
 
     // Populate needed tiles for each potential discard that leads to tenpai
@@ -1292,16 +1266,6 @@ class OracleBot : Bot
         }
 
         return result;
-    }
-
-    // 我手牌里有多少这样的牌
-    private int count(Tile tile)
-    {
-        int count = 0;
-        foreach (Tile t in round_state.self.hand)
-            if (t.tile_type == tile.tile_type)
-                count++;
-        return count;
     }
 
     private ArrayList<Tile>  filter_tile_type(TileType tp)

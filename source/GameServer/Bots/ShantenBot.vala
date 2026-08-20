@@ -716,7 +716,7 @@ class ShantenBot : Bot
 
             Tile for_log = new Tile(-1,type_needed);
             Environment.log(LogType.DEBUG, "ShantenBot",
-                @"do_call_decision Before_Need_Tile: $(for_log.to_string()) : $(available_count) ");
+                @"do_call_decision Before_Win_Tile: $(for_log.to_string()) : $(available_count) ");
         }
         if (beforeBenefit > 0) {
             Environment.log(LogType.DEBUG, "ShantenBot",
@@ -1122,103 +1122,7 @@ class ShantenBot : Bot
         return available;
     } 
 
-    // 我手牌里有多少这样的牌
-    private int count(Tile tile)
-    {
-        int count = 0;
-        foreach (Tile t in round_state.self.hand)
-            if (t.tile_type == tile.tile_type)
-                count++;
-        return count;
-    }
-
-    /**
-     * Check for "two players carry" pattern (二人抬轿)
-     * This is a special pattern where discarding one tile creates two groups with distance 1 or 2
-     *
-     * @param stats Hand statistics containing two_player_carry tiles
-     * @param tiles The tile list to check against
-     * @return The tile type to discard for this pattern, or TileType.BLANK if not applicable
-     */
-    private TileType check_two_players_carry_pattern(HandStatistics stats, ArrayList<Tile> tiles)
-    {
-        ArrayList<Tile> tpc = stats.two_player_carry; // 应该是排完序的
-        TileType discard_for_two_players_carry = TileType.BLANK;
-
-        if (tpc.size != 5) {
-            return TileType.BLANK;
-        }
-
-        // 先确保没对子 (ensure no pair exists)
-        bool hasPair = false;
-        for (int i = 0; i <= 3; i++) {
-            if (tpc[i].tile_type == tpc[i+1].tile_type) {
-                hasPair = true;
-                break;
-            }
-        }
-
-        if (hasPair) {
-            return TileType.BLANK;
-        }
-
-        // 需要在里面选distance和最小的 (find candidate with minimum distance sum)
-        HashMap<TileType, int> hDiscardCandi = new HashMap<TileType, int>();
-
-        for (int iRemove = 0; iRemove < tpc.size; iRemove++) {
-            int index0 = 0, index1 = 1, index2 = 2, index3 = 3;
-
-            // Adjust indices to skip the removed position
-            // 1234 0234 0134 0124 0123
-            if (index0 == iRemove) {
-                index0++;
-                index1++;
-                index2++;
-                index3++;
-            } else if (index1 == iRemove) {
-                index1++;
-                index2++;
-                index3++;
-            } else if (index2 == iRemove) {
-                index2++;
-                index3++;
-            } else if (index3 == iRemove) {
-                index3++;
-            }
-
-            int distance1 = tpc[index1].tile_type - tpc[index0].tile_type;
-            int distance2 = tpc[index3].tile_type - tpc[index2].tile_type;
-
-            // Check if both groups have distance 1 or 2 (valid for two players carry)
-            if ((distance1 == 1 || distance1 == 2) &&
-                (distance2 == 1 || distance2 == 2)) {
-                // 二人抬轿了 但未必最优 (found pattern but may not be optimal)
-                hDiscardCandi.set(tpc[iRemove].tile_type, distance1 + distance2);
-                break;
-            }
-        }
-
-        // 找个distance和最小的 (find the one with minimum distance sum)
-        int discard_for_distance = int.MAX; // big enough to be impossible
-        foreach (TileType tileType in hDiscardCandi.keys) {
-            // Skip rare dragon/terminal tiles if they exist
-            if (stats.rare_dragon_terminal != TileType.BLANK) {
-                // 我们有一张幺九或者中发白的独苗 (we have a lone terminal or dragon)
-                if (tileType == stats.rare_dragon_terminal) {
-                    continue;
-                }
-            }
-
-            if (hDiscardCandi.get(tileType) < discard_for_distance) {
-                // 找到小一点了 (found a smaller distance)
-                discard_for_distance = hDiscardCandi.get(tileType);
-                discard_for_two_players_carry = tileType;
-            }
-        }
-
-        return discard_for_two_players_carry;
-    }
-
+    
     /**
      * Remove non-terminal tiles that have neighbours from discard candidates
      * These tiles are valuable for forming sequences, so we protect them

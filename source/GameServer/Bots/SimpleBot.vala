@@ -181,14 +181,5 @@ class SimpleBot : Bot
         return tiles[rnd.int_range(0, tiles.size)];
     }
 
-    private int count(Tile tile)
-    {
-        int count = 0;
-        foreach (Tile t in round_state.self.hand)
-            if (t.tile_type == tile.tile_type)
-                count++;
-        return count;
-    }
-
     public override string name { get { return "SimpleBot"; } }
 }

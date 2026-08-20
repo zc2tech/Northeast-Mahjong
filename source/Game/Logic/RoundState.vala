@@ -1265,24 +1265,33 @@ public class RoundStatePlayer
     // cal_map should already be called outside 
     public void cal_chii_candi()
     {
-       chii_candi.clear();
-       add_chii_candi(0);
-       add_chii_candi(1);
-       add_chii_candi(2);
+        // 有碰一般不会去吃， 先根据pon打薄
+        chii_candi.clear();
+        if(!dangerous) {
+            // 不危险的话，就当他啥都不会吃吧
+            return;
+        }
+        // type_category: 0: MAN 1:PIN 2:SOU 
+        add_chii_candi(0);
+        add_chii_candi(1);
+        add_chii_candi(2);
     }
 
     // cal_map should already be called outside  
     public void cal_pon_candi()
     {
-       pon_candi.clear();
-       add_pon_candi(0);
-       add_pon_candi(1);
-       add_pon_candi(2);
-       if(dragon_cnt >= 2 && dragon_cnt != 4) {
+        pon_candi.clear();
+        if(!dangerous) {
+            return;
+        }
+        add_pon_candi(0);
+        add_pon_candi(1);
+        add_pon_candi(2);
+        if(dragon_cnt >= 2 && dragon_cnt != 4) {
             pon_candi.add(TileType.CHUN);
             pon_candi.add(TileType.HATSU);
             pon_candi.add(TileType.HAKU);
-       }
+        }
     }
     public void cal_win_candi()
     {
@@ -1307,7 +1316,15 @@ public class RoundStatePlayer
         }
     }
    
-    // type_category: 0: MAN 1:PIN 2:SOU 
+    // 打薄: reduce count by removing a pon (3) or pair (2) if present
+    private int thin_pon(int cnt) {
+        if (cnt >= 3) return cnt - 3;
+        if (cnt >= 2) return cnt - 2;
+        return cnt;
+    }
+
+    // type_category: 0: MAN 1:PIN 2:SOU
+    // 有碰一般不会去吃， 先根据pon打薄
     private void add_chii_candi(int type_category) {
         TileType start_tile;
         TileType end_tile;
@@ -1337,6 +1354,10 @@ public class RoundStatePlayer
             int i_cnt = the_map.get( (TileType) i);
             int p1_cnt = the_map.get( (TileType) (i + 1));
             int p2_cnt = the_map.get( (TileType) (i + 2));
+            i_cnt = thin_pon(i_cnt);
+            p1_cnt = thin_pon(p1_cnt);
+            p2_cnt = thin_pon(p2_cnt);
+
             int smallest = int.min(i_cnt, int.min(p1_cnt, p2_cnt));
             i_cnt -= smallest;
             p1_cnt -= smallest;
@@ -1385,12 +1406,13 @@ public class RoundStatePlayer
         } 
     }
 
-    public void cal_map() {
+    public void assess_risk() {
+        dangerous = false;
         map_man = create_suit_map(TileType.MAN1, TileType.MAN9);
         map_pin = create_suit_map(TileType.PIN1, TileType.PIN9);
         map_sou = create_suit_map(TileType.SOU1, TileType.SOU9);
         dragon_cnt = 0;
-
+        int single_cnt = 0;
         foreach (Tile t in this.hand)
         {
             if (t.tile_type >= TileType.MAN1 && t.tile_type <= TileType.MAN9)
@@ -1410,6 +1432,33 @@ public class RoundStatePlayer
             {
                 dragon_cnt++;
             }
+        }
+        if(dragon_cnt == 1) {
+            single_cnt++;
+        }
+        for(int tt = TileType.MAN1; tt <= TileType.MAN7; tt++) {
+            int p2_cnt = map_man.get(tt + 2);
+            int p1_cnt = map_man.get(tt + 1);
+            if(p2_cnt == 0 && p1_cnt == 0) {
+               single_cnt ++; 
+            }
+        }
+        for(int tt = TileType.PIN1; tt <= TileType.PIN7; tt++) {
+            int p2_cnt = map_pin.get(tt + 2);
+            int p1_cnt = map_pin.get(tt + 1);
+            if(p2_cnt == 0 && p1_cnt == 0) {
+               single_cnt ++; 
+            }
+        }
+        for(int tt = TileType.SOU1; tt <= TileType.SOU7; tt++) {
+            int p2_cnt = map_sou.get(tt + 2);
+            int p1_cnt = map_sou.get(tt + 1);
+            if(p2_cnt == 0 && p1_cnt == 0) {
+               single_cnt ++; 
+            }
+        }
+        if(single_cnt <= 2) {
+            dangerous = true;
         }
     }
 
@@ -1435,6 +1484,7 @@ public class RoundStatePlayer
     public HashMap<TileType, int> map_man { get; private set; }
     public HashMap<TileType, int> map_pin { get; private set; }
     public HashMap<TileType, int> map_sou { get; private set; }
+    public bool dangerous = false; // 是否需要防范
     public int dragon_cnt { get; private set; }
 
     public bool open { get; private set; } // Open riichi

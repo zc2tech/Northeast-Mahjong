@@ -61,6 +61,7 @@ void main(string[] args)
     int[] wins = new int[4];
     int[] ron_wins = new int[4];
     int[] tsumo_wins = new int[4];
+    int[] scores = new int[4];
     int draws = 0;
 
     for (int r = 0; r < rounds.length; r++)
@@ -72,6 +73,10 @@ void main(string[] args)
         print("  Result Type: %s\n", round.result_type.to_string());
         print("  Transfers: P0=%d, P1=%d, P2=%d, P3=%d\n",
               round.transfer_p0, round.transfer_p1, round.transfer_p2, round.transfer_p3);
+        scores[0] += round.transfer_p0;
+        scores[1] += round.transfer_p1;
+        scores[2] += round.transfer_p2;
+        scores[3] += round.transfer_p3;
 
         // Print initial hands with tile types
         print("\n  Initial Hands:\n"); 
@@ -256,15 +261,27 @@ void main(string[] args)
         if (wins[p] < wins[worst_player]) worst_player = p;
     }
 
+    // Find highest/lowest accumulated score
+    int richest_player = 0;
+    int poorest_player = 0;
+    for (int p = 1; p < 4; p++) {
+        if (scores[p] > scores[richest_player]) richest_player = p;
+        if (scores[p] < scores[poorest_player]) poorest_player = p;
+    }
+
     for (int p = 0; p < 4; p++) {
         double rate = total_rounds > 0 ? (wins[p] * 100.0 / total_rounds) : 0.0;
-        string human_tag = (p == log.human_player_index) ? " (human)" : "";
-        string best_tag  = (p == best_player && wins[p] > 0) ? " <-- highest win rate" : "";
-        string worst_tag = (p == worst_player && p != best_player) ? " <-- lowest win rate" : "";
-        print("  %s%s: %d wins (%.1f%%)  ron=%d tsumo=%d%s%s\n",
+        string human_tag   = (p == log.human_player_index) ? " (human)" : "";
+        //  string best_tag    = (p == best_player && wins[p] > 0) ? " <-- highest win rate" : "";
+        string best_tag    = "";
+        //  string worst_tag   = (p == worst_player && p != best_player) ? " <-- lowest win rate" : "";
+        string worst_tag   = "";
+        string richest_tag = (p == richest_player) ? " <-- highest score" : "";
+        string poorest_tag = (p == poorest_player && p != richest_player) ? " <-- lowest score" : "";
+        print("  %s%s: %d wins (%.1f%%)  ron=%d tsumo=%d  score=%+d%s%s%s%s\n",
               player_names[p], human_tag, wins[p], rate,
-              ron_wins[p], tsumo_wins[p],
-              best_tag, worst_tag);
+              ron_wins[p], tsumo_wins[p], scores[p],
+              best_tag, worst_tag, richest_tag, poorest_tag);
     }
     print("\n");
 
